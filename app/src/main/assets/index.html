@@ -789,14 +789,12 @@ function renderSettings(){
       ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
       ${confirmRm!=null?`<div class="row"><span>„${esc(cs[confirmRm]||'')}“ entfernen? Danach plant Claude ohne Rücksicht darauf.</span><div class="row"><button class="btn primary" data-action="rm-yes">Entfernen</button><button class="btn" data-action="rm-no">Abbrechen</button></div></div>`:''}
       <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div>
-    ${IN_APP?connCard():''}
     <div class="card"><h2>Hintergrund für die Planung</h2><p class="muted">Diese Angaben bekommt Claude bei jeder Planung mit. Ändern kannst du sie im Dialog.</p>
       <p class="rationale">${esc(pr.background||'Noch keine Angaben.')}</p></div>
-    <div class="card"><h2>Strava</h2><p class="muted">${mcpState==='none'?'In dieser Ansicht nicht verfügbar.':(IN_APP?'Der Abgleich holt die Aktivitäten der letzten 60 Tage über die Strava-Verbindung.':'Der Abgleich holt die Aktivitäten der letzten 60 Tage über deinen Strava-Konnektor.')}</p>
-      <p>${S.log&&S.log.lastSync?'Letzter Abgleich: '+esc(new Date(S.log.lastSync).toLocaleString('de-DE')):'Noch kein Abgleich aus der App.'} · ${acts().length} Aktivitäten gespeichert</p></div>
     <div class="card"><h2>Dialogverlauf</h2>
       ${confirmClear?`<p>Den gesamten Dialog mit Claude löschen? Plan, Ziel und Aktivitäten bleiben erhalten.</p><div class="row"><button class="btn primary" data-action="clear-yes">Löschen</button><button class="btn" data-action="clear-no">Abbrechen</button></div>`
-      :`<div class="row"><span class="muted">${(S.chat&&S.chat.messages||[]).length} Nachrichten gespeichert</span><button class="btn" data-action="clear">Verlauf löschen</button></div>`}</div>`;
+      :`<div class="row"><span class="muted">${(S.chat&&S.chat.messages||[]).length} Nachrichten gespeichert</span><button class="btn" data-action="clear">Verlauf löschen</button></div>`}</div>
+    ${IN_APP?connCard():''}`;
 }
 
 /* Vorschläge im Dialogfeld: aus der aktuellen Lage abgeleitet (Regeln, kein Claude-Aufruf) */
