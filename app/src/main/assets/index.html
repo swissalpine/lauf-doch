@@ -278,6 +278,15 @@ ol.steps .d,.day details summary .x,.day .restline,.gloss dd,.entry .short,.plan
 .mday span{font-size:13px}
 .mday i{font-size:10px;height:12px}
 .msg.auto{font-size:14px}
+/* Dialog mit Claude hervorheben */
+.dialog{background:var(--accent-soft);border:1.5px solid var(--accent)}
+.dialog-head{background:var(--accent);border-bottom:0}
+.dialog-head h2,.dialog-head .note{color:var(--accent-ink)}
+.dialog-head .note{opacity:.85}
+.dialog .compose{border-top-color:var(--accent-soft)}
+.dialog .compose textarea{background:var(--surface);border-color:var(--accent)}
+.dialog .msg.assistant{background:var(--surface)}
+.dialog .suggest button{background:var(--surface);border-style:solid;border-color:var(--accent);color:var(--accent)}
 </style>
 </head>
 <body>
