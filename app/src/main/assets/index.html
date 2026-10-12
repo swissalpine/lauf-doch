@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lauf doch!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-size:14px;font-family:system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+html{height:100%}
+/* Layout: schmale App-Spalte in Telefonbreite, Kopf mit Name, Tab-Inhalt, Dialog mit Claude, Navigationsleiste unten. Farbe: kräftiges Kobaltblau */
+:root{
+  --bg:#F3F5FA; --surface:#FFFFFF; --sunk:#E9EDF5; --ink:#121826; --muted:#586379; --line:#D6DCE8;
+  --accent:#2350F5; --accent-ink:#FFFFFF; --accent-soft:#E2E9FF;
+  --ok:#2B7A4B; --ok-soft:#DFF0E5; --warn:#9A6312; --warn-soft:#F6EAD3; --crit:#B3261E; --crit-soft:#F7DEDB;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1019; --surface:#151B28; --sunk:#10151F; --ink:#E6EBF5; --muted:#919CB3; --line:#262F43;
+  --accent:#7D9BFF; --accent-ink:#0A0F1C; --accent-soft:#1C2648;
+  --ok:#72C690; --ok-soft:#18301F; --warn:#E2B158; --warn-soft:#33281A; --crit:#F08C82; --crit-soft:#3A1E1B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1019; --surface:#151B28; --sunk:#10151F; --ink:#E6EBF5; --muted:#919CB3; --line:#262F43;
+  --accent:#7D9BFF; --accent-ink:#0A0F1C; --accent-soft:#1C2648;
+  --ok:#72C690; --ok-soft:#18301F; --warn:#E2B158; --warn-soft:#33281A; --crit:#F08C82; --crit-soft:#3A1E1B; color-scheme:dark}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+*{box-sizing:border-box}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:0 40px}
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-inline:-16px;padding:12px 16px 0;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:.01em;margin:0}
+.brand .date{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+nav.tabs{display:flex;gap:4px;margin-top:8px}
+nav.tabs button{flex:1;min-width:0;background:none;border:0;padding:10px 2px 12px;font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+main{display:flex;flex-direction:column;gap:20px;padding-top:20px}
+.panel{display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:22px;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.15;margin:0;text-wrap:balance}
+p{margin:0}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.tag.plan{background:var(--accent-soft);color:var(--accent)}
+.tag.done{background:var(--ok-soft);color:var(--ok)}
+.tag.extra{background:var(--warn-soft);color:var(--warn)}
+.sport{font-size:13px;color:var(--muted);margin-left:auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:9px 14px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.big{width:100%;padding:14px 16px;font-size:16px}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn.ghost{background:none;border-color:transparent;color:var(--accent);padding-inline:6px}
+.sync{display:flex;flex-direction:column;gap:6px}
+.sync small{color:var(--muted);font-size:13px}
+.status{font-size:13px;padding:8px 12px;border-radius:8px}
+.status.err{background:var(--crit-soft);color:var(--crit)}
+.status.ok{background:var(--ok-soft);color:var(--ok)}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+.metric{display:flex;flex-direction:column}
+.metric .v{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.metric .k{font-size:12px;color:var(--muted)}
+.target{font-family:var(--f-display);font-size:20px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+.purpose{background:var(--sunk);border-radius:8px;padding:10px 12px}
+.purpose b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:2px}
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:flex;flex-direction:column}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 8px;padding:8px 0;border-top:1px solid var(--line)}
+ol.steps li::before{content:counter(s);grid-row:span 2;font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--accent);font-variant-numeric:tabular-nums}
+ol.steps .l{font-weight:600}
+ol.steps .d{color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:13px;padding:3px 9px;border-radius:999px;background:var(--sunk);font-variant-numeric:tabular-nums}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.crit{background:var(--crit-soft);color:var(--crit)}
+.assess{border-left:3px solid var(--accent);padding:2px 0 2px 12px;white-space:pre-wrap}
+.assess b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.planref{font-size:14px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px}
+.rest{display:flex;flex-direction:column;gap:4px}
+.goal{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.goal .eyebrow{color:var(--accent-ink);opacity:.8}
+.goal .gtext{font-family:var(--f-display);font-size:28px;font-weight:600;line-height:1.15;text-wrap:balance}
+.goal .gdate{display:flex;gap:16px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.days{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.day{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
+.day:first-child{border-top:0}
+.day.today{background:var(--accent-soft)}
+.day .dl{font-variant-numeric:tabular-nums;line-height:1.2}
+.day .dl b{display:block;font-family:var(--f-display);font-size:20px;font-weight:600}
+.day .dl span{font-size:13px;color:var(--muted)}
+.day .items{display:flex;flex-direction:column;gap:6px;min-width:0}
+.day details summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.day details summary::-webkit-details-marker{display:none}
+.day details summary .t{font-weight:600}
+.day details summary .x{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.day details[open] summary{margin-bottom:6px}
+.day .restline{color:var(--muted);font-size:14px}
+.donemark{font-size:13px;color:var(--ok);font-weight:500}
+.rationale{white-space:pre-wrap}
+.weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.toggle{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 0;font-weight:600;cursor:pointer;text-align:center}
+.toggle[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sports{display:flex;flex-wrap:wrap;gap:8px}
+.sports .toggle{padding:8px 14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+/* Dialog */
+.dialog{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
+.dialog-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.msgs{display:flex;flex-direction:column;gap:10px;padding:14px 16px;max-height:420px;overflow-y:auto}
+.msg{max-width:88%;padding:9px 12px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.msg.assistant{align-self:flex-start;background:var(--sunk);border-bottom-left-radius:4px}
+.msg.error{background:var(--crit-soft);color:var(--crit)}
+.msg.auto{align-self:center;background:none;color:var(--muted);font-size:13px;text-align:center;max-width:100%;padding:2px 0}
+.thinking{align-self:flex-start;color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
+.compose{display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line)}
+.compose textarea{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.compose .row{flex-wrap:nowrap}
+.suggest{display:flex;gap:6px;flex-wrap:wrap}
+.suggest button{font-size:13px;border:1px dashed var(--line);background:none;border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--muted)}
+.suggest button:hover{color:var(--accent);border-color:var(--accent)}
+.note{font-size:13px;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:16px;color:var(--muted)}
+/* Rückblick */
+.weeknav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}
+.weeknav button{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:20px;cursor:pointer}
+.weeknav button[disabled]{opacity:.35;cursor:default}
+.weeknav .wl{text-align:center;line-height:1.2}
+.weeknav .wl b{display:block;font-family:var(--f-display);font-size:24px;font-weight:600}
+.weeknav .wl span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}
+.log{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.entry{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
+.entry:first-child{border-top:0}
+.entry .dl{font-variant-numeric:tabular-nums;line-height:1.2}
+.entry .dl b{display:block;font-family:var(--f-display);font-size:20px;font-weight:600}
+.entry .dl span{font-size:13px;color:var(--muted)}
+.entry .body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.entry .facts{font-variant-numeric:tabular-nums;font-weight:600}
+.entry .facts .s{font-weight:400;color:var(--muted)}
+.entry .short{font-size:14px}
+.entry.missed .facts{color:var(--muted);font-weight:400}
+.summary{white-space:pre-wrap}
+.perf{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.perf b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.lc{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;align-items:end}
+.lcol{display:flex;flex-direction:column;align-items:center;gap:2px;font-variant-numeric:tabular-nums}
+.lcol .lv{font-size:11px;color:var(--muted);line-height:1}
+.lcol .lb{width:100%;max-width:26px;background:var(--line);border-radius:3px 3px 0 0;min-height:2px}
+.lcol .lk{font-size:11px;color:var(--muted);line-height:1.2}
+.lcol.sel .lb{background:var(--accent)}
+.lcol.sel .lv,.lcol.sel .lk{color:var(--ink);font-weight:600}
+.entry .pl{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ht{display:flex;align-items:center;gap:8px}
+.banner{background:var(--warn-soft);border-color:var(--warn-soft);color:var(--ink)}
+.banner b{color:var(--warn)}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld > span{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fld input,.fld textarea,.addrow input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--bg);resize:vertical}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1;min-width:0}
+.chip.cmp{display:inline-flex;align-items:center;gap:6px;background:var(--warn-soft);color:var(--warn);font-weight:500;padding:4px 6px 4px 11px}
+.chip.cmp button{border:0;background:none;color:inherit;font-size:16px;line-height:1;cursor:pointer;padding:0 4px}
+.info{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:13px;line-height:1;cursor:pointer;padding:0;flex:none}
+.info[aria-expanded="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.gloss{margin:0;display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:8px;padding:12px}
+.gloss dt{font-weight:600;font-size:14px}
+.gloss dd{margin:2px 0 0;font-size:13px;color:var(--muted)}
+/* Handyformat: App-Spalte in Telefonbreite, auch auf großen Bildschirmen */
+.app{max-width:430px}
+body{font-size:14px}
+h3{font-size:21px}
+h2{font-size:19px}
+.card{padding:14px;gap:10px}
+.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+.metric .v{font-size:21px}
+.wsum{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.wsum .metric .v{font-size:19px}
+.wsum .metric .k{font-size:11.5px}
+.goal{padding:12px 14px;gap:6px}
+.goal .gtext{font-size:18px;line-height:1.25}
+.goal .gdate{font-size:13px;gap:12px}
+.brand h1{font-size:23px}
+/* Navigationsleiste unten (wie in Android-Apps) */
+header.bar{padding:12px 16px}
+.app{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,100%);margin:0;gap:0;z-index:6;
+  background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.tabs button{display:flex;justify-content:center;align-items:center;padding:6px 2px;border-bottom:0}
+nav.tabs button span.pill{display:flex;justify-content:center;align-items:center;width:58px;height:34px;border-radius:17px}
+nav.tabs button[aria-selected="true"] span.pill{background:var(--accent-soft)}
+nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.overlay{position:fixed;inset:0;background:rgba(10,14,25,.45);border:0;z-index:20;cursor:default}
+.sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(430px,100%);z-index:21;background:var(--surface);border-radius:18px 18px 0 0;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;box-shadow:0 -8px 30px rgba(0,0,0,.18);max-height:90%;overflow-y:auto}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mday{display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 0;cursor:pointer;font-variant-numeric:tabular-nums;min-width:0}
+.mday b{font-size:13px}
+.mday span{font-size:12px;color:var(--muted)}
+.mday i{font-style:normal;font-size:9px;color:var(--muted);height:11px;overflow:hidden;max-width:100%;white-space:nowrap}
+.mday.td{border-color:var(--accent-soft);background:var(--accent-soft)}
+.mday.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mday.sel span,.mday.sel i{color:var(--accent-ink)}
+.mday[disabled]{opacity:.4;cursor:default}
+.row.end{justify-content:flex-end}
+.pchip{font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+.pchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cancelled .ct{font-weight:600;text-decoration:line-through;color:var(--muted)}
+.day .cx .t{text-decoration:line-through;color:var(--muted)}
+.day .cx .x{font-size:13px;color:var(--warn)}
+.sel{width:100%;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg)}
+/* Kompakte Höhen */
+header.bar{padding:8px 16px}
+.brand h1{font-size:21px}
+main{gap:12px;padding-top:12px}
+.panel{gap:10px}
+.card{padding:12px;gap:8px}
+h2{font-size:18px}
+.muted,.note{font-size:13px;line-height:1.4}
+.fld{gap:3px}
+.fld input,.fld textarea,.addrow input{padding:7px 10px}
+.toggle{padding:7px 0}
+.sports .toggle{padding:6px 12px}
+.sports{gap:6px}
+.days .day,.entry{padding:9px 12px}
+.dialog-head{padding:10px 14px 8px}
+.msgs{padding:10px 14px;gap:8px}
+.compose{padding:10px 14px 12px;gap:6px}
+.compose textarea{min-height:48px;padding:8px 10px}
+.btn{padding:7px 12px}
+.btn.big{padding:11px 14px}
+nav.tabs{padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
+nav.tabs button{padding:4px 2px}
+.app{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+.move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
+.move label{font-size:13px;color:var(--muted)}
+.move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
+.weekdays{gap:4px}
+.toggle{font-size:14px;padding:9px 0}
+.msgs{max-height:340px}
+.msg{max-width:92%}
+.day,.entry{grid-template-columns:52px minmax(0,1fr);gap:10px;padding:11px 12px}
+.weeknav .wl b{font-size:21px}
+.btn.big{padding:13px 14px;font-size:15px}
+@media (min-width:600px){.app{border-inline:1px solid var(--line);min-height:100%}nav.tabs{border-inline:1px solid var(--line)}}
+.badge{font-size:13px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--sunk)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.crit{background:var(--crit-soft);color:var(--crit)}
+@media (max-width:420px){.wsum{grid-template-columns:repeat(2,minmax(0,1fr))}nav.tabs button{font-size:15px}}
+@media (max-width:420px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.weekdays{gap:4px}.toggle{font-size:14px}}
+@media (prefers-reduced-motion:no-preference){.dot{animation:pulse 1.2s infinite ease-in-out}}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand"><h1>Lauf doch!</h1><span class="date" id="hdrDate"></span></div>
+  </header>
+  <main>
+    <section class="panel" id="panel"></section>
+    <section class="dialog" id="dialog" aria-label="Dialog mit Claude"></section>
+  </main>
+  <div id="modal"></div>
+    <nav class="tabs" role="tablist" aria-label="Bereiche">
+      <button role="tab" id="tab-heute" data-tab="heute" aria-selected="true" aria-label="Heute" title="Heute"><span class="pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></span></button>
+      <button role="tab" id="tab-plan" data-tab="plan" aria-selected="false" aria-label="Plan" title="Plan"><span class="pill"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2"/></svg></span></button>
+      <button role="tab" id="tab-rueckblick" data-tab="rueckblick" aria-selected="false" aria-label="Rückblick" title="Rückblick"><span class="pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4h4"/><path d="M12 8v4.5l3 2"/></svg></span></button>
+      <button role="tab" id="tab-einstellungen" aria-label="Einstellungen" title="Einstellungen" data-tab="einstellungen" aria-selected="false"><span class="pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span></button>
+    </nav>
+</div>
+
+<script src="shim.js"></script>
+<script>
+(() => {
+'use strict';
+const IN_APP = !!window.IN_APP;
+const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const WD_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const SPORT = {run:'Laufen', ride:'Rad', strength:'Kraft', walk:'Gehen', other:'Sonstiges'};
+const SERVER = 'Strava';
+
+const S = {profile:null, plan:null, log:null, chat:null, loaded:false};
+let db=null, uid=null, mcp=null, mcpState='loading', sample=null, sampleState='loading';
+const TABS = {heute:'Heute', plan:'Plan', rueckblick:'Rückblick', einstellungen:'Einstellungen'};
+let weekOffset = 0;
+let dialogSince = Date.now(); // Dialog beginnt bei jedem Laden und Tab-Wechsel leer
+let tab = 'heute', busy=false, ctl=null, syncBusy=false, syncMsg=null, confirmClear=false, showAll=false, draft='';
+
+try{ const h=(location.hash||'').slice(1); if(TABS[h]) tab=h; else { const t=localStorage.getItem('tb-tab'); if(TABS[t]) tab=t; } }catch(e){}
+
+/* ---------- Hilfsfunktionen ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseYmd = s => { const [y,m,d]=String(s).split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
+const addDays = (s,n) => { const d=parseYmd(s); d.setDate(d.getDate()+n); return ymd(d); };
+const today = () => ymd(new Date());
+const fmtDay = s => { const d=parseYmd(s); return WD[d.getDay()]+' '+d.getDate()+'.'+(d.getMonth()+1)+'.'; };
+const fmtNum = (n,dig=1) => Number(n).toLocaleString('de-DE',{minimumFractionDigits:dig,maximumFractionDigits:dig});
+const fmtDur = sec => { sec=Math.round(sec||0); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; return h? h+':'+pad(m)+':'+pad(s) : m+':'+pad(s); };
+const fmtPace = (km,sec) => { if(!km) return '–'; let t=Math.round(sec/km); return Math.floor(t/60)+':'+pad(t%60); };
+const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
+function sportOf(t){ t=String(t||''); if(/Run/i.test(t)) return 'run'; if(/Ride|Cycl|Bike/i.test(t)) return 'ride'; if(/Weight|Strength|Workout|Crossfit|Yoga|Pilates/i.test(t)) return 'strength'; if(/Walk|Hike/i.test(t)) return 'walk'; return 'other'; }
+function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':'other'); }
+const daysUntil = s => Math.round((parseYmd(s)-parseYmd(today()))/86400000);
+const mondayOf = s => { const d=parseYmd(s); return addDays(s, -((d.getDay()+6)%7)); };
+function isoWeek(s){ const d=parseYmd(s); const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()+3-((d.getDay()+6)%7)); const w1=new Date(t.getFullYear(),0,4); return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7); }
+/* ---------- Leistungsanalyse (rein rechnerisch, später 1:1 nach Kotlin) ---------- */
+const EFFECT = ['', 'Regeneration', 'Grundlagenausdauer', 'Aerob intensiv (Tempo)', 'Schwelle', 'VO2max / anaerob'];
+function hrZone(hr){ const z=S.log&&S.log.zones&&S.log.zones.hrMins; if(!z||!hr) return null; let i=0; for(let k=0;k<z.length;k++) if(hr>=z[k]) i=k; return i+1; }
+function analyze(a){
+  const p = a && a.perf; if(!p) return null;
+  const r = {};
+  if(p.hr){
+    r.hr = p.hr; r.zone = hrZone(p.hr); r.effect = EFFECT[r.zone] || null;
+    if(a.sport==='run' && a.movingS && a.distKm) r.ef = (a.distKm*1000/(a.movingS/60))/p.hr;
+    const laps = (p.laps||[]).filter(l=>l.hr && l.s);
+    if(laps.length){
+      const tz=[0,0,0,0,0]; let tot=0;
+      laps.forEach(l=>{ const z=hrZone(l.hr); if(z){ tz[z-1]+=l.s; tot+=l.s; } });
+      if(tot) r.tiz = tz.map(x=>Math.round(x/tot*100));
+    }
+    // Entkopplung Pace:HF (ohne ersten Kilometer wegen HF-Anstieg)
+    if(a.sport==='run' && laps.length>=4){
+      const L = laps.slice(1).filter(l=>l.d>0);
+      const half = L.reduce((s,l)=>s+l.d,0)/2; let acc=0; const A=[],B=[];
+      L.forEach(l=>{ (acc<half?A:B).push(l); acc+=l.d; });
+      const ef = arr => { const d=arr.reduce((s,l)=>s+l.d,0), t=arr.reduce((s,l)=>s+l.s,0), h=arr.reduce((s,l)=>s+l.hr*l.s,0)/t; return (d/(t/60))/h; };
+      if(A.length && B.length){ const e1=ef(A), e2=ef(B); r.decoupling = (e1-e2)/e1*100; }
+    }
+  }
+  const ftp = S.log && S.log.zones && S.log.zones.ftp;
+  if(a.sport==='ride' && p.watts && p.deviceWatts && ftp){ r.if = p.watts/ftp; r.tss = Math.round(a.movingS/3600*r.if*r.if*100); }
+  return r;
+}
+function loadAt(d){
+  const sum = (from,to) => acts().filter(a=>a.date>from && a.date<=to).reduce((s,a)=>s+(a.re||0),0);
+  const acute = sum(addDays(d,-7),d), chronic = sum(addDays(d,-28),d)/4;
+  return {acute, chronic, acwr: chronic ? acute/chronic : null};
+}
+function acwrInfo(x){
+  if(x==null) return ['', 'zu wenig Daten'];
+  if(x<0.8) return ['', 'Entlastung']; if(x<=1.3) return ['ok','im Rahmen']; if(x<=1.5) return ['warn','erhöht']; return ['crit','hoch'];
+}
+const decClass = d => d==null?'':(d<5?'ok':d<10?'warn':'crit');
+function weekStats(mon){
+  const sun = addDays(mon,6), end = sun<today()?sun:today();
+  const wa = acts().filter(a=>a.date>=mon && a.date<=sun);
+  const runs = wa.filter(a=>a.sport==='run');
+  const efs = runs.map(analyze).filter(r=>r&&r.ef).map(r=>r.ef);
+  return {re: wa.reduce((s,a)=>s+(a.re||0),0), acwr: loadAt(end).acwr, ef: efs.length? efs.reduce((s,x)=>s+x,0)/efs.length : null,
+    km: runs.reduce((s,a)=>s+a.distKm,0)};
+}
+const painClass = p => p==null?'':(p<=2?'ok':p<=4?'warn':'crit');
+
+const complaints = () => (profile().complaints||[]).filter(Boolean);
+const careMode = () => complaints().length>0;
+const userName = () => profile().name || 'der Nutzer';
+const fbTemplate = d => careMode()
+  ? `Rückmeldung zur Einheit vom ${fmtDay(d)}: Schmerz während _/10, danach _/10, Belastung _/10. `
+  : `Rückmeldung zur Einheit vom ${fmtDay(d)}: Belastung _/10, Befinden: `;
+const profile = () => S.profile || {goal:null, trainingDays:[], sports:['run','ride','strength'], background:''};
+const acts = () => (S.log && Array.isArray(S.log.activities)) ? S.log.activities : [];
+const fb = id => (S.log && S.log.feedback && S.log.feedback[id]) || null;
+const assess = id => (S.log && S.log.assessments && S.log.assessments[id]) || null;
+const active = () => sessions().filter(s=>!s.cancelled);
+const sessions = () => (S.plan && Array.isArray(S.plan.sessions)) ? S.plan.sessions : [];
+
+/* ---------- Speicher ---------- */
+const queues = {};
+function save(name){
+  if(!db || !uid || !S[name]) return Promise.resolve();
+  const data = JSON.parse(JSON.stringify(S[name]));
+  queues[name] = (queues[name]||Promise.resolve()).then(() => db.doc('data/users/'+uid+'/'+name).set(data)).catch(e => {
+    syncMsg = {err:true, text:'Speichern fehlgeschlagen ('+(e&&e.code||'Fehler')+'). Änderungen gelten nur bis zum Neuladen.'}; render();
+  });
+  return queues[name];
+}
+
+/* ---------- Rendering ---------- */
+function render(){
+  document.getElementById('hdrDate').textContent = WD_LONG[new Date().getDay()]+', '+new Date().toLocaleDateString('de-DE');
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab===tab)));
+  const p = document.getElementById('panel');
+  p.innerHTML = changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
+  renderDialog();
+  renderMoveDialog();
+}
+
+/* Einheit auf einen anderen Tag verschieben */
+function moveControl(s){
+  if(s.date < today() || s.cancelled) return '';
+  const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
+  return `<div class="move"><button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
+}
+function cancelledCard(s){
+  return `<div class="card cancelled"><div class="card-head"><span class="tag extra">Abgesagt</span><span class="sport">${esc(SPORT[normSport(s.sport)])} · ${esc(fmtDay(s.date))}</span></div>
+    <p class="ct">${esc(s.title||'Training')}</p>${s.cancelled.reason?`<p class="muted">Grund: ${esc(s.cancelled.reason)}</p>`:''}</div>`;
+}
+/* Dialog zum Verschieben (Bottom Sheet) */
+let moveDlg = null; // {from, title, to}
+let cancelDlg = null; // {date, title, preset, reason}
+let swapDlg = null; // {date, title, text}
+function renderSwapDialog(el){
+  const presets = ['Rad statt Laufen','Kürzer','Lockerer','Kraft und Mobilität','Intervalle','Längerer Lauf'];
+  el.innerHTML = `<button class="overlay" data-action="swap-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="swTitle">
+      <h2 id="swTitle">Einheit umplanen</h2>
+      <p class="muted">„${esc(swapDlg.title)}“ · ${esc(fmtDay(swapDlg.date))}</p>
+      <div class="chips">${presets.map(p=>`<button class="pchip" data-action="swap-preset" data-p="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+      <label class="fld" for="swapText"><span>Was soll stattdessen geplant werden?</span><textarea id="swapText" rows="3" placeholder="z. B. 45 min Rolle locker, ich bin heute nur in der Halle">${esc(swapDlg.text||'')}</textarea></label>
+      <p class="note">Claude ersetzt die Einheit am selben Tag und gleicht die übrigen Einheiten bei Bedarf an.</p>
+      <div class="row end"><button class="btn" data-action="swap-close">Zurück</button><button class="btn primary" data-action="swap-do" ${(swapDlg.text||'').trim()?'':'disabled'}>Umplanen</button></div>
+    </div>`;
+  const ta = document.getElementById('swapText');
+  if(ta){ ta.addEventListener('input', () => { swapDlg.text = ta.value; const b=el.querySelector('[data-action="swap-do"]'); if(b) b.disabled = !ta.value.trim(); }); }
+}
+function renderCancelDialog(el){
+  const presets = ['Keine Zeit','Krank','Müde / erschöpft','Wetter','Sonstiges'];
+  if(careMode()) presets.splice(2,0,'Beschwerden: '+complaints()[0]);
+  el.innerHTML = `<button class="overlay" data-action="cancel-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cxTitle">
+      <h2 id="cxTitle">Einheit absagen</h2>
+      <p class="muted">„${esc(cancelDlg.title)}“ · ${esc(fmtDay(cancelDlg.date))}</p>
+      <div class="chips">${presets.map(p=>`<button class="pchip" data-action="cancel-preset" data-p="${esc(p)}" aria-pressed="${cancelDlg.preset===p}">${esc(p)}</button>`).join('')}</div>
+      <label class="fld" for="cancelReason"><span>Grund (optional genauer)</span><textarea id="cancelReason" rows="2" placeholder="z. B. Knie seit gestern gereizt, Treppe schmerzt">${esc(cancelDlg.reason||'')}</textarea></label>
+      <p class="note">Claude berücksichtigt den Grund bei der Umplanung, etwa mit Entlastung bei Krankheit oder Beschwerden oder einer Umverteilung bei Zeitmangel.</p>
+      <div class="row end"><button class="btn" data-action="cancel-close">Zurück</button><button class="btn primary" data-action="cancel-do" ${cancelDlg.preset||(cancelDlg.reason||'').trim()?'':'disabled'}>Absagen</button></div>
+    </div>`;
+  const ta = document.getElementById('cancelReason');
+  if(ta) ta.addEventListener('input', () => { cancelDlg.reason = ta.value; const b=el.querySelector('[data-action="cancel-do"]'); if(b) b.disabled = !(cancelDlg.preset || ta.value.trim()); });
+}
+function renderMoveDialog(){
+  const el = document.getElementById('modal'); if(!el) return;
+  if(cancelDlg){ renderCancelDialog(el); return; }
+  if(swapDlg){ renderSwapDialog(el); return; }
+  if(!moveDlg){ el.innerHTML=''; return; }
+  const t = today(), td = new Set(profile().trainingDays||[]);
+  const days = Array.from({length:14},(_,i)=>addDays(t,i)).map(d => {
+    const wd = parseYmd(d).getDay(), busyDay = active().some(x=>x.date===d && !(x.date===moveDlg.from && (x.title||'')===moveDlg.title));
+    const cur = d===moveDlg.from;
+    return `<button class="mday ${td.has(wd)?'td':''} ${moveDlg.to===d?'sel':''}" data-action="move-pick" data-to="${d}" ${cur?'disabled':''} aria-pressed="${moveDlg.to===d}">
+      <b>${WD[wd]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span><i>${cur?'aktuell':busyDay?'belegt':td.has(wd)?'Trainingstag':''}</i></button>`;
+  }).join('');
+  el.innerHTML = `<button class="overlay" data-action="move-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mvTitle">
+      <h2 id="mvTitle">Einheit verschieben</h2>
+      <p class="muted">„${esc(moveDlg.title)}“ · bisher ${esc(fmtDay(moveDlg.from))}</p>
+      <div class="mgrid">${days}</div>
+      <p class="note">Claude prüft danach die angrenzenden Einheiten und passt den Plan bei Bedarf an.</p>
+      <div class="row end"><button class="btn" data-action="move-close">Abbrechen</button><button class="btn primary" data-action="move" ${moveDlg.to?'':'disabled'}>${moveDlg.to?'Auf '+esc(fmtDay(moveDlg.to))+' verschieben':'Tag wählen'}</button></div>
+    </div>`;
+}
+
+function plannedCard(s, label){
+  const steps = Array.isArray(s.steps) ? s.steps : [];
+  const target = [s.distanceKm ? fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km' : '', s.durationMin ? 'ca. '+s.durationMin+' min' : ''].filter(Boolean).join(' · ');
+  return `<article class="card">
+    <div class="card-head"><span class="tag plan">${esc(label||'Geplant')}</span><span class="sport">${esc(SPORT[normSport(s.sport)])}</span></div>
+    <h3>${esc(s.title||'Training')}</h3>
+    ${target?`<div class="target">${esc(target)}</div>`:''}
+    ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
+    ${steps.length?`<ol class="steps">${steps.map(st=>`<li><span class="l">${esc(st.label||'')}</span><span class="d">${esc(st.detail||'')}</span></li>`).join('')}</ol>`:''}
+    ${moveControl(s)}
+  </article>`;
+}
+
+function doneCard(a, planned, extra){
+  const f = fb(a.id), as = assess(a.id);
+  const run = a.sport==='run' || a.sport==='walk';
+  const m = [
+    ['Distanz', fmtNum(a.distKm,2)+' km'],
+    ['Bewegungszeit', fmtDur(a.movingS)],
+    run ? ['Pace /km', fmtPace(a.distKm,a.movingS)] : ['Ø km/h', fmtNum(a.distKm/(a.movingS/3600||1),1)],
+    ['Höhenmeter', Math.round(a.elev||0)+' m'],
+    run ? ['Schritte /min', a.cadence? Math.round(a.cadence*2):'–'] : ['Kadenz', a.cadence? Math.round(a.cadence)+' U/min':'–'],
+    ['Relative Effort', a.re ?? '–']
+  ];
+  const chips = [];
+  if(f){
+    if(f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
+    if(f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
+    if(f.rpe!=null) chips.push(`<span class="chip">Belastung ${f.rpe}/10</span>`);
+    if(f.note) chips.push(`<span class="chip">${esc(f.note)}</span>`);
+  }
+  return `<article class="card">
+    <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type)} · ${esc(a.time||'')} Uhr</span></div>
+    <h3>${esc(a.name)}</h3>
+    <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
+    ${perfBlock(a)}
+    ${chips.length?`<div class="chips">${chips.join('')}</div>`:`<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'} und Belastung.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date))}">Rückmeldung geben</button></div>`}
+    ${as?`<div class="assess"><b>Einschätzung</b>${esc(as.text)}</div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
+    ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
+  </article>`;
+}
+
+function perfBlock(a){
+  if(a.sport!=='run' && a.sport!=='ride') return '';
+  const r = analyze(a);
+  if(!r) return `<div class="perf"><b>Leistung</b><span class="note">Noch keine Leistungsdaten. Sie kommen beim nächsten Strava-Abgleich.</span></div>`;
+  const c = [];
+  if(r.hr) c.push(`<span class="chip">Ø HF ${Math.round(r.hr)}${r.zone?' · Z'+r.zone:''}</span>`);
+  if(r.effect) c.push(`<span class="chip">Effekt: ${esc(r.effect)}</span>`);
+  if(r.tiz) c.push(`<span class="chip">${r.tiz.map((v,i)=>v?`Z${i+1} ${v} %`:'').filter(Boolean).join(' · ')}</span>`);
+  if(r.ef) c.push(`<span class="chip">Effizienz ${fmtNum(r.ef,2)}</span>`);
+  if(r.decoupling!=null) c.push(`<span class="chip ${decClass(r.decoupling)}">Entkopplung ${fmtNum(r.decoupling,1)} %</span>`);
+  if(r.if) c.push(`<span class="chip">IF ${fmtNum(r.if,2)} · TSS ${r.tss}</span>`);
+  const L = loadAt(a.date), [cls,lbl] = acwrInfo(L.acwr);
+  c.push(`<span class="chip ${cls}">Belastung 7/28 Tage ${L.acwr==null?'–':fmtNum(L.acwr,2)} · ${lbl}</span>`);
+  return `<div class="perf"><b>Leistung</b><div class="chips">${c.join('')}</div></div>`;
+}
+
+function loadChart(mon){
+  const weeks = []; for(let i=7;i>=0;i--) weeks.push(addDays(mon,-7*i));
+  const vals = weeks.map(w=>weekStats(w).re);
+  const max = Math.max(1,...vals);
+  return `<div class="lc" role="img" aria-label="Relative Effort der letzten 8 Wochen">${weeks.map((w,i)=>
+    `<div class="lcol ${i===7?'sel':''}"><span class="lv">${vals[i]||''}</span><span class="lb" style="height:${Math.round(vals[i]/max*36)}px"></span><span class="lk">${isoWeek(w)}</span></div>`).join('')}</div>`;
+}
+
+function syncBlock(){
+  const last = S.log && S.log.lastSync ? new Date(S.log.lastSync) : null;
+  let hint;
+  if(mcpState==='none') hint = 'Strava-Abgleich ist in dieser Ansicht nicht verfügbar. Öffne die App in claude.ai.';
+  else hint = last ? 'Letzter Abgleich: '+last.toLocaleDateString('de-DE')+', '+last.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr' : 'Noch kein Abgleich aus der App.';
+  return `<div class="sync">
+    <button class="btn primary big" id="syncBtn" data-action="sync" ${mcp&&!syncBusy?'':'disabled'}>${syncBusy?'Strava wird abgeglichen …':'Mit Strava abgleichen'}</button>
+    <small>${esc(hint)}</small>
+    ${syncMsg?`<div class="status ${syncMsg.err?'err':'ok'}">${esc(syncMsg.text)}</div>`:''}
+  </div>`;
+}
+
+function renderToday(){
+  if(!S.loaded) return syncBlock()+`<div class="empty">Trainingsdaten werden geladen …</div>`;
+  const t = today();
+  const planned = active().filter(s => s.date===t);
+  const cancelledToday = sessions().filter(s => s.date===t && s.cancelled);
+  const done = acts().filter(a => a.date===t);
+  const used = new Set(); const out = [];
+  planned.forEach(p => {
+    const d = done.find(a => !used.has(a.id) && a.sport===normSport(p.sport));
+    if(d){ used.add(d.id); out.push(doneCard(d,p,false)); } else out.push(plannedCard(p,'Geplant · heute'));
+  });
+  done.filter(a=>!used.has(a.id)).forEach(a => out.push(doneCard(a,null,planned.length>0 || true)));
+  cancelledToday.forEach(s => out.push(cancelledCard(s)));
+  if(!planned.length && !done.length){
+    const next = active().filter(s => s.date>t).sort((a,b)=>a.date<b.date?-1:1)[0];
+    if(!cancelledToday.length) out.push(`<div class="card rest"><p class="eyebrow">Heute</p><h3>Kein Training geplant</h3><p class="muted">Ruhetag. Wenn du trotzdem etwas machst, gleiche danach mit Strava ab.</p></div>`);
+    if(next) out.push(plannedCard(next, 'Nächstes Training · '+fmtDay(next.date)));
+    else out.push(`<div class="empty">Es gibt noch keinen Plan. Bitte Claude unten im Dialog, einen Plan für die nächsten zwei Wochen zu erstellen.</div>`);
+  }
+  return syncBlock() + out.join('');
+}
+
+function renderPlan(){
+  const pr = profile(), g = pr.goal;
+  const goal = g && g.text ? `<div class="card goal"><p class="eyebrow">Ziel</p><p class="gtext">${esc(g.text)}</p>
+      ${g.date?`<div class="gdate"><span>Zieldatum: <b>${esc(parseYmd(g.date).toLocaleDateString('de-DE'))}</b></span><span>noch ${daysUntil(g.date)} Tage</span></div>`:''}</div>`
+    : `<div class="empty">Noch kein Ziel festgelegt. Beschreibe dein Ziel unten im Dialog, z. B. „10 km unter 50 Minuten bis Ende März“.</div>`;
+  const t = today(); const rows = [];
+  for(let i=0;i<14;i++){
+    const d = addDays(t,i);
+    const ss = sessions().filter(s=>s.date===d);
+    const dn = acts().filter(a=>a.date===d && a.sport!=='walk');
+    const items = ss.map(s => {
+      if(s.cancelled) return `<div class="cx"><span class="t">${esc(s.title||'Training')}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
+      const steps = Array.isArray(s.steps)?s.steps:[];
+      const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
+      return `<details><summary><span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}</span></summary>
+        ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
+        ${steps.length?`<ol class="steps">${steps.map(st=>`<li><span class="l">${esc(st.label||'')}</span><span class="d">${esc(st.detail||'')}</span></li>`).join('')}</ol>`:''}
+        ${moveControl(s)}
+      </details>`;
+    }).join('');
+    const doneLine = dn.map(a=>`<span class="donemark">✓ ${esc(SPORT[a.sport])} ${fmtNum(a.distKm,1)} km absolviert</span>`).join('');
+    rows.push(`<div class="day ${i===0?'today':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+      <div class="items">${items || (doneLine?'':'<span class="restline">Ruhe</span>')}${doneLine}</div></div>`);
+  }
+  const plan = S.plan;
+  const rat = plan && plan.rationale ? `<div class="card"><div class="row"><h2>Begründung und Schwerpunkte</h2>${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · Version '+plan.revision:''}</span>`:''}</div><p class="rationale">${esc(plan.rationale)}</p></div>` : '';
+  return goal + `<div class="row"><h2>Die nächsten 14 Tage</h2><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
+    <div class="days">${rows.join('')}</div>` + rat;
+}
+
+function weekSummary(mon){ return (S.log && S.log.weekSummaries && S.log.weekSummaries[mon]) || null; }
+function earliestMonday(){
+  const ds = acts().map(a=>a.date).concat(sessions().map(s=>s.date)).sort();
+  return ds.length ? mondayOf(ds[0]) : mondayOf(today());
+}
+let infoOpen = false, confirmRm = null;
+/* Geänderte Einstellungen merken, damit der Plan angepasst wird */
+function markChange(key, text){
+  const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+  pr.pendingChanges = Object.assign({}, pr.pendingChanges||{}, {[key]: text});
+}
+const pendingList = () => Object.values(profile().pendingChanges||{}).filter(Boolean);
+function replanFromChanges(){
+  const ch = pendingList(); if(!ch.length || !sample || busy) return;
+  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan der nächsten 14 Tage daran an.', {auto:true});
+}
+function changeBanner(){
+  const ch = pendingList(); if(!ch.length) return '';
+  return `<div class="card banner"><p><b>Einstellungen geändert</b> · ${esc(ch.join(' · '))}</p>
+    ${busy?'<p class="note">Claude passt den Plan an …</p>':`<div><button class="btn primary" data-action="replan-changes" ${sample?'':'disabled'}>Plan jetzt anpassen</button></div>`}</div>`;
+}
+document.addEventListener('change', e => {
+  const id = e.target && e.target.id; if(id!=='pfName' && id!=='pfPerf') return;
+  const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+  if(id==='pfName') pr.name = e.target.value.trim().slice(0,40);
+  else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
+  save('profile');
+});
+document.addEventListener('keydown', e => { if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
+const GLOSSAR = `<dl class="gloss">
+  <div><dt>RE · Relative Effort</dt><dd>Stravas Belastungswert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
+  <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
+  <div><dt>Lauf-Effizienz</dt><dd>Meter pro Minute je Herzschlag. Höher heißt gleiches Tempo bei niedrigerem Puls. Auf Trails schwankt der Wert mit den Höhenmetern.</dd></div>
+  <div><dt>Entkopplung</dt><dd>Vergleicht Tempo pro Herzschlag in der ersten und zweiten Laufhälfte (ohne ersten Kilometer). Unter 5 % trägt die Grundlage die Dauer, 5–10 % spürbare Ermüdung, über 10 % war die Einheit für die aktuelle Form zu lang oder zu intensiv.</dd></div>
+  <div><dt>IF · Intensity Factor</dt><dd>Durchschnittliche Wattleistung geteilt durch deine FTP. Unter 0,75 locker, 0,75–0,85 zügig, 0,85–0,95 Tempo bis Schwelle, um 1,0 Schwelle.</dd></div>
+  <div><dt>TSS · Training Stress Score</dt><dd>Stunden × IF² × 100. Eine Stunde genau an der FTP ergibt 100.</dd></div>
+</dl>`;
+function lastWeekOffset(){
+  const last = acts().map(a=>a.date).filter(d=>d<=today()).sort().pop();
+  return last ? Math.round((parseYmd(mondayOf(today()))-parseYmd(mondayOf(last)))/(7*86400000)) : 0;
+}
+let weekInit = false;
+function renderHistory(){
+  if(S.loaded && !weekInit){ weekInit = true; weekOffset = lastWeekOffset(); }
+  if(!S.loaded) return `<div class="empty">Trainingsdaten werden geladen …</div>`;
+  const cur = mondayOf(today());
+  const mon = addDays(cur, -7*weekOffset), sun = addDays(mon,6);
+  const first = earliestMonday();
+  const label = weekOffset===0 ? 'Diese Woche' : weekOffset===1 ? 'Letzte Woche' : 'KW '+isoWeek(mon);
+  const range = `KW ${isoWeek(mon)} · ${parseYmd(mon).getDate()}.${parseYmd(mon).getMonth()+1}.–${parseYmd(sun).getDate()}.${parseYmd(sun).getMonth()+1}.${parseYmd(sun).getFullYear()}`;
+  const wa = acts().filter(a=>a.date>=mon && a.date<=sun).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const runs = wa.filter(a=>a.sport==='run');
+  const runKm = runs.reduce((s,a)=>s+a.distKm,0), runS = runs.reduce((s,a)=>s+a.movingS,0);
+  const hm = runs.reduce((s,a)=>s+(a.elev||0),0);
+  const otherMin = Math.round(wa.filter(a=>a.sport==='ride'||a.sport==='strength').reduce((s,a)=>s+a.movingS,0)/60);
+  const pains = wa.map(a=>fb(a.id)).filter(Boolean).flatMap(f=>[f.painDuring,f.painAfter]).filter(v=>v!=null);
+  const maxPain = pains.length ? Math.max(...pains) : null;
+  const metrics = [
+    ['Lauf-km', fmtNum(runKm,1)], ['Läufe', runs.length], ['Ø Pace /km', runs.length?fmtPace(runKm,runS):'–'],
+    ['Höhenmeter Lauf', Math.round(hm)+' m'], ['Rad / Kraft', otherMin?otherMin+' min':'–'], ['Max. Schmerz', maxPain==null?'–':maxPain+'/10']
+  ];
+  // Tageseinträge: absolvierte Einheiten plus geplante, aber ausgelassene Einheiten (nur vergangene Tage)
+  const t = today(); const rows = [];
+  for(let i=0;i<7;i++){
+    const d = addDays(mon,i);
+    const done = wa.filter(a=>a.date===d);
+    const planned = active().filter(s=>s.date===d);
+    const cancelledD = sessions().filter(s=>s.date===d && s.cancelled);
+    const used = new Set();
+    done.forEach(a => {
+      const p = planned.find(s=>!used.has(s) && normSport(s.sport)===a.sport); if(p) used.add(p);
+      const f = fb(a.id), as = assess(a.id);
+      const run = a.sport==='run'||a.sport==='walk';
+      const facts = [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm'].join(' · ');
+      const chips = [];
+      if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
+      else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
+      if(f && f.rpe!=null) chips.push(`<span class="chip">RPE ${f.rpe}</span>`);
+      const short = as ? (as.short || as.text) : (f && f.note) || '';
+      const r = analyze(a); let pl = '';
+      if(r){
+        const parts = [];
+        if(r.hr) parts.push('HF '+Math.round(r.hr)+(r.zone?' (Z'+r.zone+')':''));
+        if(r.effect) parts.push(r.effect);
+        if(r.ef) parts.push('Effizienz '+fmtNum(r.ef,2));
+        if(r.decoupling!=null) parts.push('Entkopplung '+fmtNum(r.decoupling,1)+' %');
+        if(r.if) parts.push('IF '+fmtNum(r.if,2)+' · TSS '+r.tss);
+        if(a.re) parts.push('RE '+a.re);
+        pl = parts.join(' · ');
+      } else if(a.re) pl = 'RE '+a.re;
+      rows.push(`<div class="entry"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+        <div class="body"><span class="facts">${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
+        ${pl?`<span class="pl">${esc(pl)}</span>`:''}
+        ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
+    });
+    planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+      <div class="body"><span class="facts">Ausgelassen: ${esc(s.title)}</span></div></div>`));
+    cancelledD.forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+      <div class="body"><span class="facts">Abgesagt: ${esc(s.title)}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</div></div>`));
+  }
+  const ws = weekSummary(mon);
+  const msgs = ((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun).length;
+  return `<div class="weeknav">
+      <button data-action="week-prev" aria-label="Vorherige Woche" ${mon<=first?'disabled':''}>‹</button>
+      <div class="wl"><b>${esc(label)}</b><span>${esc(range)}</span></div>
+      <button data-action="week-next" aria-label="Nächste Woche" ${weekOffset===0?'disabled':''}>›</button>
+    </div>
+    <div class="card"><div class="wsum">${metrics.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
+    ${(() => { const st=weekStats(mon), pv=weekStats(addDays(mon,-7)); const [cls,lbl]=acwrInfo(st.acwr);
+      const efd = st.ef && pv.ef ? (st.ef-pv.ef)/pv.ef*100 : null;
+      return `<div class="card"><div class="row"><div class="ht"><h2>Belastung und Form</h2><button class="info" data-action="info" aria-expanded="${infoOpen}" aria-label="Erklärung der Kennzahlen">i</button></div><span class="badge ${cls}">Belastung ${lbl}</span></div>
+        ${loadChart(mon)}
+        <div class="wsum">
+          <div class="metric"><span class="v">${st.re}</span><span class="k">Relative Effort (Woche)</span></div>
+          <div class="metric"><span class="v">${st.acwr==null?'–':fmtNum(st.acwr,2)}</span><span class="k">Verhältnis 7 / 28 Tage</span></div>
+          <div class="metric"><span class="v">${st.ef?fmtNum(st.ef,2):'–'}</span><span class="k">Lauf-Effizienz${efd!=null?` (${efd>=0?'+':''}${fmtNum(efd,1)} % zur Vorwoche)`:''}</span></div>
+        </div>
+        ${infoOpen?GLOSSAR:''}</div>`; })()}
+    <div class="card"><div class="row"><h2>Wochenfazit</h2>${msgs?`<span class="note">${msgs} Dialognachrichten in dieser Woche</span>`:''}</div>
+      ${ws?`<p class="summary">${esc(ws.text)}</p>`:`<p class="muted">Noch kein Fazit für diese Woche.</p>`}
+      ${wa.length?`<div><button class="btn" data-action="week-summary" data-mon="${mon}" ${sample&&!busy?'':'disabled'}>${ws?'Fazit aktualisieren':'Fazit von Claude erstellen'}</button></div>`:''}</div>
+    ${rows.length?`<div class="log">${rows.join('')}</div>`:`<div class="empty">In dieser Woche wurde noch kein Training aufgezeichnet.${acts().length?' <button class="btn ghost" data-action="week-last">Zur letzten Trainingswoche</button>':''}</div>`}`;
+}
+
+/* ---------- Nur in der Android-App: Verbindungen und Datensicherung ---------- */
+const MODELS = [['claude-sonnet-5-5','Claude Sonnet 5.5 (empfohlen)'],['claude-opus-5-5','Claude Opus 5.5 (gründlicher, teurer)'],['claude-haiku-5-5','Claude Haiku 5.5 (schnell, günstig)']];
+function appStatus(){ try{ return JSON.parse(window.Android.getStatus()); }catch(e){ return {}; } }
+function connCard(){
+  const st = appStatus();
+  return `<div class="card"><h2>Verbindungen</h2>
+    <div class="fld"><span>Claude</span>
+      <p class="note">${st.claudeKey?'API-Schlüssel hinterlegt.':'Noch kein API-Schlüssel. Anlegen unter console.anthropic.com → API Keys.'} Abgerechnet wird nach Verbrauch über dein Anthropic-Konto.</p>
+      <input id="cfKey" type="password" autocomplete="off" placeholder="${st.claudeKey?'Neuen Schlüssel eintragen (optional)':'sk-ant-…'}">
+      <select id="cfModel" class="sel">${MODELS.map(([v,l])=>`<option value="${v}" ${st.model===v?'selected':''}>${l}</option>`).join('')}</select>
+      <div><button class="btn" data-action="cf-claude">Speichern</button></div></div>
+    <div class="fld"><span>Strava</span>
+      ${st.stravaConnected?`<div class="row"><p>Verbunden${st.stravaAthlete?' als '+esc(st.stravaAthlete):''}.</p><button class="btn" data-action="cf-strava-off">Trennen</button></div>`
+      :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>laufdoch.app</b> eintragen. Dann Client-ID und Client-Secret hier eintragen.</p>
+      <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
+      <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
+      <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>
+    <div class="fld"><span>Datensicherung</span>
+      <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei in „Downloads“. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
+      ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p><div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
+      :`<div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
+  </div>`;
+}
+let confirmImport = null; // geladene Sicherung, wartet auf Bestätigung
+window.onAppStatus = () => render();
+window.onBackupLoaded = text => {
+  let obj = null; try{ obj = JSON.parse(text); }catch(e){}
+  if(!obj || !(obj.profile || obj.plan || obj.log)){ syncMsg={err:true, text:'Die Datei ist keine Sicherung von „Lauf doch!“.'}; render(); return; }
+  confirmImport = obj; tab='einstellungen'; render();
+};
+window.appBack = () => {
+  if(moveDlg||cancelDlg||swapDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; renderMoveDialog(); return true; }
+  if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
+  return false;
+};
+
+function renderSettings(){
+  const pr = profile(); const td = new Set(pr.trainingDays||[]); const sp = new Set(pr.sports||[]);
+  const order=[1,2,3,4,5,6,0];
+  const cs = complaints();
+  return `<div class="card"><h2>Profil</h2>
+      <label class="fld" for="pfName"><span>Name</span><input id="pfName" type="text" value="${esc(pr.name||'')}" placeholder="Vorname" autocomplete="given-name"></label>
+      <div class="fld"><span>Sportarten</span><div class="sports">${['run','ride','strength','walk'].map(s=>`<button class="toggle" data-action="sport" data-sport="${s}" aria-pressed="${sp.has(s)}">${SPORT[s]}</button>`).join('')}</div>
+        <p class="note">Laufen ist der Schwerpunkt, weitere Sportarten plant Claude ergänzend ein.</p></div>
+      <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label></div>
+    <div class="card"><h2>Trainingstage</h2><p class="muted">An diesen Tagen plant Claude Einheiten. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p>
+      <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div></div>
+    <div class="card"><h2>Fitness und Beschwerden</h2>
+      <p class="muted">${cs.length?'Claude plant vorsichtig, fragt nach Schmerz an diesen Stellen und steigert nur bei stabilen Signalen.':'Keine Beschwerden eingetragen. Claude plant leistungsorientiert auf dein Ziel hin.'}</p>
+      ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
+      ${confirmRm!=null?`<div class="row"><span>„${esc(cs[confirmRm]||'')}“ entfernen? Danach plant Claude ohne Rücksicht darauf.</span><div class="row"><button class="btn primary" data-action="rm-yes">Entfernen</button><button class="btn" data-action="rm-no">Abbrechen</button></div></div>`:''}
+      <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div>
+    ${IN_APP?connCard():''}
+    <div class="card"><h2>Hintergrund für die Planung</h2><p class="muted">Diese Angaben bekommt Claude bei jeder Planung mit. Ändern kannst du sie im Dialog.</p>
+      <p class="rationale">${esc(pr.background||'Noch keine Angaben.')}</p></div>
+    <div class="card"><h2>Strava</h2><p class="muted">${mcpState==='none'?'In dieser Ansicht nicht verfügbar.':(IN_APP?'Der Abgleich holt die Aktivitäten der letzten 60 Tage über die Strava-Verbindung.':'Der Abgleich holt die Aktivitäten der letzten 60 Tage über deinen Strava-Konnektor.')}</p>
+      <p>${S.log&&S.log.lastSync?'Letzter Abgleich: '+esc(new Date(S.log.lastSync).toLocaleString('de-DE')):'Noch kein Abgleich aus der App.'} · ${acts().length} Aktivitäten gespeichert</p></div>
+    <div class="card"><h2>Dialogverlauf</h2>
+      ${confirmClear?`<p>Den gesamten Dialog mit Claude löschen? Plan, Ziel und Aktivitäten bleiben erhalten.</p><div class="row"><button class="btn primary" data-action="clear-yes">Löschen</button><button class="btn" data-action="clear-no">Abbrechen</button></div>`
+      :`<div class="row"><span class="muted">${(S.chat&&S.chat.messages||[]).length} Nachrichten gespeichert</span><button class="btn" data-action="clear">Verlauf löschen</button></div>`}</div>`;
+}
+
+/* Vorschläge im Dialogfeld: aus der aktuellen Lage abgeleitet (Regeln, kein Claude-Aufruf) */
+function suggestions(){
+  const t = today(), out = [];
+  const add = (label, text) => out.push({label, text: text ?? label});
+  const noFb = a => { const f=fb(a.id); return !f || (f.painDuring==null && f.painAfter==null && f.rpe==null); };
+  if(tab==='heute'){
+    const planned = active().filter(s=>s.date===t);
+    const doneToday = acts().filter(a=>a.date===t);
+    const open = planned.filter(p=>!doneToday.some(a=>a.sport===normSport(p.sport)));
+    if(open.length) add('Wie sieht das heutige Training genau aus?');
+    else if(!planned.length && !doneToday.length) add('Ich möchte heute doch etwas machen.', 'Ich möchte heute doch etwas machen: ');
+    const pending = acts().filter(a=>a.sport==='run' && a.date>=addDays(t,-3) && noFb(a))[0];
+    if(pending) add(`Rückmeldung zum ${a2s(pending)} vom ${fmtDay(pending.date)} geben`, fbTemplate(pending.date));
+    if(careMode()) add(`${complaints()[0]} heute …`, `${complaints()[0]}: Heute fühlt es sich `);
+    else add('Wie ich mich heute fühle …', 'Heute fühle ich mich ');
+  } else if(tab==='plan'){
+    const pr = profile();
+    if(!pr.goal || !pr.goal.text) add('Ziel festlegen', 'Mein Ziel ist ');
+    const since = S.plan && S.plan.updatedAt ? S.plan.updatedAt.slice(0,10) : '';
+    if(acts().some(a=>(a.sport==='run'||a.sport==='ride') && a.date>=since)) add('Passe den Plan an meine letzten Einheiten an.');
+    const L = loadAt(t); if(L.acwr!=null && L.acwr>1.3) add('Ist meine Belastung gerade zu hoch?');
+    const lastPlanned = active().map(s=>s.date).sort().pop();
+    if(!lastPlanned || lastPlanned < addDays(t,7)) add('Plan verlängern', 'Bitte verlängere den Plan auf die nächsten 14 Tage.');
+    if(out.length<2) add('Warum diese Steigerung?');
+    if(out.length<2) add('Passt meine Belastung gerade?');
+  } else if(tab==='rueckblick'){
+    const mon = addDays(mondayOf(t), -7*weekOffset);
+    const hasActs = acts().some(a=>a.date>=mon && a.date<=addDays(mon,6));
+    if(hasActs && !weekSummary(mon)) out.push({label:'Fazit für diese Woche erstellen', action:'week-summary', mon});
+    add('Wie entwickelt sich meine Form?');
+    if(weekOffset>0 || hasActs) add('Vergleiche diese Woche mit der Vorwoche.', `Vergleiche die Woche ab ${fmtDay(mon)} mit der Vorwoche.`);
+  } else {
+    add('Trainingstage ändern', 'Ich möchte an folgenden Tagen trainieren: ');
+    add('Sportart ergänzen', 'Nimm bitte zusätzlich ');
+  }
+  return out.slice(0,3);
+}
+const a2s = a => a.sport==='run' ? 'Lauf' : a.sport==='ride' ? 'Radtraining' : 'Training';
+
+function renderDialog(){
+  const el = document.getElementById('dialog');
+  const msgs = ((S.chat && S.chat.messages) || []).filter(m => (m.ts||0) >= dialogSince);
+  const shown = showAll ? msgs : msgs.slice(-8);
+  let body;
+  if(!msgs.length && !busy) body = `<p class="note">Claude fragt bei Bedarf nach und passt den Plan an.</p>`;
+  else body = (msgs.length>shown.length?`<button class="btn ghost" data-action="more">Ältere Nachrichten anzeigen (${msgs.length-shown.length})</button>`:'') +
+    shown.map(m => `<div class="msg ${m.auto?'auto':m.error?'assistant error':m.role}">${esc(m.text)}</div>`).join('');
+  if(busy) body += `<div class="thinking"><span class="dot"></span><span id="thinkTxt">Claude denkt nach …</span><button class="btn ghost" data-action="stop">Stopp</button></div>`;
+  let compose;
+  if(sampleState==='none') compose = `<p class="note">Der Dialog mit Claude ist in dieser Ansicht nicht verfügbar.</p>`;
+  else if(sampleState==='denied') compose = `<p class="note">Du hast der App den Zugriff auf Claude nicht erlaubt. Lade die Seite neu, um erneut gefragt zu werden.</p>`;
+  else compose = `<div class="suggest">${suggestions().map(s=> s.action ? `<button data-action="${esc(s.action)}" data-mon="${esc(s.mon)}" ${sample&&!busy?'':'disabled'}>${esc(s.label)}</button>` : `<button data-action="prefill" data-text="${esc(s.text)}">${esc(s.label)}</button>`).join('')}</div>
+      <textarea id="msgInput" placeholder="Nachricht an Claude …" aria-label="Nachricht an Claude">${esc(draft)}</textarea>
+      <div class="row"><span class="note">${IN_APP?'Abrechnung über deinen API-Schlüssel.':'Antworten nutzen dein Claude-Kontingent.'}</span><button class="btn primary" data-action="send" ${busy||!sample?'disabled':''}>Senden</button></div>`;
+  const hadFocus = document.activeElement && document.activeElement.id==='msgInput';
+  el.innerHTML = `<div class="dialog-head"><h2>Mit Claude besprechen</h2><span class="note">${TABS[tab]}</span></div>
+    <div class="msgs" id="msgs">${body}</div><div class="compose">${compose}</div>`;
+  const box = document.getElementById('msgs'); box.scrollTop = box.scrollHeight;
+  const ta = document.getElementById('msgInput');
+  if(ta){ ta.addEventListener('input', () => { draft = ta.value; }); ta.addEventListener('keydown', e => { if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); send(); } }); if(hadFocus){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }
+}
+
+/* ---------- Strava ---------- */
+function compact(a){
+  const s = a.summary||{};
+  return {id:String(a.id), date:String(a.start_local||'').slice(0,10), time:String(a.start_local||'').slice(11,16), name:a.name||'Aktivität',
+    type:a.sport_type||'', sport:sportOf(a.sport_type), distKm:Math.round((s.distance||0)/10)/100, movingS:s.moving_time||0,
+    elev:s.elevation_gain||0, re:s.relative_effort??null, cadence:s.avg_cadence?Math.round(s.avg_cadence*10)/10:null};
+}
+async function syncStrava(){
+  if(!mcp || syncBusy) return;
+  syncBusy=true; syncMsg=null; render();
+  try{
+    const start = addDays(today(),-60)+'T00:00:00';
+    const r = await mcp.callTool(SERVER,'list_activities',{first:100, range_start:start},{cache:false});
+    const list = (r && r.payload && Array.isArray(r.payload.activities)) ? r.payload.activities : [];
+    const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+    log.activities = log.activities||[]; log.feedback = log.feedback||{}; log.assessments = log.assessments||{};
+    const known = new Set(log.activities.map(a=>a.id));
+    const incoming = list.map(compact);
+    const fresh = incoming.filter(a=>!known.has(a.id));
+    const byId = new Map(log.activities.map(a=>[a.id,a])); incoming.forEach(a=>byId.set(a.id, Object.assign({}, byId.get(a.id)||{}, a)));
+    log.activities = [...byId.values()].sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time)).slice(0,120);
+    log.lastSync = new Date().toISOString();
+    try{
+      const z = (await mcp.callTool(SERVER,'get_athlete_zones',{},{cache:false})).payload || {};
+      if(Array.isArray(z.heart_rate_zones)) log.zones = {hrMins: z.heart_rate_zones.map(x=>x.min||0), ftp: z.ftp||null};
+    }catch(_){}
+    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !a.perf && daysUntil(a.date)>=-60).slice(0,15);
+    for(let i=0;i<need.length;i++){
+      syncMsg = {text:`Leistungsdaten ${i+1} von ${need.length} …`}; render();
+      try{
+        const p = (await mcp.callTool(SERVER,'get_activity_performance',{activity_id:need[i].id},{cache:false})).payload || {};
+        need[i].perf = {hr:p.has_heartrate&&p.average_heartrate?Math.round(p.average_heartrate*10)/10:null, hrMax:p.max_heartrate||null,
+          watts:p.average_watts?Math.round(p.average_watts):null, deviceWatts:!!p.has_device_watts,
+          laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null}))};
+      }catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
+    }
+    // in den aktuellen Stand übernehmen (Rückmeldungen/Fazits können sich währenddessen geändert haben)
+    const cur = S.log || {};
+    S.log = Object.assign({}, cur, {activities: log.activities, zones: log.zones || cur.zones, lastSync: log.lastSync});
+    await save('log');
+    syncMsg = {text: fresh.length ? fresh.length+(fresh.length===1?' neue Aktivität':' neue Aktivitäten')+' übernommen.' : 'Keine neuen Aktivitäten.'};
+    syncBusy=false; render();
+    const recent = fresh.filter(a => a.sport!=='walk' && daysUntil(a.date) >= -10);
+    if(recent.length && sample && sampleState!=='denied' && !busy){
+      const desc = recent.map(a=>`${fmtDay(a.date)} ${SPORT[a.sport]} „${a.name}“ ${fmtNum(a.distKm,2)} km (ID ${a.id})`).join('; ');
+      askClaude('Strava-Abgleich: '+desc+'. Bitte einschätzen, nach Schmerz und Belastung fragen und den Plan bei Bedarf anpassen.', {auto:true});
+    }
+  }catch(e){
+    const c = e && e.code;
+    const t = c==='server_not_connected' ? (IN_APP?'Strava ist nicht verbunden. Verbinde Strava in den Einstellungen unter „Verbindungen“.':'Strava ist nicht verbunden. Füge den Strava-Konnektor in claude.ai unter Einstellungen → Konnektoren hinzu.')
+      : c==='needs_reauth' ? (IN_APP?'Die Strava-Anmeldung ist abgelaufen. Verbinde Strava in den Einstellungen neu.':'Die Strava-Verbindung ist abgelaufen. Verbinde Strava in claude.ai unter Einstellungen → Konnektoren neu.')
+      : c==='not_in_manifest' || c==='consent_required' ? 'Du hast der App den Zugriff auf Strava nicht erlaubt. Erlaube ihn über das Berechtigungsmenü der App.'
+      : c==='selection_required' ? 'Es gibt mehrere Strava-Verbindungen. Wähle eine aus, wenn claude.ai danach fragt.'
+      : c==='server_unavailable' ? 'Strava antwortet gerade nicht. Versuche es in ein paar Minuten erneut.'
+      : c==='approval_required' ? 'Der Abruf braucht deine Freigabe. Tippe erneut auf „Mit Strava abgleichen“ und erlaube ihn.'
+      : 'Abgleich fehlgeschlagen: '+((e&&e.message)||'unbekannter Fehler');
+    syncMsg = {err:true, text:t}; syncBusy=false; render();
+  }
+}
+
+/* ---------- Claude ---------- */
+function buildContext(){
+  const pr = profile(), t = today();
+  const since = addDays(t,-42);
+  const al = acts().filter(a=>a.date>=since).map(a=>{
+    const f=fb(a.id), as=assess(a.id);
+    const r = analyze(a), L = loadAt(a.date);
+    const leistung = r ? {hfAvg:r.hr, hfMax:a.perf.hrMax, hfZone:r.zone, effekt:r.effect, zonenAnteilProzent:r.tiz, effizienz:r.ef?Math.round(r.ef*1000)/1000:undefined,
+      entkopplungProzent:r.decoupling!=null?Math.round(r.decoupling*10)/10:undefined, IF:r.if?Math.round(r.if*100)/100:undefined, TSS:r.tss,
+      splits:(a.perf.laps||[]).map(l=>`${fmtPace(l.d/1000,l.s)}/km ${l.hr||'–'}bpm ${l.g??0}%`).join(' | ')} : undefined;
+    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
+      belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, einschaetzung:as?as.text:undefined};
+  });
+  const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null}); }
+  const zones = S.log && S.log.zones;
+  const plan = sessions().filter(s=>s.date>=addDays(t,-7));
+  const nm = userName(), care = careMode(), cl = complaints().join(', ');
+  return [
+`Du bist Claude und arbeitest als Trainingsbegleiter in der Trainings-App von ${nm}. Schwerpunkt ist Laufen, andere Sportarten werden ergänzend geplant. ${care ? `${nm} trainiert mit Beschwerden: ${cl}. Die Sicherheit der betroffenen Stellen geht vor Leistung.` : `Es sind keine Beschwerden eingetragen. Plane leistungsorientiert auf das Ziel hin.`}
+
+Regeln:
+- Antworte auf Deutsch, direkt, knapp und fachlich präzise. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
+${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel. Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
+- Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
+- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) und Belastung (RPE 1–10) vorliegt, frage danach.`
+: `- Periodisiere auf das Ziel hin: Aufbauwochen mit regelmäßigen Entlastungswochen (z. B. 3:1), Wochenumfang höchstens etwa 10 % steigern.
+- Intensitätsverteilung: etwa 80 % locker (Z1–Z2), der Rest gezielte Reize (Schwelle, Intervalle, Zieltempo). Harte Einheiten nicht an aufeinanderfolgenden Tagen.
+- Leite Zieltempi aus Ziel, Leistungsstand und Daten ab und gib Intervalle mit Pace oder HF-Zone an.
+- Wenn zu einer neuen Aktivität keine Rückmeldung zu Belastung (RPE 1–10) und Befinden vorliegt, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
+- Stelle höchstens eine Rückfrage pro Antwort.
+- Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
+- Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
+- Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
+- Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Belastung und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
+  · Belastung: Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
+  · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
+  · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
+  · Rad: IF und TSS bezogen auf die FTP.
+  · Formentwicklung über die Wochen (Effizienz, Belastung) nur mit Vorsicht, solange wenige Daten vorliegen.
+- Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD): 2–5 Sätze in Stichworten zu Umfang, ${care?'Beschwerdesignalen':'Befinden'}, Belastung und Trainingswirkung, Auswertung und was im Dialog besprochen oder entschieden wurde. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
+- Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
+
+Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
+{"reply":"Text an ${nm}",
+ "updates":{
+   "name":"Vorname",
+   "complaints":["Knie (Patella)"],
+   "performance":"Leistungsstand, z. B. Bestzeiten",
+   "goal":{"text":"knappes Ziel","date":"YYYY-MM-DD"},
+   "trainingDays":[2,4,6],
+   "sports":["run","ride","strength"],
+   "background":"aktualisierter Hintergrundtext",
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"5 min sehr locker"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
+   "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
+   "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}Belastung, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"eine Zeile in Stichworten"}],
+   "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
+ }}
+Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" ist immer die vollständige Liste. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.`,
+`HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}. Aktiver Tab in der App: ${tab}.`,
+`KALENDER (14 Tage ab heute): ${Array.from({length:14},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
+  return `${d} ${WD_LONG[wd]}${bl.includes(d)?' (gesperrt, Nutzer kann nicht)':al.includes(d)?' (Trainingstag, Einheit dorthin verschoben)':(pr.trainingDays||[]).includes(wd)?' (Trainingstag)':''}`; }).join('; ')}`,
+`ZIEL: ${pr.goal&&pr.goal.text ? pr.goal.text+(pr.goal.date?' (Zieldatum '+pr.goal.date+')':'') : 'noch nicht festgelegt'}`,
+`BESCHWERDEN: ${cl||'keine'}`,
+`LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
+`TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}`,
+`SPORTARTEN: ${(pr.sports||[]).map(s=>SPORT[s]).join(', ')}`,
+`HINTERGRUND: ${pr.background||'–'}`,
+`AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
+`BEGRÜNDUNG DES AKTUELLEN PLANS: ${S.plan&&S.plan.rationale||'–'}`,
+`AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen): ${JSON.stringify(al)}`,
+`HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
+`WOCHENWERTE (letzte 6 Wochen): ${JSON.stringify(wochen)}`,
+`WOCHENFAZITS DER LETZTEN 6 WOCHEN: ${JSON.stringify(Object.fromEntries(Object.entries((S.log&&S.log.weekSummaries)||{}).filter(([k])=>k>=mondayOf(since)).map(([k,v])=>[k,v.text])))}`
+  ].join('\n\n');
+}
+
+function cleanSession(s){
+  if(!s || !isDate(s.date)) return null;
+  return {date:s.date, sport:normSport(s.sport), extra: s.extra===true || undefined, title:String(s.title||'Training').slice(0,120), goal:s.goal?String(s.goal).slice(0,600):'',
+    distanceKm: Number(s.distanceKm)>0 ? Math.round(Number(s.distanceKm)*10)/10 : null,
+    durationMin: Number(s.durationMin)>0 ? Math.round(Number(s.durationMin)) : null,
+    steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,300)})) : []};
+}
+
+async function applyUpdates(u){
+  if(!u || typeof u!=='object') return;
+  const t = today();
+  let pc=false, plc=false, lc=false;
+  const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+  if(typeof u.name==='string' && u.name.trim()){ pr.name = u.name.trim().slice(0,40); pc=true; }
+  if(Array.isArray(u.complaints)){ pr.complaints = u.complaints.map(c=>String(c||'').trim().slice(0,60)).filter(Boolean).slice(0,5); pc=true; }
+  if(typeof u.performance==='string'){ pr.performance = u.performance.slice(0,400); pc=true; }
+  if(u.goal && u.goal.text){ pr.goal = {text:String(u.goal.text).slice(0,200), date:isDate(u.goal.date)?u.goal.date:null}; pc=true; }
+  if(Array.isArray(u.trainingDays)){ pr.trainingDays = [...new Set(u.trainingDays.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6))].sort(); pc=true; }
+  if(Array.isArray(u.sports)){ pr.sports = [...new Set(u.sports.map(normSport))]; pc=true; }
+  if(typeof u.background==='string' && u.background.trim()){ pr.background = u.background.slice(0,2000); pc=true; }
+  if(u.plan && Array.isArray(u.plan.sessions)){
+    // Einheiten an Nicht-Trainingstagen nur, wenn ausdrücklich als Zusatz markiert
+    const td = new Set(pr.trainingDays||[]);
+    const allow = new Set(((S.plan&&S.plan.allowDates)||[]).filter(d=>d>=t));
+    const blocked = new Set(((S.plan&&S.plan.blockedDates)||[]).filter(d=>d>=t));
+    const ok = s => { if(blocked.has(s.date) && !s.extra) return false; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
+    const fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && ok(s));
+    const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
+    const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
+    S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
+      allowDates:[...allow].sort(), blockedDates:[...blocked].sort()};
+    plc=true;
+  }
+  const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+  log.feedback = log.feedback||{}; log.assessments = log.assessments||{};
+  const ids = new Set(acts().map(a=>a.id));
+  if(Array.isArray(u.feedback)) u.feedback.forEach(f => {
+    if(!f || !ids.has(String(f.activityId))) return;
+    const cur = Object.assign({}, log.feedback[f.activityId]);
+    ['painDuring','painAfter','rpe'].forEach(k => { const n=Number(f[k]); if(f[k]!=null && Number.isFinite(n)) cur[k]=Math.max(0,Math.min(10,Math.round(n))); });
+    if(f.note) cur.note = String(f.note).slice(0,200);
+    log.feedback[f.activityId] = cur; lc=true;
+  });
+  if(Array.isArray(u.assessments)) u.assessments.forEach(a => {
+    if(!a || !a.text || !ids.has(String(a.activityId))) return;
+    log.assessments[a.activityId] = {text:String(a.text).slice(0,1500), short:a.short?String(a.short).slice(0,200):'', ts:new Date().toISOString()}; lc=true;
+  });
+  if(Array.isArray(u.weekSummaries)) u.weekSummaries.forEach(w => {
+    if(!w || !isDate(w.week) || !w.text) return;
+    log.weekSummaries = log.weekSummaries||{};
+    log.weekSummaries[mondayOf(w.week)] = {text:String(w.text).slice(0,1200), ts:new Date().toISOString()}; lc=true;
+  });
+  if(plc && pr.pendingChanges && Object.keys(pr.pendingChanges).length){ pr.pendingChanges = {}; pc=true; }
+  if(pc) await save('profile'); if(plc) await save('plan'); if(lc) await save('log');
+}
+
+function errText(e){
+  const c = e && e.code;
+  if(c==='not_configured') return 'Noch kein Claude-API-Schlüssel. Trag ihn in den Einstellungen unter „Verbindungen“ ein.';
+  if(c==='bad_key') return 'Der Claude-API-Schlüssel ist ungültig. Bitte in den Einstellungen prüfen.';
+  if(c==='no_credit') return 'Dein Anthropic-Konto hat kein Guthaben. Lade es in der Anthropic Console auf.';
+  if(c==='not_granted'){ sampleState='denied'; return 'Zugriff auf Claude nicht erlaubt.'; }
+  if(c==='sampling_disabled' || c==='not_declared' || c==='capability_disabled' || c==='capability_removed'){ sampleState='none'; return 'Claude ist in dieser Ansicht nicht verfügbar.'; }
+  if(c==='rate_limited') return 'Gerade zu viele Anfragen oder Nutzungslimit erreicht. Bitte später erneut senden.';
+  if(c==='session_expired') return 'Deine Anmeldung ist abgelaufen. Melde dich in claude.ai neu an.';
+  if(c==='invalid_json') return 'Die Antwort war nicht lesbar. Bitte die Nachricht erneut senden.';
+  if(c==='prompt_too_large') return 'Zu viele Daten für eine Anfrage. Lösche ältere Dialognachrichten in den Einstellungen.';
+  if(c==='refused') return 'Claude hat diese Anfrage abgelehnt. Formuliere sie bitte anders.';
+  return 'Verbindung unterbrochen. Bitte erneut senden.';
+}
+
+async function askClaude(text, opt={}){
+  if(!sample || busy || !text.trim()) return;
+  // Immer in den aktuellen S.chat schreiben: Snapshots ersetzen das Objekt während der Anfrage
+  const push = m => { if(!S.chat) S.chat={messages:[]}; S.chat.messages = (S.chat.messages||[]).concat([m]).slice(-80); };
+  push({role:'user', text:text.trim(), ts:Date.now(), auto:!!opt.auto});
+  busy=true; render(); save('chat');
+  const turns = [{role:'user', content:buildContext()}];
+  S.chat.messages.filter(m=>!m.error && (m.ts||0)>=dialogSince).slice(-16).forEach(m => turns.push({role:m.role, content:m.text}));
+  ctl = new AbortController();
+  try{
+    const res = await sample.json(turns, {cache:false, signal:ctl.signal, onText:()=>{ const el=document.getElementById('thinkTxt'); if(el) el.textContent='Claude schreibt …'; }});
+    await applyUpdates(res && res.updates);
+    const reply = res && typeof res.reply==='string' && res.reply.trim() ? res.reply.trim() : 'Erledigt.';
+    push({role:'assistant', text:reply, ts:Date.now()});
+  }catch(e){
+    if(e && e.code==='cancelled') push({role:'assistant', text:'Abgebrochen.', ts:Date.now(), error:true});
+    else push({role:'assistant', text:errText(e), ts:Date.now(), error:true});
+  }finally{
+    busy=false; ctl=null; await save('chat'); render();
+  }
+}
+function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; draft=''; askClaude(v); }
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.tab){
+    const leavingSettings = tab==='einstellungen' && b.dataset.tab!=='einstellungen';
+    if(b.dataset.tab!==tab && !busy){ dialogSince=Date.now(); draft=''; showAll=false; }
+    tab=b.dataset.tab;
+    if(leavingSettings && pendingList().length && sample && !busy){ try{localStorage.setItem('tb-tab',tab)}catch(_){} render(); window.scrollTo({top:0}); replanFromChanges(); return; } try{localStorage.setItem('tb-tab',tab)}catch(_){} render(); window.scrollTo({top:0}); return; }
+  const a = b.dataset.action; if(!a) return;
+  if(a==='sync') syncStrava();
+  else if(a==='send') send();
+  else if(a==='stop'){ if(ctl) ctl.abort(); }
+  else if(a==='more'){ showAll=true; renderDialog(); }
+  else if(a==='prefill'){ draft=b.dataset.text||''; renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
+  else if(a==='assess'){ const x=acts().find(y=>y.id===b.dataset.id); if(x) askClaude(`Bitte schätze die Einheit „${x.name}“ vom ${fmtDay(x.date)} (ID ${x.id}) ein.`); }
+  else if(a==='week-prev'){ weekOffset++; render(); }
+  else if(a==='add-complaint' || a==='rm-yes'){
+    const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+    const list = (pr.complaints||[]).slice();
+    if(a==='add-complaint'){ const inp=document.getElementById('newComplaint'); const v=(inp&&inp.value||'').trim().slice(0,60); if(!v || list.length>=5) return; list.push(v); }
+    else { list.splice(confirmRm,1); confirmRm=null; }
+    pr.complaints = list; markChange('complaints', 'Beschwerden: '+(list.join(', ')||'keine')); render(); save('profile');
+  }
+  else if(a==='replan-changes') replanFromChanges();
+  else if(a==='swap-open'){ swapDlg={date:b.dataset.date, title:b.dataset.title, text:''}; renderMoveDialog(); const ta=document.getElementById('swapText'); if(ta) ta.focus(); }
+  else if(a==='swap-close'){ swapDlg=null; renderMoveDialog(); }
+  else if(a==='swap-preset'){ if(swapDlg){ const p=b.dataset.p; swapDlg.text = (swapDlg.text||'').trim() ? swapDlg.text.trim()+', '+p : p; renderMoveDialog(); } }
+  else if(a==='swap-do'){
+    if(!swapDlg || !(swapDlg.text||'').trim()) return;
+    const {date, title} = swapDlg, wish = swapDlg.text.trim();
+    swapDlg=null; renderMoveDialog();
+    if(S.plan){ S.plan.allowDates = [...new Set([...(S.plan.allowDates||[]), date])].filter(d=>d>=today()).sort(); await save('plan'); }
+    if(sample && !busy) askClaude(`Bitte plane „${title}“ am ${fmtDay(date)} um. Stattdessen möchte ich: ${wish}. Ersetze die Einheit am selben Tag (Titel, Ziel der Einheit, konkrete Schritte) und gleiche die übrigen Einheiten der nächsten 14 Tage bei Bedarf an, damit Belastung und Wochenumfang stimmig bleiben. Weise kurz darauf hin, falls der Wunsch für das Ziel oder die Beschwerden ungünstig ist.`);
+  }
+  else if(a==='cancel-open'){ cancelDlg={date:b.dataset.date, title:b.dataset.title, preset:null, reason:''}; renderMoveDialog(); }
+  else if(a==='cancel-close'){ cancelDlg=null; renderMoveDialog(); }
+  else if(a==='cancel-preset'){ if(cancelDlg){ cancelDlg.preset = cancelDlg.preset===b.dataset.p ? null : b.dataset.p; renderMoveDialog(); } }
+  else if(a==='cancel-do'){
+    if(!cancelDlg || !S.plan) return;
+    const {date, title} = cancelDlg; const reason = [cancelDlg.preset, (cancelDlg.reason||'').trim()].filter(Boolean).join(': ');
+    cancelDlg=null; renderMoveDialog();
+    const s = S.plan.sessions.find(x=>x.date===date && (x.title||'')===title && !x.cancelled); if(!s) return;
+    s.cancelled = {reason, ts:new Date().toISOString()};
+    S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
+    render(); await save('plan');
+    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung der nächsten 14 Tage: Bei Krankheit oder Beschwerden die Belastung danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
+  }
+  else if(a==='move-open'){ moveDlg={from:b.dataset.date, title:b.dataset.title, to:null}; renderMoveDialog(); }
+  else if(a==='move-close'){ moveDlg=null; renderMoveDialog(); }
+  else if(a==='move-pick'){ if(moveDlg){ moveDlg.to=b.dataset.to; renderMoveDialog(); } }
+  else if(a==='move'){
+    if(!moveDlg) return;
+    const to = moveDlg.to, from = moveDlg.from, title = moveDlg.title;
+    moveDlg=null; renderMoveDialog();
+    if(!S.plan || !isDate(to) || to===from) return;
+    const s = S.plan.sessions.find(x=>x.date===from && (x.title||'')===title); if(!s) return;
+    s.date = to; s.extra = true;
+    const uniq = arr => [...new Set(arr)].filter(d=>d>=today()).sort();
+    S.plan.allowDates = uniq([...(S.plan.allowDates||[]), to]);
+    S.plan.blockedDates = uniq([...(S.plan.blockedDates||[]).filter(d=>d!==to), from]);
+    S.plan.sessions.sort((x,y)=>x.date.localeCompare(y.date));
+    render(); await save('plan');
+    if(sample && !busy) askClaude(`Ich habe „${s.title}“ von ${fmtDay(from)} auf ${fmtDay(to)} verschoben, weil ich am ${fmtDay(from)} nicht kann. Die Einheit bleibt am ${fmtDay(to)}, am ${fmtDay(from)} bitte nichts planen. Prüfe Abstände und Belastung der angrenzenden Einheiten und passe den Plan an: Einheiten bei Bedarf kürzen oder tauschen und dafür andere verlängern, damit der Wochenumfang passt.`, {auto:true});
+  }
+  else if(a==='rm-complaint'){ confirmRm=Number(b.dataset.i); render(); }
+  else if(a==='rm-no'){ confirmRm=null; render(); }
+  else if(a==='info'){ infoOpen=!infoOpen; render(); }
+  else if(a==='week-last'){ weekOffset=lastWeekOffset(); render(); }
+  else if(a==='week-next'){ weekOffset=Math.max(0,weekOffset-1); render(); }
+  else if(a==='week-summary'){
+    const mon=b.dataset.mon, sun=addDays(mon,6);
+    const dlg=((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun)
+      .map(m=>(m.role==='user'?userName()+': ':'Claude: ')+m.text.slice(0,400)).join('\n').slice(-6000);
+    askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): Training in Stichworten, ${careMode()?'Beschwerdesignale':'Befinden'}, Belastung, Auswertung und was im Dialog besprochen wurde. Gib zu jeder Einheit dieser Woche ohne Einschätzung eine kurze Einschätzung mit "short" an.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`);
+  }
+  else if(a==='replan') askClaude('Bitte plane die nächsten 14 Tage auf Basis meiner letzten Einheiten und Rückmeldungen neu.');
+  else if(a==='day' || a==='sport'){
+    const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+    if(a==='day'){ const d=Number(b.dataset.day); const s=new Set(pr.trainingDays||[]); s.has(d)?s.delete(d):s.add(d); pr.trainingDays=[...s].sort();
+      markChange('days', 'Trainingstage: '+([1,2,3,4,5,6,0].filter(x=>s.has(x)).map(x=>WD[x]).join(', ')||'keine')); }
+    else { const k=b.dataset.sport; const s=new Set(pr.sports||[]); s.has(k)?s.delete(k):s.add(k); pr.sports=[...s];
+      markChange('sports', 'Sportarten: '+(pr.sports.map(x=>SPORT[x]).join(', ')||'keine')); }
+    render(); save('profile');
+  }
+  else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
+  else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
+  else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
+  else if(a==='cf-export'){ if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(window.__ldExport()))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); }
+  else if(a==='cf-import'){ window.Android.pickBackup(); }
+  else if(a==='cf-import-no'){ confirmImport=null; render(); }
+  else if(a==='cf-import-yes'){ const o=confirmImport; confirmImport=null; window.__ldImport(o); window.Android.toast('Sicherung übernommen.'); weekInit=false; render(); }
+  else if(a==='clear'){ confirmClear=true; render(); }
+  else if(a==='clear-no'){ confirmClear=false; render(); }
+  else if(a==='clear-yes'){ confirmClear=false; S.chat={messages:[]}; showAll=false; render(); save('chat'); }
+});
+
+/* ---------- Start ---------- */
+render();
+(async () => {
+  const cl = window.claude;
+  if(!cl || !cl.use){ mcpState='none'; sampleState='none'; S.loaded=true; render(); return; }
+  cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); });
+  cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); });
+  const [user, dbx] = await Promise.all([cl.use('user'), cl.use('db')]);
+  db = dbx; uid = user ? await user.id() : null;
+  if(!db || !uid){ S.loaded=true; syncMsg={err:true, text:'Speichern ist in dieser Ansicht nicht möglich. Öffne die App angemeldet in claude.ai.'}; render(); return; }
+  let pending = 4;
+  ['profile','plan','log','chat'].forEach(name => {
+    db.doc('data/users/'+uid+'/'+name).onSnapshot(snap => {
+      S[name] = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
+      if(pending>0){ pending--; if(pending===0) S.loaded=true; }
+      if(!(busy && name==='chat')) render();
+    }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
+  });
+})();
+})();
+</script>
+
+</body>
+</html>
