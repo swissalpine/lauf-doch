@@ -245,6 +245,15 @@ nav.tabs button{padding:4px 2px}
 .app{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
 .restday{background:var(--sunk)}
 .restday h3{color:var(--muted)}
+.ins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.ins li{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border-top:1px solid var(--line)}
+.ins li:first-child{border-top:0}
+.ins li:has(.ia){flex-direction:row;align-items:flex-start;justify-content:space-between}
+.ins li > span:first-child{min-width:0;overflow-wrap:anywhere}
+.ins .ia{display:flex;gap:2px;flex:none}
+.ins .ib{border:0;background:none;color:var(--muted);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer;border-radius:6px}
+.ins .ib:hover{color:var(--accent);background:var(--accent-soft)}
+.ins textarea{width:100%;border:1px solid var(--accent);border-radius:8px;padding:7px 9px;background:var(--surface);resize:vertical}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -442,6 +451,28 @@ function cancelledCard(s){
 let moveDlg = null; // {from, title, to}
 let cancelDlg = null; // {date, title, preset, reason}
 let swapDlg = null; // {date, title, text}
+let insightDlg = null; // {edit: index|null}
+const insights = () => (profile().insights||[]).filter(Boolean);
+function setInsights(list){
+  const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+  pr.insights = list.map(x=>String(x).trim().slice(0,200)).filter(Boolean).slice(0,25);
+  save('profile');
+}
+function renderInsightDialog(el){
+  const list = insights();
+  el.innerHTML = `<button class="overlay" data-action="ins-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="inTitle">
+      <h2 id="inTitle">Erkenntnisse</h2>
+      <p class="muted">Dauerhafte Beobachtungen, die Claude bei jeder Planung berücksichtigt. Claude ergänzt sie selbst, du kannst sie ändern oder löschen.</p>
+      ${list.length?`<ul class="ins">${list.map((x,i)=> insightDlg.edit===i
+        ? `<li><textarea id="insEdit" rows="2" aria-label="Erkenntnis bearbeiten">${esc(x)}</textarea><div class="row end"><button class="btn" data-action="ins-edit-no">Abbrechen</button><button class="btn primary" data-action="ins-edit-yes" data-i="${i}">Speichern</button></div></li>`
+        : `<li><span>${esc(x)}</span><span class="ia"><button class="ib" data-action="ins-edit" data-i="${i}" aria-label="Bearbeiten">✎</button><button class="ib" data-action="ins-del" data-i="${i}" aria-label="Löschen">×</button></span></li>`).join('')}</ul>`
+        :`<p class="empty">Noch keine Erkenntnisse. Claude legt sie im Laufe der Zeit an. Du kannst Claude auch bitten, sie jetzt aus deinen bisherigen Daten abzuleiten.</p>`}
+      <div class="addrow"><input id="insNew" type="text" placeholder="z. B. Bergab über 5 % reizt das Knie" aria-label="Erkenntnis hinzufügen"><button class="btn" data-action="ins-add">Hinzufügen</button></div>
+      <div class="row end"><button class="btn" data-action="ins-derive" ${sample&&!busy?'':'disabled'}>Von Claude ableiten lassen</button><button class="btn primary" data-action="ins-close">Fertig</button></div>
+    </div>`;
+  const ta = document.getElementById('insEdit'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
 function renderSwapDialog(el){
   const presets = ['Rad statt Laufen','Kürzer','Lockerer','Kraft und Mobilität','Intervalle','Längerer Lauf'];
   el.innerHTML = `<button class="overlay" data-action="swap-close" aria-label="Schließen" tabindex="-1"></button>
@@ -475,6 +506,7 @@ function renderMoveDialog(){
   const el = document.getElementById('modal'); if(!el) return;
   if(cancelDlg){ renderCancelDialog(el); return; }
   if(swapDlg){ renderSwapDialog(el); return; }
+  if(insightDlg){ renderInsightDialog(el); return; }
   if(!moveDlg){ el.innerHTML=''; return; }
   const t = today(), td = new Set(profile().trainingDays||[]);
   const days = Array.from({length:14},(_,i)=>addDays(t,i)).map(d => {
@@ -653,7 +685,7 @@ document.addEventListener('change', e => {
   else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
   save('profile');
 });
-document.addEventListener('keydown', e => { if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
+document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
 const GLOSSAR = `<dl class="gloss">
   <div><dt>RE · Relative Effort</dt><dd>Stravas Belastungswert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
@@ -781,7 +813,7 @@ window.onBackupLoaded = text => {
   confirmImport = obj; tab='einstellungen'; render();
 };
 window.appBack = () => {
-  if(moveDlg||cancelDlg||swapDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; renderMoveDialog(); return true; }
+  if(moveDlg||cancelDlg||swapDlg||insightDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; renderMoveDialog(); return true; }
   if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
   return false;
 };
@@ -802,6 +834,8 @@ function renderSettings(){
       ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
       ${confirmRm!=null?`<div class="row"><span>„${esc(cs[confirmRm]||'')}“ entfernen? Danach plant Claude ohne Rücksicht darauf.</span><div class="row"><button class="btn primary" data-action="rm-yes">Entfernen</button><button class="btn" data-action="rm-no">Abbrechen</button></div></div>`:''}
       <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div>
+    <div class="card"><div class="row"><h2>Erkenntnisse</h2><button class="btn" data-action="ins-open">Ansehen${insights().length?' ('+insights().length+')':''}</button></div>
+      <p class="muted">Was Claude sich dauerhaft über dein Training merkt.</p></div>
     <div class="card"><h2>Hintergrund für die Planung</h2><p class="muted">Diese Angaben bekommt Claude bei jeder Planung mit. Ändern kannst du sie im Dialog.</p>
       <p class="rationale">${esc(pr.background||'Noch keine Angaben.')}</p></div>
     <div class="card"><h2>Dialogverlauf</h2>
@@ -965,6 +999,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Stelle höchstens eine Rückfrage pro Antwort.
 - Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Belastung (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Belastung der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
+- Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Belastung und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
@@ -982,6 +1017,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "name":"Vorname",
    "complaints":["Knie (Patella)"],
    "performance":"Leistungsstand, z. B. Bestzeiten",
+   "insights":["vollständige Liste der Erkenntnisse, je eine kurze Zeile"],
    "goal":{"text":"knappes Ziel","date":"YYYY-MM-DD"},
    "trainingDays":[2,4,6],
    "sports":["run","ride","strength"],
@@ -998,6 +1034,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `ZIEL: ${pr.goal&&pr.goal.text ? pr.goal.text+(pr.goal.date?' (Zieldatum '+pr.goal.date+')':'') : 'noch nicht festgelegt'}`,
 `BESCHWERDEN: ${cl||'keine'}`,
 `LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
+`ERKENNTNISSE: ${(pr.insights||[]).length ? (pr.insights||[]).map(x=>'- '+x).join('\n') : 'noch keine'}`,
 `TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}`,
 `SPORTARTEN: ${(pr.sports||[]).map(s=>SPORT[s]).join(', ')}`,
 `HINTERGRUND: ${pr.background||'–'}`,
@@ -1026,6 +1063,7 @@ async function applyUpdates(u){
   if(typeof u.name==='string' && u.name.trim()){ pr.name = u.name.trim().slice(0,40); pc=true; }
   if(Array.isArray(u.complaints)){ pr.complaints = u.complaints.map(c=>String(c||'').trim().slice(0,60)).filter(Boolean).slice(0,5); pc=true; }
   if(typeof u.performance==='string'){ pr.performance = u.performance.slice(0,400); pc=true; }
+  if(Array.isArray(u.insights)){ pr.insights = u.insights.map(x=>String(x||'').trim().slice(0,200)).filter(Boolean).slice(0,25); pc=true; }
   if(u.goal && u.goal.text){ pr.goal = {text:String(u.goal.text).slice(0,200), date:isDate(u.goal.date)?u.goal.date:null}; pc=true; }
   if(Array.isArray(u.trainingDays)){ pr.trainingDays = [...new Set(u.trainingDays.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6))].sort(); pc=true; }
   if(Array.isArray(u.sports)){ pr.sports = [...new Set(u.sports.map(normSport))]; pc=true; }
@@ -1157,6 +1195,14 @@ document.addEventListener('click', async e => {
     pr.complaints = list; markChange('complaints', 'Beschwerden: '+(list.join(', ')||'keine')); render(); save('profile');
   }
   else if(a==='replan-changes') replanFromChanges();
+  else if(a==='ins-open'){ insightDlg={edit:null}; renderMoveDialog(); }
+  else if(a==='ins-close'){ insightDlg=null; renderMoveDialog(); render(); }
+  else if(a==='ins-add'){ const i=document.getElementById('insNew'); const v=(i&&i.value||'').trim(); if(!v) return; setInsights([...insights(), v]); renderMoveDialog(); const n=document.getElementById('insNew'); if(n) n.focus(); }
+  else if(a==='ins-del'){ const l=insights(); l.splice(Number(b.dataset.i),1); setInsights(l); renderMoveDialog(); }
+  else if(a==='ins-edit'){ insightDlg.edit=Number(b.dataset.i); renderMoveDialog(); }
+  else if(a==='ins-edit-no'){ insightDlg.edit=null; renderMoveDialog(); }
+  else if(a==='ins-edit-yes'){ const ta=document.getElementById('insEdit'); const l=insights(); const i=Number(b.dataset.i); if(ta){ if(ta.value.trim()) l[i]=ta.value.trim(); else l.splice(i,1); } insightDlg.edit=null; setInsights(l); renderMoveDialog(); }
+  else if(a==='ins-derive'){ insightDlg=null; renderMoveDialog(); askClaude('Bitte leite aus meinen bisherigen Aktivitäten, Rückmeldungen, Wochenfazits und dem Hintergrund die wichtigsten dauerhaften Erkenntnisse ab und liefere die vollständige Liste unter "insights". Behalte bestehende Erkenntnisse, sofern sie noch stimmen.'); }
   else if(a==='swap-open'){ swapDlg={date:b.dataset.date, title:b.dataset.title, text:''}; renderMoveDialog(); const ta=document.getElementById('swapText'); if(ta) ta.focus(); }
   else if(a==='swap-close'){ swapDlg=null; renderMoveDialog(); }
   else if(a==='swap-preset'){ if(swapDlg){ const p=b.dataset.p; swapDlg.text = (swapDlg.text||'').trim() ? swapDlg.text.trim()+', '+p : p; renderMoveDialog(); } }
