@@ -494,8 +494,8 @@ const complaints = () => (profile().complaints||[]).filter(Boolean);
 const careMode = () => complaints().length>0;
 const userName = () => profile().name || 'der Nutzer';
 const fbTemplate = (d, hasRpe) => careMode()
-  ? `Rückmeldung zur Einheit vom ${fmtDay(d)}: Schmerz während _/10, danach _/10${hasRpe?'':', Belastung _/10'}. `
-  : `Rückmeldung zur Einheit vom ${fmtDay(d)}: ${hasRpe?'':'Belastung _/10, '}Befinden: `;
+  ? `Rückmeldung zur Einheit vom ${fmtDay(d)}: Schmerz während _/10, danach _/10${hasRpe?'':', RPE _/10'}. `
+  : `Rückmeldung zur Einheit vom ${fmtDay(d)}: ${hasRpe?'':'RPE _/10, '}Befinden: `;
 const profile = () => S.profile || {goal:null, trainingDays:[], sports:['run','ride','strength'], background:''};
 const acts = () => (S.log && Array.isArray(S.log.activities)) ? S.log.activities : [];
 const fb = id => (S.log && S.log.feedback && S.log.feedback[id]) || null;
@@ -564,7 +564,7 @@ let bgDlg = null;   // {edit:bool}
 let icuDlg = null; // {ext, title, date, sport, mode}
 function renderIcuDialog(el){
   const opts = ICU_MODES[icuDlg.sport] || ICU_MODES.run;
-  const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rolle und Rad mit Leistungsmesser.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der Belastung.'}[icuDlg.mode]||'';
+  const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rolle und Rad mit Leistungsmesser.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der RPE.'}[icuDlg.mode]||'';
   el.innerHTML = `<button class="overlay" data-action="icu-close" aria-label="Schließen" tabindex="-1"></button>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="icTitle">
       <h2 id="icTitle">${icuState(sessions().find(x=>icuEntry(x)&&icuEntry(x).ext===icuDlg.ext)||{})==='ok'?'Erneut an die Uhr senden':'An die Uhr senden'}</h2>
@@ -743,7 +743,7 @@ function guideKey(st){ return ((st.label||'')+'|'+(st.detail||'')).toLowerCase()
 function stepLi(st, sess){
   const t = [];
   const q = isExercise(st, sess) ? `<button class="qhelp" data-action="guide" data-label="${esc(st.label||'')}" data-detail="${esc(st.detail||'')}" aria-label="Übung erklären: ${esc(st.label||'')}">?</button>` : '';
-  if(st.rpe) t.push(`<span class="tg">Belastung ${esc(st.rpe)}</span>`);
+  if(st.rpe) t.push(`<span class="tg">RPE ${esc(st.rpe)}</span>`);
   if(st.hr) t.push(`<span class="tg">HF ${esc(st.hr)}</span>`);
   if(st.pace) t.push(`<span class="tg">${esc(st.pace)} /km</span>`);
   return `<li><span class="l">${esc(st.label||'')}${q}</span><span class="d">${esc(st.detail||'')}${t.length?`<span class="tgs">${t.join('')}</span>`:''}</span></li>`;
@@ -775,7 +775,7 @@ function doneCard(a, planned, extra){
     ['Relative Effort', a.re ?? '–']
   ];
   const chips = [];
-  const rp = rpeOf(a); if(rp) chips.push(`<span class="chip">Belastung ${rp.v}/10${rp.src==='Strava'?' (Strava)':''}</span>`);
+  const rp = rpeOf(a); if(rp) chips.push(`<span class="chip">RPE ${rp.v}/10${rp.src==='Strava'?' (Strava)':''}</span>`);
   if(f){
     if(f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
     if(f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
@@ -787,8 +787,8 @@ function doneCard(a, planned, extra){
     <h3>${esc(a.name)}</h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
-    ${rpeOf(a)?'':`<div class="rpepick"><span>Belastung</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="Belastung ${n} von 10">${n}</button>`).join('')}</div></div>`}
-    ${(f && (f.painDuring!=null||f.painAfter!=null||f.note)) || (!careMode() && rp) ?`<div class="chips">${chips.join('')}</div>`:`${chips.length?`<div class="chips">${chips.join('')}</div>`:''}<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'}${rp?'':' und Belastung'}.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>`}
+    ${rpeOf(a)?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
+    ${(f && (f.painDuring!=null||f.painAfter!=null||f.note)) || (!careMode() && rp) ?`<div class="chips">${chips.join('')}</div>`:`${chips.length?`<div class="chips">${chips.join('')}</div>`:''}<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'}${rp?'':' und RPE'}.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>`}
     ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div>${staleAssess(a)?`<div class="row" style="margin-top:6px"><span class="note">Vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:''}</div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
     ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
   </article>`;
@@ -916,7 +916,7 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg||icuDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
 const GLOSSAR = `<dl class="gloss">
-  <div><dt>RE · Relative Effort</dt><dd>Stravas Belastungswert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
+  <div><dt>RE · Relative Effort</dt><dd>Stravas Trainingslast-Wert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 niedrig (Entlastung), 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
   <div><dt>Lauf-Effizienz</dt><dd>Meter pro Minute je Herzschlag. Höher heißt gleiches Tempo bei niedrigerem Puls. Auf Trails schwankt der Wert mit den Höhenmetern.</dd></div>
   <div><dt>Entkopplung</dt><dd>Vergleicht Tempo pro Herzschlag in der ersten und zweiten Laufhälfte (ohne ersten Kilometer). Unter 5 % trägt die Grundlage die Dauer, 5–10 % spürbare Ermüdung, über 10 % war die Einheit für die aktuelle Form zu lang oder zu intensiv.</dd></div>
@@ -963,7 +963,7 @@ function renderHistory(){
       const chips = [];
       if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
       else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
-      { const rp=rpeOf(a); if(rp) chips.push(`<span class="chip">Belastung ${rp.v}/10</span>`); }
+      { const rp=rpeOf(a); if(rp) chips.push(`<span class="chip">RPE ${rp.v}/10</span>`); }
       const short = as ? (as.short || as.text) : (f && f.note) || '';
       const r = analyze(a); let pl = '';
       if(r){
@@ -1032,9 +1032,9 @@ function connCard(){
       <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 7 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
-        <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+        <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <label class="fld" for="cfIcuRide"><span>Zielvorgabe Rad</span>
-        <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt (Prozent der FTP)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+        <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt (Prozent der FTP)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <p class="note">Beim Senden einer einzelnen Einheit kannst du die Vorgabe jeweils neu wählen.</p>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
@@ -1103,11 +1103,11 @@ function suggestions(){
     if(!pr.goal || !pr.goal.text) add('Ziel festlegen', 'Mein Ziel ist ');
     const since = S.plan && S.plan.updatedAt ? S.plan.updatedAt.slice(0,10) : '';
     if(acts().some(a=>(a.sport==='run'||a.sport==='ride') && a.date>=since)) add('Passe den Plan an meine letzten Einheiten an.');
-    const L = loadAt(t); if(L.acwr!=null && L.acwr>1.3) add('Ist meine Belastung gerade zu hoch?');
+    const L = loadAt(t); if(L.acwr!=null && L.acwr>1.3) add('Ist meine Trainingslast gerade zu hoch?');
     const lastPlanned = active().map(s=>s.date).sort().pop();
     if(!lastPlanned || lastPlanned < addDays(t,7)) add('Plan verlängern', 'Bitte verlängere den Plan auf die nächsten 14 Tage.');
     if(out.length<2) add('Warum diese Steigerung?');
-    if(out.length<2) add('Passt meine Belastung gerade?');
+    if(out.length<2) add('Passt meine Trainingslast gerade?');
   } else if(tab==='rueckblick'){
     const mon = addDays(mondayOf(t), -7*weekOffset);
     const hasActs = acts().some(a=>a.date>=mon && a.date<=addDays(mon,6));
@@ -1192,7 +1192,7 @@ async function syncStrava(){
     const recent = fresh.filter(a => a.sport!=='walk' && daysUntil(a.date) >= -10);
     if(recent.length && sample && sampleState!=='denied' && !busy){
       const desc = recent.map(a=>`${fmtDay(a.date)} ${SPORT[a.sport]} „${a.name}“ ${fmtNum(a.distKm,2)} km (ID ${a.id})`).join('; ');
-      askClaude('Strava-Abgleich: '+desc+'. Bitte einschätzen, nach Schmerz und Belastung fragen und den Plan bei Bedarf anpassen.', {auto:true});
+      askClaude('Strava-Abgleich: '+desc+'. Bitte einschätzen, nach Schmerz und RPE fragen und den Plan bei Bedarf anpassen.', {auto:true});
     }
   }catch(e){
     const c = e && e.code;
@@ -1231,29 +1231,29 @@ Regeln:
 - Antworte auf Deutsch, direkt, knapp und fachlich präzise. Formatierung sparsam: kurze Absätze, bei Bedarf Aufzählungen mit „- “ und **fett** für Stichwörter; keine Überschriften, Tabellen oder Links. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
 ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel. Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
 - Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
-- „Belastung“ ist die wahrgenommene Anstrengung (RPE 1–10). Sag im Text immer „Belastung“, nicht „RPE“. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava" aus Strava), frag nicht erneut.
-- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) vorliegt, frage danach; nach der Belastung nur, wenn sie weder in der Rückmeldung noch aus Strava vorliegt.`
+- „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava" aus Strava), frag nicht erneut.
+- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) vorliegt, frage danach; nach der RPE nur, wenn sie weder in der Rückmeldung noch aus Strava vorliegt.`
 : `- Periodisiere auf das Ziel hin: Aufbauwochen mit regelmäßigen Entlastungswochen (z. B. 3:1), Wochenumfang höchstens etwa 10 % steigern.
 - Intensitätsverteilung: etwa 80 % locker (Z1–Z2), der Rest gezielte Reize (Schwelle, Intervalle, Zieltempo). Harte Einheiten nicht an aufeinanderfolgenden Tagen.
 - Leite Zieltempi aus Ziel, Leistungsstand und Daten ab und gib Intervalle mit Pace oder HF-Zone an.
-- „Belastung“ ist die wahrgenommene Anstrengung (RPE 1–10). Sag im Text immer „Belastung“, nicht „RPE“. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava"), frag nicht erneut.
-- Wenn zu einer neuen Aktivität weder Belastung noch Befinden bekannt sind, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
+- „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava"), frag nicht erneut.
+- Wenn zu einer neuen Aktivität weder RPE noch Befinden bekannt sind, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
 - Stelle höchstens eine Rückfrage pro Antwort.
-- Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Belastung (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
-- Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Belastung der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
+- Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
+- Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
-- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (Belastung 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke. Auf Trails mit Höhenmetern steuert Belastung bzw. HF, nicht das Tempo; sag das im Detail.
+- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke. Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
-- Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Belastung und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
-  · Trainingslast (nicht mit „Belastung“ = RPE verwechseln): Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
+- Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Trainingslast und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
+  · Trainingslast (nicht mit der RPE verwechseln): Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
   · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
   · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
   · Rad: IF und TSS bezogen auf die FTP.
-  · Formentwicklung über die Wochen (Effizienz, Belastung) nur mit Vorsicht, solange wenige Daten vorliegen.
-- "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, Belastung, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
+  · Formentwicklung über die Wochen (Effizienz, Trainingslast) nur mit Vorsicht, solange wenige Daten vorliegen.
+- "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
-- Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD): 2–5 Sätze in Stichworten zu Umfang, ${care?'Beschwerdesignalen':'Befinden'}, Belastung und Trainingswirkung, Auswertung und was im Dialog besprochen oder entschieden wurde. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
+- Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD): 2–5 Sätze in Stichworten zu Umfang, ${care?'Beschwerdesignalen':'Befinden'}, RPE, Trainingslast und Trainingswirkung, Auswertung und was im Dialog besprochen oder entschieden wurde. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -1269,7 +1269,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "background":"aktualisierter Hintergrundtext",
    "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
-   "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}Belastung, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
+   "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
  }}
 Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" ist immer die vollständige Liste. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.`,
@@ -1393,8 +1393,8 @@ function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.va
 /* ---------- Garmin über intervals.icu ---------- */
 const icuMode = () => (profile().icu && profile().icu.mode) || 'hr';
 const icuRideMode = () => (profile().icu && profile().icu.rideMode) || 'hr';
-const ICU_MODES = {run:[['hr','Herzfrequenz'],['pace','Pace'],['rpe','Belastung']], ride:[['hr','Herzfrequenz'],['watt','Watt'],['rpe','Belastung']]};
-const ICU_LABEL = {hr:'Herzfrequenz', pace:'Pace', watt:'Watt', rpe:'Belastung'};
+const ICU_MODES = {run:[['hr','Herzfrequenz'],['pace','Pace'],['rpe','RPE']], ride:[['hr','Herzfrequenz'],['watt','Watt'],['rpe','RPE']]};
+const ICU_LABEL = {hr:'Herzfrequenz', pace:'Pace', watt:'Watt', rpe:'RPE'};
 /* Zielvorgabe einer Einheit: eigene Wahl beim Einzelsenden, sonst Grundeinstellung der Sportart */
 function icuModeFor(e){ const o = S.plan && S.plan.icuModes && S.plan.icuModes[e.ext]; if(o) return o; return normSport(e.s.sport)==='ride' ? icuRideMode() : icuMode(); }
 const icuAuto = () => !!(profile().icu && profile().icu.auto);
@@ -1418,7 +1418,7 @@ function icuState(s0){
   if(!IN_APP || !appStatus().icuKey) return null;
   const e = icuEntry(s0); if(!e) return null;
   const h = (S.plan && S.plan.icuSent || {})[e.ext];
-  return !h ? 'new' : h===icuHash(['v3',e.s,icuModeFor(e)]) ? 'ok' : 'changed';
+  return !h ? 'new' : h===icuHash(['v4',e.s,icuModeFor(e)]) ? 'ok' : 'changed';
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
 async function icuTexts(items){
@@ -1430,9 +1430,9 @@ HF-Zonen (Untergrenzen Z1–Z5): ${z?z.join(', '):'unbekannt'}. FTP: ${S.log&&S.
 Regeln:
 - Abschnitte als Überschriftzeilen ohne Bindestrich, z. B. „Einlaufen“, „Hauptteil 4x“, „Auslaufen“. Wiederholungen nur als „… 4x“ in der Überschrift, keine verschachtelten Wiederholungen, je eine Leerzeile vor und nach einem Wiederholungsblock.
 - Jeder Schritt: „- <Hinweis> <Dauer> <Ziel>“. Dauer als Zeit (10m, 30s, 1m30) oder Strecke mit Dezimalpunkt (1.5km). „m“ heißt Minuten. Keine weiteren Zahlen mit Einheit im Hinweis.
-- Hinweis kurz auf Deutsch, immer mit der Belastung, z. B. „Locker, Belastung 2–3“ (Bereich mit Halbgeviertstrich).
+- Hinweis kurz auf Deutsch, immer mit der RPE, z. B. „Locker, RPE 2–3“ (Bereich mit Halbgeviertstrich).
 - Ziel je nach "zielvorgabe": hr → „Z2 HR“ oder „Z1-Z2 HR“; pace → „5:35-5:20/km Pace“ (langsamere Pace zuerst), ohne bekannte Pace stattdessen HF-Zone; watt (nur Rad) → Prozent der FTP wie „55-75%“; rpe → kein Ziel, die Zeile endet nach der Dauer.
-- Nur echte zeitliche Abschnitte werden Schritte (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen). Verhaltenshinweise ohne eigene Dauer, z. B. „Bergab: steilere Abstiege gehen“, „Kadenz hoch halten“ oder „flache Strecke wählen“, sind kein eigener Schritt und keine eigene Überschrift; nimm sie kurz in den Hinweis des Laufschritts auf, zu dem sie gehören (z. B. „Locker, bergab gehen, Belastung 3–4“).
+- Nur echte zeitliche Abschnitte werden Schritte (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen). Verhaltenshinweise ohne eigene Dauer, z. B. „Bergab: steilere Abstiege gehen“, „Kadenz hoch halten“ oder „flache Strecke wählen“, sind kein eigener Schritt und keine eigene Überschrift; nimm sie kurz in den Hinweis des Laufschritts auf, zu dem sie gehören (z. B. „Locker, bergab gehen, RPE 3–4“).
 - Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
 - Nur der Lauf- bzw. Radteil. Lass Kraftübungen, Gymnastik, Dehnen und Mobilisation komplett weg, auch nicht als Text- oder Überschriftzeile; sie würden auf der Uhr als Laufabschnitt erscheinen.
 
@@ -1453,7 +1453,7 @@ async function icuSync(manual, onlyExt, forceMode){
     if(onlyExt && forceMode){ S.plan.icuModes = Object.assign({}, S.plan.icuModes||{}, {[onlyExt]:forceMode}); }
     const items = (onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions()).map(x => Object.assign(x, {mode:icuModeFor(x)}));
     const sent = Object.assign({}, S.plan.icuSent||{});
-    const changed = items.filter(({s,ext,mode}) => onlyExt || sent[ext] !== icuHash(['v3',s,mode]));
+    const changed = items.filter(({s,ext,mode}) => onlyExt || sent[ext] !== icuHash(['v4',s,mode]));
     let created = 0, deleted = 0;
     if(changed.length){
       const texts = await icuTexts(changed);
@@ -1464,7 +1464,7 @@ async function icuSync(manual, onlyExt, forceMode){
       if(events.length){
         icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
         await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
-        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v3',it.s,it.mode]); });
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v4',it.s,it.mode]); });
         created = events.length;
       }
     }
@@ -1566,7 +1566,7 @@ document.addEventListener('click', async e => {
     render(); await save('log');
     const act = acts().find(x=>x.id===b.dataset.id);
     if(act && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
-      askClaude(`Rückmeldung ergänzt: Belastung ${b.dataset.v}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`, {auto:true});
+      askClaude(`Rückmeldung ergänzt: RPE ${b.dataset.v}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`, {auto:true});
   }
   else if(a==='guide'){ e.preventDefault(); const st={label:b.dataset.label, detail:b.dataset.detail}; guideDlg={label:st.label, detail:st.detail, key:guideKey(st), loading:false, error:null}; renderMoveDialog(); loadGuide(false); }
   else if(a==='guide-close'){ guideDlg=null; renderMoveDialog(); }
@@ -1597,7 +1597,7 @@ document.addEventListener('click', async e => {
     const {date, title} = swapDlg, wish = swapDlg.text.trim();
     swapDlg=null; renderMoveDialog();
     if(S.plan){ S.plan.allowDates = [...new Set([...(S.plan.allowDates||[]), date])].filter(d=>d>=today()).sort(); await save('plan'); }
-    if(sample && !busy) askClaude(`Bitte plane „${title}“ am ${fmtDay(date)} um. Stattdessen möchte ich: ${wish}. Ersetze die Einheit am selben Tag (Titel, Ziel der Einheit, konkrete Schritte) und gleiche die übrigen Einheiten der nächsten 14 Tage bei Bedarf an, damit Belastung und Wochenumfang stimmig bleiben. Weise kurz darauf hin, falls der Wunsch für das Ziel oder die Beschwerden ungünstig ist.`);
+    if(sample && !busy) askClaude(`Bitte plane „${title}“ am ${fmtDay(date)} um. Stattdessen möchte ich: ${wish}. Ersetze die Einheit am selben Tag (Titel, Ziel der Einheit, konkrete Schritte) und gleiche die übrigen Einheiten der nächsten 14 Tage bei Bedarf an, damit Trainingslast und Wochenumfang stimmig bleiben. Weise kurz darauf hin, falls der Wunsch für das Ziel oder die Beschwerden ungünstig ist.`);
   }
   else if(a==='cancel-open'){ cancelDlg={date:b.dataset.date, title:b.dataset.title, preset:null, reason:''}; renderMoveDialog(); }
   else if(a==='cancel-close'){ cancelDlg=null; renderMoveDialog(); }
@@ -1610,7 +1610,7 @@ document.addEventListener('click', async e => {
     s.cancelled = {reason, ts:new Date().toISOString()};
     S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
     render(); await save('plan'); icuAutoSync();
-    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung der nächsten 14 Tage: Bei Krankheit oder Beschwerden die Belastung danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
+    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung der nächsten 14 Tage: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
   }
   else if(a==='move-open'){ moveDlg={from:b.dataset.date, title:b.dataset.title, to:null}; renderMoveDialog(); }
   else if(a==='move-close'){ moveDlg=null; renderMoveDialog(); }
@@ -1627,7 +1627,7 @@ document.addEventListener('click', async e => {
     S.plan.blockedDates = uniq([...(S.plan.blockedDates||[]).filter(d=>d!==to), from]);
     S.plan.sessions.sort((x,y)=>x.date.localeCompare(y.date));
     render(); await save('plan'); icuAutoSync();
-    if(sample && !busy) askClaude(`Ich habe „${s.title}“ von ${fmtDay(from)} auf ${fmtDay(to)} verschoben, weil ich am ${fmtDay(from)} nicht kann. Die Einheit bleibt am ${fmtDay(to)}, am ${fmtDay(from)} bitte nichts planen. Prüfe Abstände und Belastung der angrenzenden Einheiten und passe den Plan an: Einheiten bei Bedarf kürzen oder tauschen und dafür andere verlängern, damit der Wochenumfang passt.`, {auto:true});
+    if(sample && !busy) askClaude(`Ich habe „${s.title}“ von ${fmtDay(from)} auf ${fmtDay(to)} verschoben, weil ich am ${fmtDay(from)} nicht kann. Die Einheit bleibt am ${fmtDay(to)}, am ${fmtDay(from)} bitte nichts planen. Prüfe Abstände und Trainingslast der angrenzenden Einheiten und passe den Plan an: Einheiten bei Bedarf kürzen oder tauschen und dafür andere verlängern, damit der Wochenumfang passt.`, {auto:true});
   }
   else if(a==='rm-complaint'){ confirmRm=Number(b.dataset.i); render(); }
   else if(a==='rm-no'){ confirmRm=null; render(); }
@@ -1638,7 +1638,7 @@ document.addEventListener('click', async e => {
     const mon=b.dataset.mon, sun=addDays(mon,6);
     const dlg=((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun)
       .map(m=>(m.role==='user'?userName()+': ':'Claude: ')+m.text.slice(0,400)).join('\n').slice(-6000);
-    askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): Training in Stichworten, ${careMode()?'Beschwerdesignale':'Befinden'}, Belastung, Auswertung und was im Dialog besprochen wurde. Liefere unter "assessments" für jede Einheit dieser Woche (IDs ${acts().filter(x=>x.date>=mon&&x.date<=sun&&x.sport!=='walk').map(x=>x.id).join(', ')}) eine Einschätzung mit "text" und "short" nach den aktuellen Regeln, auch wenn schon eine existiert${(()=>{const st=acts().filter(x=>x.date>=mon&&x.date<=sun&&staleAssess(x)).map(x=>x.id);return st.length?' und erneuere die durch neuere Rückmeldungen überholten Einschätzungen (IDs '+st.join(', ')+')':'';})()}. Stütze dich nur auf den aktuellen Stand der Rückmeldungen.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`, {auto:true, display:`Wochenfazit für die Woche ab ${fmtDay(mon)} aktualisieren`});
+    askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): Training in Stichworten, ${careMode()?'Beschwerdesignale':'Befinden'}, RPE, Trainingslast, Auswertung und was im Dialog besprochen wurde. Liefere unter "assessments" für jede Einheit dieser Woche (IDs ${acts().filter(x=>x.date>=mon&&x.date<=sun&&x.sport!=='walk').map(x=>x.id).join(', ')}) eine Einschätzung mit "text" und "short" nach den aktuellen Regeln, auch wenn schon eine existiert${(()=>{const st=acts().filter(x=>x.date>=mon&&x.date<=sun&&staleAssess(x)).map(x=>x.id);return st.length?' und erneuere die durch neuere Rückmeldungen überholten Einschätzungen (IDs '+st.join(', ')+')':'';})()}. Stütze dich nur auf den aktuellen Stand der Rückmeldungen.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`, {auto:true, display:`Wochenfazit für die Woche ab ${fmtDay(mon)} aktualisieren`});
   }
   else if(a==='replan') askClaude('Bitte plane die nächsten 14 Tage auf Basis meiner letzten Einheiten und Rückmeldungen neu.');
   else if(a==='day' || a==='sport'){
