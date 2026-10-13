@@ -229,6 +229,9 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .icubar .btn{width:100%}
 .btn.icu{border-color:var(--accent);color:var(--accent)}
 .icuok{align-self:center;font-size:13px;color:var(--ok);font-weight:600}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 0;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 /* Kompakte Höhen */
 header.bar{padding:8px 16px}
 .brand h1{font-size:21px}
@@ -519,7 +522,7 @@ function moveControl(s){
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   const is = icuState(s);
-  const icuBtn = is==='new'||is==='changed' ? `<button class="btn icu" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${is==='changed'?'Änderung an Uhr senden':'An Uhr senden'}</button>` : is==='ok' ? `<span class="icuok">✓ auf der Uhr</span>` : '';
+  const icuBtn = is==='new'||is==='changed' ? `<button class="btn icu" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${is==='changed'?'Änderung an Uhr senden':'An Uhr senden'}</button>` : is==='ok' ? `<span class="icuok">✓ auf der Uhr · ${ICU_LABEL[icuModeFor(icuEntry(s))]}</span>` : '';
   return `<div class="move">${icuBtn}<button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
 }
 function cancelledCard(s){
@@ -532,6 +535,19 @@ let cancelDlg = null; // {date, title, preset, reason}
 let swapDlg = null; // {date, title, text}
 let insightDlg = null; // {edit: index|null}
 let bgDlg = null;   // {edit:bool}
+let icuDlg = null; // {ext, title, date, sport, mode}
+function renderIcuDialog(el){
+  const opts = ICU_MODES[icuDlg.sport] || ICU_MODES.run;
+  const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rolle und Rad mit Leistungsmesser.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der Belastung.'}[icuDlg.mode]||'';
+  el.innerHTML = `<button class="overlay" data-action="icu-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="icTitle">
+      <h2 id="icTitle">An die Uhr senden</h2>
+      <p class="muted">„${esc(icuDlg.title)}“ · ${esc(fmtDay(icuDlg.date))}</p>
+      <div class="fld"><span>Zielvorgabe</span><div class="seg">${opts.map(([v,l])=>`<button data-action="icu-pick" data-m="${v}" aria-pressed="${icuDlg.mode===v}">${l}</button>`).join('')}</div></div>
+      <p class="note">${esc(hint)}</p>
+      <div class="row end"><button class="btn" data-action="icu-close">Abbrechen</button><button class="btn primary" data-action="icu-send" ${icuBusy?'disabled':''}>Senden</button></div>
+    </div>`;
+}
 let guideDlg = null; // {label, detail, key, loading, error}
 const guides = () => (S.log && S.log.guides) || {};
 function renderGuideDialog(el){
@@ -676,6 +692,7 @@ function renderMoveDialog(){
   if(bgDlg){ renderBgDialog(el); return; }
   if(histDlg){ renderHistDialog(el); return; }
   if(guideDlg){ renderGuideDialog(el); return; }
+  if(icuDlg){ renderIcuDialog(el); return; }
   if(!moveDlg){ el.innerHTML=''; return; }
   const t = today(), td = new Set(profile().trainingDays||[]);
   const days = Array.from({length:14},(_,i)=>addDays(t,i)).map(d => {
@@ -871,7 +888,7 @@ document.addEventListener('change', e => {
   else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
   save('profile');
 });
-document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
+document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg||icuDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
 const GLOSSAR = `<dl class="gloss">
   <div><dt>RE · Relative Effort</dt><dd>Stravas Belastungswert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 niedrig (Entlastung), 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
@@ -988,8 +1005,11 @@ function connCard(){
     <div class="fld"><span>Garmin (über intervals.icu)</span>
       <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 7 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
-      <label class="fld" for="cfIcuMode"><span>Zielvorgabe auf der Uhr</span>
+      <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="fld" for="cfIcuRide"><span>Zielvorgabe Rad</span>
+        <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt (Prozent der FTP)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <p class="note">Beim Senden einer einzelnen Einheit kannst du die Vorgabe jeweils neu wählen.</p>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
       ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>
@@ -1007,7 +1027,7 @@ window.onBackupLoaded = text => {
   confirmImport = obj; tab='einstellungen'; render();
 };
 window.appBack = () => {
-  if(moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; renderMoveDialog(); return true; }
+  if(moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg||icuDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return true; }
   if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
   return false;
 };
@@ -1278,7 +1298,7 @@ async function applyUpdates(u){
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
     S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
-      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[], icuSent:(S.plan&&S.plan.icuSent)||{}, icuLast:(S.plan&&S.plan.icuLast)||null};
+      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[], icuSent:(S.plan&&S.plan.icuSent)||{}, icuModes:(S.plan&&S.plan.icuModes)||{}, icuLast:(S.plan&&S.plan.icuLast)||null};
     plc=true;
   }
   const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
@@ -1346,6 +1366,11 @@ function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.va
 
 /* ---------- Garmin über intervals.icu ---------- */
 const icuMode = () => (profile().icu && profile().icu.mode) || 'hr';
+const icuRideMode = () => (profile().icu && profile().icu.rideMode) || 'hr';
+const ICU_MODES = {run:[['hr','Herzfrequenz'],['pace','Pace'],['rpe','Belastung']], ride:[['hr','Herzfrequenz'],['watt','Watt'],['rpe','Belastung']]};
+const ICU_LABEL = {hr:'Herzfrequenz', pace:'Pace', watt:'Watt', rpe:'Belastung'};
+/* Zielvorgabe einer Einheit: eigene Wahl beim Einzelsenden, sonst Grundeinstellung der Sportart */
+function icuModeFor(e){ const o = S.plan && S.plan.icuModes && S.plan.icuModes[e.ext]; if(o) return o; return normSport(e.s.sport)==='ride' ? icuRideMode() : icuMode(); }
 const icuAuto = () => !!(profile().icu && profile().icu.auto);
 let icuBusy = false, icuMsg = null, icuTimer = null;
 function icuCall(method, path, body){ return window.__bridgeCall('intervals', body===undefined?{method, path}:{method, path, body}); }
@@ -1367,44 +1392,45 @@ function icuState(s0){
   if(!IN_APP || !appStatus().icuKey) return null;
   const e = icuEntry(s0); if(!e) return null;
   const h = (S.plan && S.plan.icuSent || {})[e.ext];
-  return !h ? 'new' : h===icuHash(['v3',e.s,icuMode()]) ? 'ok' : 'changed';
+  return !h ? 'new' : h===icuHash(['v3',e.s,icuModeFor(e)]) ? 'ok' : 'changed';
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
-async function icuTexts(items, mode){
+async function icuTexts(items){
   const z = S.log && S.log.zones && S.log.zones.hrMins;
   const prompt = `Wandle Trainingseinheiten in die Workout-Syntax von intervals.icu um (für die Übertragung auf eine Garmin-Uhr).
-Zielvorgabe: ${mode==='hr'?'Herzfrequenz-Zonen':mode==='pace'?'Pace (nur wo die Einheit eine Pace nennt; sonst HF-Zone)':'keine Zielbereiche, Belastung nur als Text'}.
-HF-Zonen (Untergrenzen Z1–Z5): ${z?z.join(', '):'unbekannt'}.
+Jede Einheit hat ein Feld "zielvorgabe": hr, pace, watt oder rpe.
+HF-Zonen (Untergrenzen Z1–Z5): ${z?z.join(', '):'unbekannt'}. FTP: ${S.log&&S.log.zones&&S.log.zones.ftp||'unbekannt'} W.
 
 Regeln:
 - Abschnitte als Überschriftzeilen ohne Bindestrich, z. B. „Einlaufen“, „Hauptteil 4x“, „Auslaufen“. Wiederholungen nur als „… 4x“ in der Überschrift, keine verschachtelten Wiederholungen, je eine Leerzeile vor und nach einem Wiederholungsblock.
 - Jeder Schritt: „- <Hinweis> <Dauer> <Ziel>“. Dauer als Zeit (10m, 30s, 1m30) oder Strecke mit Dezimalpunkt (1.5km). „m“ heißt Minuten. Keine weiteren Zahlen mit Einheit im Hinweis.
 - Hinweis kurz auf Deutsch, immer mit der Belastung, z. B. „Locker, Belastung 2–3“ (Bereich mit Halbgeviertstrich).
-- Ziel: ${mode==='hr'?'„Z2 HR“ oder „Z1-Z2 HR“':mode==='pace'?'„5:35-5:20/km Pace“ (langsamere Pace zuerst), sonst „Z2 HR“':'kein Ziel, Zeile endet nach der Dauer'}.
+- Ziel je nach "zielvorgabe": hr → „Z2 HR“ oder „Z1-Z2 HR“; pace → „5:35-5:20/km Pace“ (langsamere Pace zuerst), ohne bekannte Pace stattdessen HF-Zone; watt (nur Rad) → Prozent der FTP wie „55-75%“; rpe → kein Ziel, die Zeile endet nach der Dauer.
 - Nur echte zeitliche Abschnitte werden Schritte (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen). Verhaltenshinweise ohne eigene Dauer, z. B. „Bergab: steilere Abstiege gehen“, „Kadenz hoch halten“ oder „flache Strecke wählen“, sind kein eigener Schritt und keine eigene Überschrift; nimm sie kurz in den Hinweis des Laufschritts auf, zu dem sie gehören (z. B. „Locker, bergab gehen, Belastung 3–4“).
 - Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
 - Nur der Lauf- bzw. Radteil. Lass Kraftübungen, Gymnastik, Dehnen und Mobilisation komplett weg, auch nicht als Text- oder Überschriftzeile; sie würden auf der Uhr als Laufabschnitt erscheinen.
 
 Einheiten:
-${JSON.stringify(items.map(({s,ext})=>({key:ext, sportart:normSport(s.sport), titel:s.title, ziel:s.goal, km:s.distanceKm, minuten:s.durationMin, schritte:s.steps})))}
+${JSON.stringify(items.map(({s,ext,mode})=>({key:ext, zielvorgabe:mode, sportart:normSport(s.sport), titel:s.title, ziel:s.goal, km:s.distanceKm, minuten:s.durationMin, schritte:s.steps})))}
 
 Antworte nur mit JSON: {"workouts":[{"key":"…","text":"…"}]}`;
   const res = await sample.json(prompt, {cache:false});
   const map = {}; (res && res.workouts || []).forEach(w => { if(w && w.key && w.text) map[w.key] = String(w.text).slice(0,4000); });
   return map;
 }
-async function icuSync(manual, onlyExt){
+async function icuSync(manual, onlyExt, forceMode){
   if(!IN_APP || icuBusy || !S.plan) return;
   const st = appStatus(); if(!st.icuKey){ if(manual){ icuMsg={err:true,text:'Bitte zuerst den intervals.icu-API-Schlüssel speichern.'}; render(); } return; }
   if(!sample){ icuMsg={err:true,text:'Claude ist nicht verfügbar.'}; render(); return; }
   icuBusy = true; icuMsg = {text:'Einheiten werden umgewandelt …'}; render();
   try{
-    const mode = icuMode(), items = onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions();
+    if(onlyExt && forceMode){ S.plan.icuModes = Object.assign({}, S.plan.icuModes||{}, {[onlyExt]:forceMode}); }
+    const items = (onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions()).map(x => Object.assign(x, {mode:icuModeFor(x)}));
     const sent = Object.assign({}, S.plan.icuSent||{});
-    const changed = items.filter(({s,ext}) => sent[ext] !== icuHash(['v3',s,mode]));
+    const changed = items.filter(({s,ext,mode}) => onlyExt || sent[ext] !== icuHash(['v3',s,mode]));
     let created = 0, deleted = 0;
     if(changed.length){
-      const texts = await icuTexts(changed, mode);
+      const texts = await icuTexts(changed);
       const events = changed.filter(({ext})=>texts[ext]).map(({s,ext}) => ({
         category:'WORKOUT', start_date_local:s.date+'T00:00:00', type:ICU_TYPE[normSport(s.sport)]||'Run',
         name:s.title||'Training', description:texts[ext], external_id:ext,
@@ -1412,7 +1438,7 @@ async function icuSync(manual, onlyExt){
       if(events.length){
         icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
         await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
-        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v3',it.s,mode]); });
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v3',it.s,it.mode]); });
         created = events.length;
       }
     }
@@ -1422,10 +1448,10 @@ async function icuSync(manual, onlyExt){
     const stale = onlyExt ? [] : Object.keys(sent).filter(k => !keep.has(k));
     if(stale.length){
       await icuCall('PUT','/athlete/0/events/bulk-delete', stale.map(k=>({external_id:k})));
-      stale.forEach(k => delete sent[k]); deleted = stale.length;
+      stale.forEach(k => { delete sent[k]; if(S.plan.icuModes) delete S.plan.icuModes[k]; }); deleted = stale.length;
     }
     S.plan.icuSent = sent; S.plan.icuLast = new Date().toISOString(); await save('plan');
-    if(onlyExt && created) window.Android.toast('Einheit an intervals.icu gesendet.');
+    if(onlyExt && created) window.Android.toast(`Einheit mit Zielvorgabe ${ICU_LABEL[items[0].mode]} gesendet.`);
     icuMsg = {text: created||deleted ? `${created} Einheit${created===1?'':'en'} gesendet${deleted?`, ${deleted} entfernt`:''}. Garmin Connect übernimmt sie in der Regel innerhalb weniger Minuten.` : 'Alles aktuell, nichts zu senden.'};
   }catch(e){
     const c = e && e.code;
@@ -1583,15 +1609,16 @@ document.addEventListener('click', async e => {
   else if(a==='cf-icu-save'){
     const k=document.getElementById('cfIcu'); if(k && k.value.trim()) window.Android.setIntervals(k.value.trim());
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
-    const m=document.getElementById('cfIcuMode'), au=document.getElementById('cfIcuAuto');
-    const oldMode = icuMode();
-    pr.icu = {mode: m?m.value:'hr', auto: !!(au&&au.checked)};
+    const m=document.getElementById('cfIcuMode'), rm=document.getElementById('cfIcuRide'), au=document.getElementById('cfIcuAuto');
+    pr.icu = {mode: m?m.value:'hr', rideMode: rm?rm.value:'hr', auto: !!(au&&au.checked)};
     await save('profile'); window.Android.toast('Garmin-Einstellungen gespeichert.');
-    if(oldMode!==pr.icu.mode && S.plan) { S.plan.icuSent = {}; }
     render();
   }
   else if(a==='icu-sync'){ icuSync(true); }
-  else if(a==='icu-one'){ const s0 = sessions().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); const e = s0 && icuEntry(s0); if(e) icuSync(true, e.ext); }
+  else if(a==='icu-one'){ const s0 = sessions().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); const e = s0 && icuEntry(s0); if(e){ icuDlg = {ext:e.ext, title:s0.title||'Training', date:s0.date, sport:normSport(s0.sport), mode:icuModeFor(e)}; renderMoveDialog(); } }
+  else if(a==='icu-pick'){ if(icuDlg){ icuDlg.mode = b.dataset.m; renderMoveDialog(); } }
+  else if(a==='icu-close'){ icuDlg=null; renderMoveDialog(); }
+  else if(a==='icu-send'){ const d=icuDlg; icuDlg=null; renderMoveDialog(); if(d) icuSync(true, d.ext, d.mode); }
   else if(a==='cf-export'){ if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(window.__ldExport()))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); }
   else if(a==='cf-import'){ window.Android.pickBackup(); }
   else if(a==='cf-import-no'){ confirmImport=null; render(); }
