@@ -254,6 +254,16 @@ nav.tabs button{padding:4px 2px}
 .ins .ib{border:0;background:none;color:var(--muted);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer;border-radius:6px}
 .ins .ib:hover{color:var(--accent);background:var(--accent-soft)}
 .ins textarea{width:100%;border:1px solid var(--accent);border-radius:8px;padding:7px 9px;background:var(--surface);resize:vertical}
+.sheet.tall{max-height:88%}
+.hist{display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow-y:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.hist .msg{max-width:92%;font-size:14px}
+.hist .msg.assistant{background:var(--surface)}
+.hist .msg.autouser{opacity:.85}
+.hday{align-self:center;font-size:12.5px;font-weight:600;color:var(--muted);padding:2px 10px;border-radius:999px;background:var(--sunk)}
+.htime{display:block;font-size:11.5px;opacity:.7;margin-top:3px;text-align:right}
+.hauto{display:block;font-size:11.5px;font-weight:600;opacity:.8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.bgview{white-space:pre-wrap;max-height:50vh;overflow-y:auto;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.bgta{width:100%;border:1px solid var(--accent);border-radius:10px;padding:9px 11px;background:var(--surface);resize:vertical}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -452,6 +462,42 @@ let moveDlg = null; // {from, title, to}
 let cancelDlg = null; // {date, title, preset, reason}
 let swapDlg = null; // {date, title, text}
 let insightDlg = null; // {edit: index|null}
+let bgDlg = null;   // {edit:bool}
+let histDlg = null; // {confirm:bool}
+function renderBgDialog(el){
+  const bg = profile().background || '';
+  el.innerHTML = `<button class="overlay" data-action="bg-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bgTitle">
+      <h2 id="bgTitle">Hintergrund für die Planung</h2>
+      <p class="muted">Vorgeschichte, Rahmenbedingungen und Gewohnheiten. Claude bekommt den Text bei jeder Planung und passt ihn an, wenn du im Dialog etwas Grundlegendes änderst.</p>
+      ${bgDlg.edit
+        ? `<textarea id="bgText" class="bgta" rows="9" aria-label="Hintergrund bearbeiten">${esc(bg)}</textarea>
+           <div class="row end"><button class="btn" data-action="bg-edit-no">Abbrechen</button><button class="btn primary" data-action="bg-save">Speichern</button></div>`
+        : `<div class="bgview">${bg?esc(bg):'<span class="muted">Noch keine Angaben.</span>'}</div>
+           <div class="row end"><button class="btn" data-action="bg-edit">Bearbeiten</button><button class="btn primary" data-action="bg-close">Fertig</button></div>`}
+    </div>`;
+  const ta = document.getElementById('bgText'); if(ta) ta.focus();
+}
+function renderHistDialog(el){
+  const msgs = (S.chat && S.chat.messages) || [];
+  let lastDay = '', body = '';
+  msgs.forEach(m => {
+    const d = m.ts ? ymd(new Date(m.ts)) : '';
+    if(d && d!==lastDay){ lastDay=d; body += `<div class="hday">${esc(fmtDay(d))}</div>`; }
+    const time = m.ts ? new Date(m.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
+    body += `<div class="msg ${m.error?'assistant error':m.role}${m.auto?' autouser':''}">${m.auto?'<span class="hauto">automatisch</span>':''}${esc(m.text)}<span class="htime">${esc(time)}</span></div>`;
+  });
+  el.innerHTML = `<button class="overlay" data-action="hist-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="hiTitle">
+      <h2 id="hiTitle">Dialogverlauf</h2>
+      <p class="muted">${msgs.length} Nachrichten gespeichert, höchstens die letzten 80.</p>
+      <div class="hist" id="histBox">${body || '<p class="muted">Noch keine Nachrichten.</p>'}</div>
+      ${histDlg.confirm
+        ? `<p>Den gesamten Dialog löschen? Plan, Ziel, Erkenntnisse und Aktivitäten bleiben erhalten.</p><div class="row end"><button class="btn" data-action="hist-del-no">Abbrechen</button><button class="btn primary" data-action="hist-del-yes">Löschen</button></div>`
+        : `<div class="row end">${msgs.length?'<button class="btn" data-action="hist-del">Verlauf löschen</button>':''}<button class="btn primary" data-action="hist-close">Fertig</button></div>`}
+    </div>`;
+  const box = document.getElementById('histBox'); if(box) box.scrollTop = box.scrollHeight;
+}
 const insights = () => (profile().insights||[]).filter(Boolean);
 function setInsights(list){
   const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
@@ -507,6 +553,8 @@ function renderMoveDialog(){
   if(cancelDlg){ renderCancelDialog(el); return; }
   if(swapDlg){ renderSwapDialog(el); return; }
   if(insightDlg){ renderInsightDialog(el); return; }
+  if(bgDlg){ renderBgDialog(el); return; }
+  if(histDlg){ renderHistDialog(el); return; }
   if(!moveDlg){ el.innerHTML=''; return; }
   const t = today(), td = new Set(profile().trainingDays||[]);
   const days = Array.from({length:14},(_,i)=>addDays(t,i)).map(d => {
@@ -685,7 +733,7 @@ document.addEventListener('change', e => {
   else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
   save('profile');
 });
-document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
+document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
 const GLOSSAR = `<dl class="gloss">
   <div><dt>RE · Relative Effort</dt><dd>Stravas Belastungswert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
@@ -813,7 +861,7 @@ window.onBackupLoaded = text => {
   confirmImport = obj; tab='einstellungen'; render();
 };
 window.appBack = () => {
-  if(moveDlg||cancelDlg||swapDlg||insightDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; renderMoveDialog(); return true; }
+  if(moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; renderMoveDialog(); return true; }
   if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
   return false;
 };
@@ -836,11 +884,10 @@ function renderSettings(){
       <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div>
     <div class="card"><div class="row"><h2>Erkenntnisse</h2><button class="btn" data-action="ins-open">Ansehen${insights().length?' ('+insights().length+')':''}</button></div>
       <p class="muted">Was Claude sich dauerhaft über dein Training merkt.</p></div>
-    <div class="card"><h2>Hintergrund für die Planung</h2><p class="muted">Diese Angaben bekommt Claude bei jeder Planung mit. Ändern kannst du sie im Dialog.</p>
-      <p class="rationale">${esc(pr.background||'Noch keine Angaben.')}</p></div>
-    <div class="card"><h2>Dialogverlauf</h2>
-      ${confirmClear?`<p>Den gesamten Dialog mit Claude löschen? Plan, Ziel und Aktivitäten bleiben erhalten.</p><div class="row"><button class="btn primary" data-action="clear-yes">Löschen</button><button class="btn" data-action="clear-no">Abbrechen</button></div>`
-      :`<div class="row"><span class="muted">${(S.chat&&S.chat.messages||[]).length} Nachrichten gespeichert</span><button class="btn" data-action="clear">Verlauf löschen</button></div>`}</div>
+    <div class="card"><div class="row"><h2>Hintergrund</h2><button class="btn" data-action="bg-open">Ansehen</button></div>
+      <p class="muted">Vorgeschichte und Rahmen, die Claude bei jeder Planung bekommt.</p></div>
+    <div class="card"><div class="row"><h2>Dialogverlauf</h2><button class="btn" data-action="hist-open">Ansehen${(S.chat&&S.chat.messages||[]).length?' ('+(S.chat.messages.length)+')':''}</button></div>
+      <p class="muted">Gespeicherte Nachrichten zwischen dir und Claude.</p></div>
     ${IN_APP?connCard():''}`;
 }
 
@@ -1195,6 +1242,16 @@ document.addEventListener('click', async e => {
     pr.complaints = list; markChange('complaints', 'Beschwerden: '+(list.join(', ')||'keine')); render(); save('profile');
   }
   else if(a==='replan-changes') replanFromChanges();
+  else if(a==='bg-open'){ bgDlg={edit:false}; renderMoveDialog(); }
+  else if(a==='bg-close'){ bgDlg=null; renderMoveDialog(); }
+  else if(a==='bg-edit'){ bgDlg.edit=true; renderMoveDialog(); }
+  else if(a==='bg-edit-no'){ bgDlg.edit=false; renderMoveDialog(); }
+  else if(a==='bg-save'){ const ta=document.getElementById('bgText'); const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile()))); pr.background=(ta?ta.value:'').trim().slice(0,2000); save('profile'); bgDlg.edit=false; renderMoveDialog(); }
+  else if(a==='hist-open'){ histDlg={confirm:false}; renderMoveDialog(); }
+  else if(a==='hist-close'){ histDlg=null; renderMoveDialog(); render(); }
+  else if(a==='hist-del'){ histDlg.confirm=true; renderMoveDialog(); }
+  else if(a==='hist-del-no'){ histDlg.confirm=false; renderMoveDialog(); }
+  else if(a==='hist-del-yes'){ S.chat={messages:[]}; showAll=false; save('chat'); histDlg.confirm=false; renderMoveDialog(); render(); }
   else if(a==='ins-open'){ insightDlg={edit:null}; renderMoveDialog(); }
   else if(a==='ins-close'){ insightDlg=null; renderMoveDialog(); render(); }
   else if(a==='ins-add'){ const i=document.getElementById('insNew'); const v=(i&&i.value||'').trim(); if(!v) return; setInsights([...insights(), v]); renderMoveDialog(); const n=document.getElementById('insNew'); if(n) n.focus(); }
