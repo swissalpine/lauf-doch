@@ -117,7 +117,8 @@
       }
       return {
         has_heartrate: !!a.has_heartrate, average_heartrate: a.average_heartrate || null, max_heartrate: a.max_heartrate || null,
-        average_watts: a.average_watts || null, has_device_watts: !!a.device_watts, laps: laps
+        average_watts: a.average_watts || null, has_device_watts: !!a.device_watts, laps: laps,
+        perceived_exertion: a.perceived_exertion != null ? a.perceived_exertion : null
       };
     }
   };

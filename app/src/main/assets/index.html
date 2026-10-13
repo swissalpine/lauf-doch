@@ -273,6 +273,8 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tg{font-size:12.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -444,14 +446,16 @@ function weekStats(mon){
   return {re: wa.reduce((s,a)=>s+(a.re||0),0), acwr: loadAt(end).acwr, ef: efs.length? efs.reduce((s,x)=>s+x,0)/efs.length : null,
     km: runs.reduce((s,a)=>s+a.distKm,0)};
 }
+/* Belastung (RPE 1–10): eigene Rückmeldung, sonst „Wahrgenommene Anstrengung“ aus Strava */
+function rpeOf(a){ const f=fb(a.id); if(f && f.rpe!=null) return {v:f.rpe, src:'du'}; if(a.perf && a.perf.rpe!=null) return {v:a.perf.rpe, src:'Strava'}; return null; }
 const painClass = p => p==null?'':(p<=2?'ok':p<=4?'warn':'crit');
 
 const complaints = () => (profile().complaints||[]).filter(Boolean);
 const careMode = () => complaints().length>0;
 const userName = () => profile().name || 'der Nutzer';
-const fbTemplate = d => careMode()
-  ? `Rückmeldung zur Einheit vom ${fmtDay(d)}: Schmerz während _/10, danach _/10, Belastung _/10. `
-  : `Rückmeldung zur Einheit vom ${fmtDay(d)}: Belastung _/10, Befinden: `;
+const fbTemplate = (d, hasRpe) => careMode()
+  ? `Rückmeldung zur Einheit vom ${fmtDay(d)}: Schmerz während _/10, danach _/10${hasRpe?'':', Belastung _/10'}. `
+  : `Rückmeldung zur Einheit vom ${fmtDay(d)}: ${hasRpe?'':'Belastung _/10, '}Befinden: `;
 const profile = () => S.profile || {goal:null, trainingDays:[], sports:['run','ride','strength'], background:''};
 const acts = () => (S.log && Array.isArray(S.log.activities)) ? S.log.activities : [];
 const fb = id => (S.log && S.log.feedback && S.log.feedback[id]) || null;
@@ -483,6 +487,7 @@ function render(){
 /* Einheit auf einen anderen Tag verschieben */
 function moveControl(s){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
+  if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   return `<div class="move"><button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
 }
@@ -606,6 +611,13 @@ function renderMoveDialog(){
     </div>`;
 }
 
+function stepLi(st){
+  const t = [];
+  if(st.rpe) t.push(`<span class="tg">Belastung ${esc(st.rpe)}</span>`);
+  if(st.hr) t.push(`<span class="tg">HF ${esc(st.hr)}</span>`);
+  if(st.pace) t.push(`<span class="tg">${esc(st.pace)} /km</span>`);
+  return `<li><span class="l">${esc(st.label||'')}</span><span class="d">${esc(st.detail||'')}${t.length?`<span class="tgs">${t.join('')}</span>`:''}</span></li>`;
+}
 function plannedCard(s, label){
   const steps = Array.isArray(s.steps) ? s.steps : [];
   const target = [s.distanceKm ? fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km' : '', s.durationMin ? 'ca. '+s.durationMin+' min' : ''].filter(Boolean).join(' · ');
@@ -616,7 +628,7 @@ function plannedCard(s, label){
     <h3>${esc(s.title||'Training')}</h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
-    ${steps.length?`<ol class="steps">${steps.map(st=>`<li><span class="l">${esc(st.label||'')}</span><span class="d">${esc(st.detail||'')}</span></li>`).join('')}</ol>`:''}
+    ${steps.length?`<ol class="steps">${steps.map(stepLi).join('')}</ol>`:''}
     ${moveControl(s)}
   </article>`;
 }
@@ -633,10 +645,11 @@ function doneCard(a, planned, extra){
     ['Relative Effort', a.re ?? '–']
   ];
   const chips = [];
+  const rp = rpeOf(a); if(rp) chips.push(`<span class="chip">Belastung ${rp.v}/10${rp.src==='Strava'?' (Strava)':''}</span>`);
   if(f){
     if(f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
     if(f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
-    if(f.rpe!=null) chips.push(`<span class="chip">Belastung ${f.rpe}/10</span>`);
+
     if(f.note) chips.push(`<span class="chip">${esc(f.note)}</span>`);
   }
   return `<article class="card">
@@ -644,7 +657,7 @@ function doneCard(a, planned, extra){
     <h3>${esc(a.name)}</h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
-    ${chips.length?`<div class="chips">${chips.join('')}</div>`:`<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'} und Belastung.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date))}">Rückmeldung geben</button></div>`}
+    ${(f && (f.painDuring!=null||f.painAfter!=null||f.note)) || (!careMode() && rp) ?`<div class="chips">${chips.join('')}</div>`:`${chips.length?`<div class="chips">${chips.join('')}</div>`:''}<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'}${rp?'':' und Belastung'}.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>`}
     ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div></div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
     ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
   </article>`;
@@ -662,7 +675,7 @@ function perfBlock(a){
   if(r.decoupling!=null) c.push(`<span class="chip ${decClass(r.decoupling)}">Entkopplung ${fmtNum(r.decoupling,1)} %</span>`);
   if(r.if) c.push(`<span class="chip">IF ${fmtNum(r.if,2)} · TSS ${r.tss}</span>`);
   const L = loadAt(a.date), [cls,lbl] = acwrInfo(L.acwr);
-  c.push(`<span class="chip ${cls}">Belastung 7/28 Tage ${L.acwr==null?'–':fmtNum(L.acwr,2)} · ${lbl}</span>`);
+  c.push(`<span class="chip ${cls}">Trainingslast 7/28 ${L.acwr==null?'–':fmtNum(L.acwr,2)} · ${lbl}</span>`);
   return `<div class="perf"><b>Leistung</b><div class="chips">${c.join('')}</div></div>`;
 }
 
@@ -724,7 +737,7 @@ function renderPlan(){
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       return `<details><summary><span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
-        ${steps.length?`<ol class="steps">${steps.map(st=>`<li><span class="l">${esc(st.label||'')}</span><span class="d">${esc(st.detail||'')}</span></li>`).join('')}</ol>`:''}
+        ${steps.length?`<ol class="steps">${steps.map(stepLi).join('')}</ol>`:''}
         ${moveControl(s)}
       </details>`;
     }).join('');
@@ -815,7 +828,7 @@ function renderHistory(){
       const chips = [];
       if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
       else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
-      if(f && f.rpe!=null) chips.push(`<span class="chip">RPE ${f.rpe}</span>`);
+      { const rp=rpeOf(a); if(rp) chips.push(`<span class="chip">Belastung ${rp.v}/10</span>`); }
       const short = as ? (as.short || as.text) : (f && f.note) || '';
       const r = analyze(a); let pl = '';
       if(r){
@@ -849,7 +862,7 @@ function renderHistory(){
     <div class="card"><div class="wsum">${metrics.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
     ${(() => { const st=weekStats(mon), pv=weekStats(addDays(mon,-7)); const [cls,lbl]=acwrInfo(st.acwr);
       const efd = st.ef && pv.ef ? (st.ef-pv.ef)/pv.ef*100 : null;
-      return `<div class="card"><div class="row"><div class="ht"><h2>Belastung und Form</h2><button class="info" data-action="info" aria-expanded="${infoOpen}" aria-label="Erklärung der Kennzahlen">i</button></div><span class="badge ${cls}">Belastung ${lbl}</span></div>
+      return `<div class="card"><div class="row"><div class="ht"><h2>Trainingslast und Form</h2><button class="info" data-action="info" aria-expanded="${infoOpen}" aria-label="Erklärung der Kennzahlen">i</button></div><span class="badge ${cls}">Last ${lbl}</span></div>
         ${loadChart(mon)}
         <div class="wsum">
           <div class="metric"><span class="v">${st.re}</span><span class="k">Relative Effort (Woche)</span></div>
@@ -928,7 +941,7 @@ function renderSettings(){
 function suggestions(){
   const t = today(), out = [];
   const add = (label, text) => out.push({label, text: text ?? label});
-  const noFb = a => { const f=fb(a.id); return !f || (f.painDuring==null && f.painAfter==null && f.rpe==null); };
+  const noFb = a => { const f=fb(a.id); return careMode() ? (!f || (f.painDuring==null && f.painAfter==null)) : !rpeOf(a); };
   if(tab==='heute'){
     const planned = active().filter(s=>s.date===t);
     const doneToday = acts().filter(a=>a.date===t);
@@ -936,7 +949,7 @@ function suggestions(){
     if(open.length) add('Wie sieht das heutige Training genau aus?');
     else if(!planned.length && !doneToday.length) add('Ich möchte heute doch etwas machen.', 'Ich möchte heute doch etwas machen: ');
     const pending = acts().filter(a=>a.sport==='run' && a.date>=addDays(t,-3) && noFb(a))[0];
-    if(pending) add(`Rückmeldung zum ${a2s(pending)} vom ${fmtDay(pending.date)} geben`, fbTemplate(pending.date));
+    if(pending) add(`Rückmeldung zum ${a2s(pending)} vom ${fmtDay(pending.date)} geben`, fbTemplate(pending.date, !!rpeOf(pending)));
     if(careMode()) add(`${complaints()[0]} heute …`, `${complaints()[0]}: Heute fühlt es sich `);
     else add('Wie ich mich heute fühle …', 'Heute fühle ich mich ');
   } else if(tab==='plan'){
@@ -1012,13 +1025,14 @@ async function syncStrava(){
       const z = (await mcp.callTool(SERVER,'get_athlete_zones',{},{cache:false})).payload || {};
       if(Array.isArray(z.heart_rate_zones)) log.zones = {hrMins: z.heart_rate_zones.map(x=>x.min||0), ftp: z.ftp||null};
     }catch(_){}
-    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !a.perf && daysUntil(a.date)>=-60).slice(0,15);
+    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && (!a.perf || (a.perf.rpe==null && daysUntil(a.date)>=-3)) && daysUntil(a.date)>=-60).slice(0,15);
     for(let i=0;i<need.length;i++){
       syncMsg = {text:`Leistungsdaten ${i+1} von ${need.length} …`}; render();
       try{
         const p = (await mcp.callTool(SERVER,'get_activity_performance',{activity_id:need[i].id},{cache:false})).payload || {};
         need[i].perf = {hr:p.has_heartrate&&p.average_heartrate?Math.round(p.average_heartrate*10)/10:null, hrMax:p.max_heartrate||null,
           watts:p.average_watts?Math.round(p.average_watts):null, deviceWatts:!!p.has_device_watts,
+          rpe:(p.perceived_exertion ?? p.perceivedExertion ?? null)!=null ? Math.round(Number(p.perceived_exertion ?? p.perceivedExertion)) : null,
           laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null}))};
       }catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
     }
@@ -1058,7 +1072,7 @@ function buildContext(){
       entkopplungProzent:r.decoupling!=null?Math.round(r.decoupling*10)/10:undefined, IF:r.if?Math.round(r.if*100)/100:undefined, TSS:r.tss,
       splits:(a.perf.laps||[]).map(l=>`${fmtPace(l.d/1000,l.s)}/km ${l.hr||'–'}bpm ${l.g??0}%`).join(' | ')} : undefined;
     return {id:a.id, datum:a.date, sport:a.sport, name:a.name, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
-      belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, einschaetzung:as?as.text:undefined};
+      belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
   });
   const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null}); }
   const zones = S.log && S.log.zones;
@@ -1071,19 +1085,22 @@ Regeln:
 - Antworte auf Deutsch, direkt, knapp und fachlich präzise. Formatierung sparsam: kurze Absätze, bei Bedarf Aufzählungen mit „- “ und **fett** für Stichwörter; keine Überschriften, Tabellen oder Links. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
 ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel. Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
 - Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
-- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) und Belastung (RPE 1–10) vorliegt, frage danach.`
+- „Belastung“ ist die wahrgenommene Anstrengung (RPE 1–10). Sag im Text immer „Belastung“, nicht „RPE“. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava" aus Strava), frag nicht erneut.
+- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) vorliegt, frage danach; nach der Belastung nur, wenn sie weder in der Rückmeldung noch aus Strava vorliegt.`
 : `- Periodisiere auf das Ziel hin: Aufbauwochen mit regelmäßigen Entlastungswochen (z. B. 3:1), Wochenumfang höchstens etwa 10 % steigern.
 - Intensitätsverteilung: etwa 80 % locker (Z1–Z2), der Rest gezielte Reize (Schwelle, Intervalle, Zieltempo). Harte Einheiten nicht an aufeinanderfolgenden Tagen.
 - Leite Zieltempi aus Ziel, Leistungsstand und Daten ab und gib Intervalle mit Pace oder HF-Zone an.
-- Wenn zu einer neuen Aktivität keine Rückmeldung zu Belastung (RPE 1–10) und Befinden vorliegt, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
+- „Belastung“ ist die wahrgenommene Anstrengung (RPE 1–10). Sag im Text immer „Belastung“, nicht „RPE“. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava"), frag nicht erneut.
+- Wenn zu einer neuen Aktivität weder Belastung noch Befinden bekannt sind, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
 - Stelle höchstens eine Rückfrage pro Antwort.
 - Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Belastung (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Belastung der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
+- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (Belastung 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke. Auf Trails mit Höhenmetern steuert Belastung bzw. HF, nicht das Tempo; sag das im Detail.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Belastung und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
-  · Belastung: Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
+  · Trainingslast (nicht mit „Belastung“ = RPE verwechseln): Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
   · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
   · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
   · Rad: IF und TSS bezogen auf die FTP.
@@ -1102,7 +1119,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "trainingDays":[2,4,6],
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
-   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"5 min sehr locker"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}Belastung, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"eine Zeile in Stichworten"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
@@ -1132,7 +1149,8 @@ function cleanSession(s){
   return {date:s.date, sport:normSport(s.sport), extra: s.extra===true || undefined, title:String(s.title||'Training').slice(0,120), goal:s.goal?String(s.goal).slice(0,600):'',
     distanceKm: Number(s.distanceKm)>0 ? Math.round(Number(s.distanceKm)*10)/10 : null,
     durationMin: Number(s.durationMin)>0 ? Math.round(Number(s.durationMin)) : null,
-    steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,300)})) : []};
+    steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,300),
+      rpe:x&&x.rpe!=null?String(x.rpe).slice(0,12):undefined, hr:x&&x.hr?String(x.hr).slice(0,20):undefined, pace:x&&x.pace?String(x.pace).slice(0,24):undefined})) : []};
 }
 
 async function applyUpdates(u){
