@@ -232,6 +232,18 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .seg button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 0;font-weight:600;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.actbar{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+.actbar .acts{display:flex;gap:8px;margin-left:auto}
+.actbar svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.actbar .pill{flex:1;min-width:0;border:0;border-radius:999px;height:44px;padding:0 14px;font-weight:700;font-size:15px;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actbar .p-new{background:var(--accent);color:var(--accent-ink)}
+.actbar .p-ok{background:var(--ok-soft);color:var(--ok)}
+.actbar .p-chg{background:var(--warn-soft);color:var(--warn)}
+.actbar .pill[disabled]{opacity:.6}
+.actbar .ic{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;padding:0;flex:none}
+.actbar .ic:active{background:var(--sunk)}
+.actbar .ic.neg{color:var(--crit)}
+.tip{position:fixed;z-index:30;background:var(--ink);color:var(--bg);font-size:13px;font-weight:600;padding:5px 10px;border-radius:8px;pointer-events:none;transform:translate(-50%,-100%)}
 /* Kompakte Höhen */
 header.bar{padding:8px 16px}
 .brand h1{font-size:21px}
@@ -517,13 +529,27 @@ function render(){
 }
 
 /* Einheit auf einen anderen Tag verschieben */
+const IC = {
+  watch:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3M12 10v3l2 1"/></svg>',
+  watchOk:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3M10 12l1.5 1.5L14.5 10"/></svg>',
+  watchWarn:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3M12 9.5v3M12 14.5v.01"/></svg>',
+  move:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M10 15h6M13 12l3 3-3 3"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>',
+  cancel:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
+};
 function moveControl(s){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   const is = icuState(s);
-  const icuBtn = is==='new'||is==='changed' ? `<button class="btn icu" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${is==='changed'?'Änderung an Uhr senden':'An Uhr senden'}</button>` : is==='ok' ? `<button class="btn icuok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} title="Zielvorgabe ändern und erneut senden">✓ Uhr · ${ICU_LABEL[icuModeFor(icuEntry(s))]}</button>` : '';
-  return `<div class="move">${icuBtn}<button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
+  const lbl = is ? ({hr:'HF', pace:'Pace', watt:'Watt', rpe:'RPE'})[icuModeFor(icuEntry(s))] : '';
+  const pill = is==='new' ? `<button class="pill p-new" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watch}senden</button>`
+    : is==='ok' ? `<button class="pill p-ok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} aria-label="${esc(lbl)} gesendet, erneut senden">${IC.watchOk}${esc(lbl)} gesendet</button>`
+    : is==='changed' ? `<button class="pill p-chg" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watchWarn}neu senden</button>` : '';
+  return `<div class="actbar">${pill}<span class="acts">
+    <button class="ic" data-action="move-open" ${da} data-tip="Verschieben" aria-label="Verschieben">${IC.move}</button>
+    <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
+    <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
 }
 function cancelledCard(s){
   return `<div class="card cancelled"><div class="card-head"><span class="tag extra">Abgesagt</span><span class="sport">${esc(SPORT[normSport(s.sport)])} · ${esc(fmtDay(s.date))}</span></div>
@@ -1488,6 +1514,26 @@ async function checkMissed(){
 }
 window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); icuAutoSync(); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
+
+/* ---------- Langes Drücken auf Symbolknöpfe zeigt den Namen ---------- */
+(() => {
+  let t = null, tipEl = null, suppress = false;
+  const hide = () => { clearTimeout(t); t = null; if(tipEl){ tipEl.remove(); tipEl = null; } };
+  document.addEventListener('pointerdown', e => {
+    const b = e.target.closest && e.target.closest('[data-tip]'); if(!b) return;
+    hide();
+    t = setTimeout(() => {
+      const r = b.getBoundingClientRect();
+      tipEl = document.createElement('div'); tipEl.className = 'tip'; tipEl.textContent = b.dataset.tip;
+      tipEl.style.left = (r.left + r.width/2) + 'px'; tipEl.style.top = (r.top - 6) + 'px';
+      document.body.appendChild(tipEl); suppress = true;
+      setTimeout(hide, 1400);
+    }, 450);
+  });
+  ['pointerup','pointercancel','pointerleave','scroll'].forEach(ev => document.addEventListener(ev, () => { clearTimeout(t); t = null; }, true));
+  document.addEventListener('click', e => { if(suppress){ suppress = false; if(e.target.closest && e.target.closest('[data-tip]')){ e.stopImmediatePropagation(); e.preventDefault(); } } }, true);
+  document.addEventListener('contextmenu', e => { if(e.target.closest && e.target.closest('[data-tip]')) e.preventDefault(); });
+})();
 
 /* ---------- Ereignisse ---------- */
 document.addEventListener('click', async e => {
