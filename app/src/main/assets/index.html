@@ -243,6 +243,8 @@ h2{font-size:18px}
 nav.tabs{padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
 nav.tabs button{padding:4px 2px}
 .app{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+.restday{background:var(--sunk)}
+.restday h3{color:var(--muted)}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -315,7 +317,7 @@ ol.steps .d,.day details summary .x,.day .restline,.gloss dd,.entry .short,.plan
 const IN_APP = !!window.IN_APP;
 const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 const WD_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-const SPORT = {run:'Laufen', ride:'Rad', strength:'Kraft', walk:'Gehen', other:'Sonstiges'};
+const SPORT = {run:'Laufen', ride:'Rad', strength:'Kraft', walk:'Gehen', other:'Sonstiges', rest:'Ruhe'};
 const SERVER = 'Strava';
 
 const S = {profile:null, plan:null, log:null, chat:null, loaded:false};
@@ -340,7 +342,7 @@ const fmtDur = sec => { sec=Math.round(sec||0); const h=Math.floor(sec/3600), m=
 const fmtPace = (km,sec) => { if(!km) return '–'; let t=Math.round(sec/km); return Math.floor(t/60)+':'+pad(t%60); };
 const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
 function sportOf(t){ t=String(t||''); if(/Run/i.test(t)) return 'run'; if(/Ride|Cycl|Bike/i.test(t)) return 'ride'; if(/Weight|Strength|Workout|Crossfit|Yoga|Pilates/i.test(t)) return 'strength'; if(/Walk|Hike/i.test(t)) return 'walk'; return 'other'; }
-function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':'other'); }
+function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':/ruhe|rest|pause/.test(s)?'rest':'other'); }
 const daysUntil = s => Math.round((parseYmd(s)-parseYmd(today()))/86400000);
 const mondayOf = s => { const d=parseYmd(s); return addDays(s, -((d.getDay()+6)%7)); };
 function isoWeek(s){ const d=parseYmd(s); const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()+3-((d.getDay()+6)%7)); const w1=new Date(t.getFullYear(),0,4); return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7); }
@@ -428,7 +430,7 @@ function render(){
 
 /* Einheit auf einen anderen Tag verschieben */
 function moveControl(s){
-  if(s.date < today() || s.cancelled) return '';
+  if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   return `<div class="move"><button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
 }
@@ -494,8 +496,10 @@ function renderMoveDialog(){
 function plannedCard(s, label){
   const steps = Array.isArray(s.steps) ? s.steps : [];
   const target = [s.distanceKm ? fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km' : '', s.durationMin ? 'ca. '+s.durationMin+' min' : ''].filter(Boolean).join(' · ');
-  return `<article class="card">
-    <div class="card-head"><span class="tag plan">${esc(label||'Geplant')}</span><span class="sport">${esc(SPORT[normSport(s.sport)])}</span></div>
+  const rest = normSport(s.sport)==='rest';
+  if(rest) label = String(label||'').replace('Geplant · heute','Ruhetag · heute').replace('Nächstes Training','Ruhetag');
+  return `<article class="card${rest?' restday':''}">
+    <div class="card-head"><span class="tag ${rest?'':'plan'}">${esc(label||'Geplant')}</span><span class="sport">${esc(SPORT[normSport(s.sport)])}</span></div>
     <h3>${esc(s.title||'Training')}</h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
@@ -910,6 +914,7 @@ async function syncStrava(){
     await save('log');
     syncMsg = {text: fresh.length ? fresh.length+(fresh.length===1?' neue Aktivität':' neue Aktivitäten')+' übernommen.' : 'Keine neuen Aktivitäten.'};
     syncBusy=false; render();
+    setTimeout(checkMissed, 1500);
     const recent = fresh.filter(a => a.sport!=='walk' && daysUntil(a.date) >= -10);
     if(recent.length && sample && sampleState!=='denied' && !busy){
       const desc = recent.map(a=>`${fmtDay(a.date)} ${SPORT[a.sport]} „${a.name}“ ${fmtNum(a.distKm,2)} km (ID ${a.id})`).join('; ');
@@ -958,7 +963,8 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Leite Zieltempi aus Ziel, Leistungsstand und Daten ab und gib Intervalle mit Pace oder HF-Zone an.
 - Wenn zu einer neuen Aktivität keine Rückmeldung zu Belastung (RPE 1–10) und Befinden vorliegt, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
 - Stelle höchstens eine Rückfrage pro Antwort.
-- Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
+- Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Belastung (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
+- Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Belastung der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Belastung und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
@@ -980,7 +986,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "trainingDays":[2,4,6],
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
-   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"5 min sehr locker"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"5 min sehr locker"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}Belastung, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"eine Zeile in Stichworten"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
@@ -1034,7 +1040,7 @@ async function applyUpdates(u){
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
     S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
-      allowDates:[...allow].sort(), blockedDates:[...blocked].sort()};
+      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[]};
     plc=true;
   }
   const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
@@ -1097,6 +1103,35 @@ async function askClaude(text, opt={}){
   }
 }
 function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; draft=''; askClaude(v); }
+
+/* ---------- Ausgelassene Einheiten: einmalig melden und Umplanung anstoßen ---------- */
+function missedSessions(){
+  const t = today(), since = addDays(t,-3);
+  const handled = new Set((S.plan && S.plan.missedHandled) || []);
+  return active().filter(s => s.date<t && s.date>=since && normSport(s.sport)!=='rest' && !handled.has(s.date+'|'+(s.title||''))
+    && !acts().some(a => a.date===s.date && a.sport===normSport(s.sport)));
+}
+let missedBusy = false;
+async function checkMissed(){
+  if(missedBusy || busy || !S.loaded || !S.plan || !sample || sampleState==='denied') return;
+  const miss = missedSessions(); if(!miss.length) return;
+  missedBusy = true;
+  try{
+    const keys = miss.map(s => s.date+'|'+(s.title||''));
+    const desc = miss.map(s => {
+      const other = acts().filter(a => a.date===s.date && a.sport!=='walk');
+      return `${fmtDay(s.date)} „${s.title}“ (${SPORT[normSport(s.sport)]}${s.distanceKm?', '+fmtNum(s.distanceKm,1)+' km':''})`
+        + (other.length ? ` – stattdessen: ${other.map(a=>SPORT[a.sport]+' '+fmtNum(a.distKm,1)+' km, '+Math.round(a.movingS/60)+' min').join('; ')}` : ' – nichts absolviert');
+    }).join('; ');
+    // synchron markieren und fragen, damit kein anderer Aufruf dazwischenkommt
+    S.plan.missedHandled = [...new Set([...(S.plan.missedHandled||[]), ...keys])].slice(-60);
+    const q = askClaude(`Ausgelassen laut Strava: ${desc}. Bitte plane die nächsten 14 Tage neu: Entscheide, ob die Inhalte nachgeholt, gekürzt oder gestrichen werden, und rechne Ersatztraining an. Frag kurz nach dem Grund, falls er für die Planung wichtig ist.`, {auto:true});
+    await save('plan');
+    await q;
+  } finally { missedBusy = false; }
+}
+window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); });
+document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
 
 /* ---------- Ereignisse ---------- */
 document.addEventListener('click', async e => {
@@ -1200,7 +1235,7 @@ render();
   const cl = window.claude;
   if(!cl || !cl.use){ mcpState='none'; sampleState='none'; S.loaded=true; render(); return; }
   cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); });
-  cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); });
+  cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); });
   const [user, dbx] = await Promise.all([cl.use('user'), cl.use('db')]);
   db = dbx; uid = user ? await user.id() : null;
   if(!db || !uid){ S.loaded=true; syncMsg={err:true, text:'Speichern ist in dieser Ansicht nicht möglich. Öffne die App angemeldet in claude.ai.'}; render(); return; }
@@ -1208,7 +1243,7 @@ render();
   ['profile','plan','log','chat'].forEach(name => {
     db.doc('data/users/'+uid+'/'+name).onSnapshot(snap => {
       S[name] = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
-      if(pending>0){ pending--; if(pending===0) S.loaded=true; }
+      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); } }
       if(!(busy && name==='chat')) render();
     }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
   });
