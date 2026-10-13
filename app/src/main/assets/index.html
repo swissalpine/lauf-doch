@@ -264,6 +264,15 @@ nav.tabs button{padding:4px 2px}
 .hauto{display:block;font-size:11.5px;font-weight:600;opacity:.8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
 .bgview{white-space:pre-wrap;max-height:50vh;overflow-y:auto;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .bgta{width:100%;border:1px solid var(--accent);border-radius:10px;padding:9px 11px;background:var(--surface);resize:vertical}
+.md{white-space:normal}
+.md p{margin:0 0 .55em}
+.md p:last-child,.md ul:last-child,.md ol:last-child{margin-bottom:0}
+.md ul,.md ol{margin:0 0 .55em;padding-left:1.25em}
+.md li{margin:.15em 0}
+.md .mdh{font-weight:700}
+.md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
+.msg:has(.md){white-space:normal}
+.rationale.md,.summary.md{white-space:normal}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -350,6 +359,30 @@ try{ const h=(location.hash||'').slice(1); if(TABS[h]) tab=h; else { const t=loc
 
 /* ---------- Hilfsfunktionen ---------- */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* Kleines, sicheres Markdown für Claudes Texte: erst escapen, dann Fett, Kursiv, Code, Überschriften und Listen */
+function md(src){
+  const inline = t => t
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/__([^_]+)__/g, '<b>$1</b>')
+    .replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s).,;:!?]|$)/g, '$1<i>$2</i>');
+  const lines = esc(src).replace(/\r/g,'').split('\n');
+  let html = '', list = null, para = [];
+  const flushPara = () => { if(para.length){ html += '<p>' + para.map(inline).join('<br>') + '</p>'; para = []; } };
+  const flushList = () => { if(list){ html += `<${list.type}>` + list.items.map(x=>'<li>'+inline(x)+'</li>').join('') + `</${list.type}>`; list = null; } };
+  lines.forEach(raw => {
+    const l = raw.trim();
+    let m;
+    if(!l){ flushPara(); flushList(); return; }
+    if((m = l.match(/^#{1,6}\s+(.*)$/))){ flushPara(); flushList(); html += '<p class="mdh">' + inline(m[1]) + '</p>'; return; }
+    if((m = l.match(/^[-*•]\s+(.*)$/))){ flushPara(); if(!list || list.type!=='ul'){ flushList(); list = {type:'ul', items:[]}; } list.items.push(m[1]); return; }
+    if((m = l.match(/^\d+[.)]\s+(.*)$/))){ flushPara(); if(!list || list.type!=='ol'){ flushList(); list = {type:'ol', items:[]}; } list.items.push(m[1]); return; }
+    if(/^(-{3,}|\*{3,}|_{3,})$/.test(l)){ flushPara(); flushList(); return; }
+    flushList(); para.push(l);
+  });
+  flushPara(); flushList();
+  return html;
+}
 const pad = n => String(n).padStart(2,'0');
 const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parseYmd = s => { const [y,m,d]=String(s).split('-').map(Number); return new Date(y,(m||1)-1,d||1); };
@@ -485,7 +518,7 @@ function renderHistDialog(el){
     const d = m.ts ? ymd(new Date(m.ts)) : '';
     if(d && d!==lastDay){ lastDay=d; body += `<div class="hday">${esc(fmtDay(d))}</div>`; }
     const time = m.ts ? new Date(m.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
-    body += `<div class="msg ${m.error?'assistant error':m.role}${m.auto?' autouser':''}">${m.auto?'<span class="hauto">automatisch</span>':''}${esc(m.text)}<span class="htime">${esc(time)}</span></div>`;
+    body += `<div class="msg ${m.error?'assistant error':m.role}${m.auto?' autouser':''}">${m.auto?'<span class="hauto">automatisch</span>':''}${m.role==='assistant'&&!m.error?`<div class="md">${md(m.text)}</div>`:esc(m.text)}<span class="htime">${esc(time)}</span></div>`;
   });
   el.innerHTML = `<button class="overlay" data-action="hist-close" aria-label="Schließen" tabindex="-1"></button>
     <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="hiTitle">
@@ -612,7 +645,7 @@ function doneCard(a, planned, extra){
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:`<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'} und Belastung.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date))}">Rückmeldung geben</button></div>`}
-    ${as?`<div class="assess"><b>Einschätzung</b>${esc(as.text)}</div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
+    ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div></div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
     ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
   </article>`;
 }
@@ -700,7 +733,7 @@ function renderPlan(){
       <div class="items">${items || (doneLine?'':'<span class="restline">Ruhe</span>')}${doneLine}</div></div>`);
   }
   const plan = S.plan;
-  const rat = plan && plan.rationale ? `<div class="card"><div class="row"><h2>Begründung und Schwerpunkte</h2>${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · Version '+plan.revision:''}</span>`:''}</div><p class="rationale">${esc(plan.rationale)}</p></div>` : '';
+  const rat = plan && plan.rationale ? `<div class="card"><div class="row"><h2>Begründung und Schwerpunkte</h2>${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · Version '+plan.revision:''}</span>`:''}</div><div class="rationale md">${md(plan.rationale)}</div></div>` : '';
   return goal + `<div class="row"><h2>Die nächsten 14 Tage</h2><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
     <div class="days">${rows.join('')}</div>` + rat;
 }
@@ -825,7 +858,7 @@ function renderHistory(){
         </div>
         ${infoOpen?GLOSSAR:''}</div>`; })()}
     <div class="card"><div class="row"><h2>Wochenfazit</h2>${msgs?`<span class="note">${msgs} Dialognachrichten in dieser Woche</span>`:''}</div>
-      ${ws?`<p class="summary">${esc(ws.text)}</p>`:`<p class="muted">Noch kein Fazit für diese Woche.</p>`}
+      ${ws?`<div class="summary md">${md(ws.text)}</div>`:`<p class="muted">Noch kein Fazit für diese Woche.</p>`}
       ${wa.length?`<div><button class="btn" data-action="week-summary" data-mon="${mon}" ${sample&&!busy?'':'disabled'}>${ws?'Fazit aktualisieren':'Fazit von Claude erstellen'}</button></div>`:''}</div>
     ${rows.length?`<div class="log">${rows.join('')}</div>`:`<div class="empty">In dieser Woche wurde noch kein Training aufgezeichnet.${acts().length?' <button class="btn ghost" data-action="week-last">Zur letzten Trainingswoche</button>':''}</div>`}`;
 }
@@ -937,7 +970,7 @@ function renderDialog(){
   let body;
   if(!msgs.length && !busy) body = `<p class="note">Claude fragt bei Bedarf nach und passt den Plan an.</p>`;
   else body = (msgs.length>shown.length?`<button class="btn ghost" data-action="more">Ältere Nachrichten anzeigen (${msgs.length-shown.length})</button>`:'') +
-    shown.map(m => `<div class="msg ${m.auto?'auto':m.error?'assistant error':m.role}">${esc(m.text)}</div>`).join('');
+    shown.map(m => `<div class="msg ${m.auto?'auto':m.error?'assistant error':m.role}">${m.role==='assistant'&&!m.error&&!m.auto?`<div class="md">${md(m.text)}</div>`:esc(m.text)}</div>`).join('');
   if(busy) body += `<div class="thinking"><span class="dot"></span><span id="thinkTxt">Claude denkt nach …</span><button class="btn ghost" data-action="stop">Stopp</button></div>`;
   let compose;
   if(sampleState==='none') compose = `<p class="note">Der Dialog mit Claude ist in dieser Ansicht nicht verfügbar.</p>`;
@@ -1035,7 +1068,7 @@ function buildContext(){
 `Du bist Claude und arbeitest als Trainingsbegleiter in der Trainings-App von ${nm}. Schwerpunkt ist Laufen, andere Sportarten werden ergänzend geplant. ${care ? `${nm} trainiert mit Beschwerden: ${cl}. Die Sicherheit der betroffenen Stellen geht vor Leistung.` : `Es sind keine Beschwerden eingetragen. Plane leistungsorientiert auf das Ziel hin.`}
 
 Regeln:
-- Antworte auf Deutsch, direkt, knapp und fachlich präzise. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
+- Antworte auf Deutsch, direkt, knapp und fachlich präzise. Formatierung sparsam: kurze Absätze, bei Bedarf Aufzählungen mit „- “ und **fett** für Stichwörter; keine Überschriften, Tabellen oder Links. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
 ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel. Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
 - Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
 - Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) und Belastung (RPE 1–10) vorliegt, frage danach.`
