@@ -283,6 +283,15 @@ nav.tabs button{padding:4px 2px}
 .rpebtns{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
 .rpebtns button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 0;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer}
 .rpebtns button:hover{border-color:var(--accent);color:var(--accent)}
+.qhelp{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:7px;border-radius:50%;border:1.5px solid var(--accent);background:var(--surface);color:var(--accent);font-weight:700;font-size:13px;line-height:1;cursor:pointer;vertical-align:1px;padding:0}
+.qhelp:hover{background:var(--accent);color:var(--accent-ink)}
+.gbody{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:62vh}
+.gsub{color:var(--muted);font-size:14px}
+.gx{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.gx h3{font-size:19px}
+.gsteps,.gl{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
+.gsteps li p,.gl li p{margin:0}
+.gcaution{background:var(--warn-soft);color:var(--ink);border-radius:8px;padding:7px 10px}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -511,6 +520,57 @@ let cancelDlg = null; // {date, title, preset, reason}
 let swapDlg = null; // {date, title, text}
 let insightDlg = null; // {edit: index|null}
 let bgDlg = null;   // {edit:bool}
+let guideDlg = null; // {label, detail, key, loading, error}
+const guides = () => (S.log && S.log.guides) || {};
+function renderGuideDialog(el){
+  const g = guides()[guideDlg.key];
+  let body;
+  if(g){
+    body = `<p class="gsub">${esc(guideDlg.label)}${guideDlg.detail?' · '+esc(guideDlg.detail):''}</p>
+      ${(g.exercises||[]).map(x=>`<div class="gx"><h3>${esc(x.name||'')}</h3>
+        ${x.purpose?`<p class="muted">${esc(x.purpose)}</p>`:''}
+        ${(x.steps||[]).length?`<ol class="gsteps">${x.steps.map(z=>`<li>${md(z)}</li>`).join('')}</ol>`:''}
+        ${x.dose?`<p><b>Umfang:</b> ${esc(x.dose)}</p>`:''}
+        ${(x.cues||[]).length?`<p><b>Darauf achten</b></p><ul class="gl">${x.cues.map(z=>`<li>${md(z)}</li>`).join('')}</ul>`:''}
+        ${(x.mistakes||[]).length?`<p><b>Typische Fehler</b></p><ul class="gl">${x.mistakes.map(z=>`<li>${md(z)}</li>`).join('')}</ul>`:''}
+        ${x.caution?`<div class="gcaution md">${md(x.caution)}</div>`:''}
+        ${x.easier||x.harder?`<p class="note">${x.easier?'Leichter: '+esc(x.easier):''}${x.easier&&x.harder?' · ':''}${x.harder?'Schwerer: '+esc(x.harder):''}</p>`:''}
+      </div>`).join('')}`;
+  } else if(guideDlg.loading){
+    body = `<p class="gsub">${esc(guideDlg.label)}</p><div class="thinking"><span class="dot"></span><span>Claude erklärt die Übung …</span></div>`;
+  } else {
+    body = `<p class="gsub">${esc(guideDlg.label)}</p><p class="status err">${esc(guideDlg.error||'Erklärung nicht verfügbar.')}</p>`;
+  }
+  el.innerHTML = `<button class="overlay" data-action="guide-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="gTitle">
+      <h2 id="gTitle">So geht die Übung</h2>
+      <div class="gbody">${body}</div>
+      <div class="row end">${g?'<button class="btn" data-action="guide-redo">Neu erklären</button>':''}${!g&&!guideDlg.loading?'<button class="btn" data-action="guide-redo">Erneut versuchen</button>':''}<button class="btn primary" data-action="guide-close">Fertig</button></div>
+    </div>`;
+}
+async function loadGuide(force){
+  const d = guideDlg; if(!d || !sample) { if(d){ d.error='Claude ist nicht verfügbar.'; renderMoveDialog(); } return; }
+  if(guides()[d.key] && !force) { renderMoveDialog(); return; }
+  d.loading = true; d.error = null; renderMoveDialog();
+  const pr = profile();
+  const prompt = `Erkläre die Kraft-/Mobilitätsübung(en) aus diesem Trainingsschritt einer Lauf-App für einen Hobbyläufer ohne Vorkenntnisse, auf Deutsch, präzise und knapp.
+Schritt: „${d.label}“${d.detail?` – ${d.detail}`:''}
+Beschwerden: ${complaints().join(', ')||'keine'}
+Erkenntnisse: ${(pr.insights||[]).join('; ')||'keine'}
+
+Antworte nur mit JSON:
+{"exercises":[{"name":"Name der Übung","purpose":"wozu sie dient, ein Satz","steps":["Ausgangsposition …","Bewegung …","…"],"dose":"Sätze, Wiederholungen oder Haltezeit, Pause – passend zum Schritt","cues":["worauf achten"],"mistakes":["typischer Fehler"],"caution":"Hinweis zu den Beschwerden (z. B. Schmerzgrenze, Winkel) oder leer","easier":"leichtere Variante","harder":"schwerere Variante"}]}
+Enthält der Schritt mehrere Übungen, liefere jede einzeln. 3–6 Ausführungsschritte, je 2–4 Hinweise.`;
+  try{
+    const res = await sample.json(prompt, {modelTier:'quick'});
+    if(!res || !Array.isArray(res.exercises) || !res.exercises.length) throw {code:'invalid_json'};
+    const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+    const gs = Object.assign({}, log.guides||{}); gs[d.key] = {exercises:res.exercises.slice(0,6), ts:new Date().toISOString()};
+    const keys = Object.keys(gs); if(keys.length>40) keys.sort((a,b)=>(gs[a].ts||'').localeCompare(gs[b].ts||'')).slice(0,keys.length-40).forEach(k=>delete gs[k]);
+    log.guides = gs; save('log');
+  }catch(e){ d.error = errText(e); }
+  d.loading = false; if(guideDlg===d) renderMoveDialog();
+}
 let histDlg = null; // {confirm:bool}
 function renderBgDialog(el){
   const bg = profile().background || '';
@@ -603,6 +663,7 @@ function renderMoveDialog(){
   if(insightDlg){ renderInsightDialog(el); return; }
   if(bgDlg){ renderBgDialog(el); return; }
   if(histDlg){ renderHistDialog(el); return; }
+  if(guideDlg){ renderGuideDialog(el); return; }
   if(!moveDlg){ el.innerHTML=''; return; }
   const t = today(), td = new Set(profile().trainingDays||[]);
   const days = Array.from({length:14},(_,i)=>addDays(t,i)).map(d => {
@@ -621,12 +682,16 @@ function renderMoveDialog(){
     </div>`;
 }
 
-function stepLi(st){
+const EXERCISE = /kraft|wandsitz|wall ?sit|kniebeuge|squat|ausfallschritt|lunge|step.?down|step.?up|brücke|bridge|plank|stütz|wadenheb|calf|dehn|mobili|clamshell|monster ?walk|einbein|balance|hüft|adduktor|abduktor|exzentr|isometr|theraband|faszien|rolle ?massage/i;
+function isExercise(st, sess){ return normSport(sess && sess.sport)==='strength' || EXERCISE.test((st.label||'')+' '+(st.detail||'')); }
+function guideKey(st){ return ((st.label||'')+'|'+(st.detail||'')).toLowerCase().replace(/[^a-z0-9äöüß|]+/g,' ').trim().slice(0,160); }
+function stepLi(st, sess){
   const t = [];
+  const q = isExercise(st, sess) ? `<button class="qhelp" data-action="guide" data-label="${esc(st.label||'')}" data-detail="${esc(st.detail||'')}" aria-label="Übung erklären: ${esc(st.label||'')}">?</button>` : '';
   if(st.rpe) t.push(`<span class="tg">Belastung ${esc(st.rpe)}</span>`);
   if(st.hr) t.push(`<span class="tg">HF ${esc(st.hr)}</span>`);
   if(st.pace) t.push(`<span class="tg">${esc(st.pace)} /km</span>`);
-  return `<li><span class="l">${esc(st.label||'')}</span><span class="d">${esc(st.detail||'')}${t.length?`<span class="tgs">${t.join('')}</span>`:''}</span></li>`;
+  return `<li><span class="l">${esc(st.label||'')}${q}</span><span class="d">${esc(st.detail||'')}${t.length?`<span class="tgs">${t.join('')}</span>`:''}</span></li>`;
 }
 function plannedCard(s, label){
   const steps = Array.isArray(s.steps) ? s.steps : [];
@@ -638,7 +703,7 @@ function plannedCard(s, label){
     <h3>${esc(s.title||'Training')}</h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
-    ${steps.length?`<ol class="steps">${steps.map(stepLi).join('')}</ol>`:''}
+    ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
     ${moveControl(s)}
   </article>`;
 }
@@ -748,7 +813,7 @@ function renderPlan(){
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       return `<details><summary><span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
-        ${steps.length?`<ol class="steps">${steps.map(stepLi).join('')}</ol>`:''}
+        ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
         ${moveControl(s)}
       </details>`;
     }).join('');
@@ -790,7 +855,7 @@ document.addEventListener('change', e => {
   else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
   save('profile');
 });
-document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
+document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
 const GLOSSAR = `<dl class="gloss">
   <div><dt>RE · Relative Effort</dt><dd>Stravas Belastungswert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 niedrig (Entlastung), 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
@@ -918,7 +983,7 @@ window.onBackupLoaded = text => {
   confirmImport = obj; tab='einstellungen'; render();
 };
 window.appBack = () => {
-  if(moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; renderMoveDialog(); return true; }
+  if(moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; renderMoveDialog(); return true; }
   if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
   return false;
 };
@@ -1315,6 +1380,9 @@ document.addEventListener('click', async e => {
     if(act && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
       askClaude(`Rückmeldung ergänzt: Belastung ${b.dataset.v}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`, {auto:true});
   }
+  else if(a==='guide'){ e.preventDefault(); const st={label:b.dataset.label, detail:b.dataset.detail}; guideDlg={label:st.label, detail:st.detail, key:guideKey(st), loading:false, error:null}; renderMoveDialog(); loadGuide(false); }
+  else if(a==='guide-close'){ guideDlg=null; renderMoveDialog(); }
+  else if(a==='guide-redo'){ loadGuide(true); }
   else if(a==='bg-open'){ bgDlg={edit:false}; renderMoveDialog(); }
   else if(a==='bg-close'){ bgDlg=null; renderMoveDialog(); }
   else if(a==='bg-edit'){ bgDlg.edit=true; renderMoveDialog(); }
