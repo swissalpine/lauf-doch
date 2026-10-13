@@ -228,7 +228,7 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .icubar{display:flex}
 .icubar .btn{width:100%}
 .btn.icu{border-color:var(--accent);color:var(--accent)}
-.icuok{align-self:center;font-size:13px;color:var(--ok);font-weight:600}
+.btn.icuok{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .seg button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 0;font-weight:600;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -522,7 +522,7 @@ function moveControl(s){
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   const is = icuState(s);
-  const icuBtn = is==='new'||is==='changed' ? `<button class="btn icu" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${is==='changed'?'Änderung an Uhr senden':'An Uhr senden'}</button>` : is==='ok' ? `<span class="icuok">✓ auf der Uhr · ${ICU_LABEL[icuModeFor(icuEntry(s))]}</span>` : '';
+  const icuBtn = is==='new'||is==='changed' ? `<button class="btn icu" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${is==='changed'?'Änderung an Uhr senden':'An Uhr senden'}</button>` : is==='ok' ? `<button class="btn icuok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} title="Zielvorgabe ändern und erneut senden">✓ Uhr · ${ICU_LABEL[icuModeFor(icuEntry(s))]}</button>` : '';
   return `<div class="move">${icuBtn}<button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
 }
 function cancelledCard(s){
@@ -541,7 +541,7 @@ function renderIcuDialog(el){
   const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rolle und Rad mit Leistungsmesser.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der Belastung.'}[icuDlg.mode]||'';
   el.innerHTML = `<button class="overlay" data-action="icu-close" aria-label="Schließen" tabindex="-1"></button>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="icTitle">
-      <h2 id="icTitle">An die Uhr senden</h2>
+      <h2 id="icTitle">${icuState(sessions().find(x=>icuEntry(x)&&icuEntry(x).ext===icuDlg.ext)||{})==='ok'?'Erneut an die Uhr senden':'An die Uhr senden'}</h2>
       <p class="muted">„${esc(icuDlg.title)}“ · ${esc(fmtDay(icuDlg.date))}</p>
       <div class="fld"><span>Zielvorgabe</span><div class="seg">${opts.map(([v,l])=>`<button data-action="icu-pick" data-m="${v}" aria-pressed="${icuDlg.mode===v}">${l}</button>`).join('')}</div></div>
       <p class="note">${esc(hint)}</p>
