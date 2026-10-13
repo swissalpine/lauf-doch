@@ -498,7 +498,11 @@ function render(){
   document.getElementById('hdrDate').textContent = WD_LONG[new Date().getDay()]+', '+new Date().toLocaleDateString('de-DE');
   document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab===tab)));
   const p = document.getElementById('panel');
+  const openK = new Set([...document.querySelectorAll('details[open][data-k]')].map(d=>d.dataset.k));
+  const sy = window.scrollY;
   p.innerHTML = changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
+  p.querySelectorAll('details[data-k]').forEach(d=>{ if(openK.has(d.dataset.k)) d.open=true; });
+  if(openK.size) window.scrollTo(0, sy);
   renderDialog();
   renderMoveDialog();
 }
@@ -811,7 +815,7 @@ function renderPlan(){
       if(s.cancelled) return `<div class="cx"><span class="t">${esc(s.title||'Training')}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
-      return `<details><summary><span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}</span></summary>
+      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
         ${moveControl(s)}
