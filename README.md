@@ -9,7 +9,7 @@ Aufbau wie „Luises Stempelkarte“: Die Oberfläche ist eine Web-App (`app/src
 1. **Signatur-Secrets** im Repository anlegen (Settings → Secrets and variables → Actions): `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`. Danach baut jeder Push auf `main` eine APK und veröffentlicht sie als Release.
 2. **Claude:** In der [Anthropic Console](https://console.anthropic.com) einen API-Schlüssel anlegen und in der App unter Einstellungen → Verbindungen eintragen. Abrechnung nach Verbrauch.
 3. **Strava:** Unter [strava.com/settings/api](https://www.strava.com/settings/api) eine Anwendung anlegen, als Autorisierungs-Callback-Domain `laufdoch.app` eintragen. Client-ID und Client-Secret in der App eintragen und „Mit Strava verbinden“ tippen.
-4. **Garmin (optional):** intervals.icu-Konto mit Garmin Connect verbinden und dort das Hochladen geplanter Trainings aktivieren. Den API-Schlüssel (intervals.icu → Einstellungen → Entwickler) in der App unter Verbindungen → Garmin eintragen, Zielvorgabe wählen (HF, Pace oder Belastung als Text).
+4. **Garmin (optional):** intervals.icu-Konto mit Garmin Connect verbinden und dort das Hochladen geplanter Trainings aktivieren. Den API-Schlüssel (intervals.icu → Einstellungen → Entwickler) in der App unter Verbindungen → Garmin eintragen, Zielvorgabe wählen (HF, Pace oder RPE als Text; beim Rad Watt statt Pace).
 5. **Daten übernehmen:** Eine Sicherung (`lauf-doch-sicherung-….json`) in „Downloads“ legen und in der App unter Einstellungen → Datensicherung laden.
 
 ## Dateien
