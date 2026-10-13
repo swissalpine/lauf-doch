@@ -976,7 +976,7 @@ function connCard(){
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>
     <div class="fld"><span>Garmin (über intervals.icu)</span>
-      <p class="note">Schickt die Einheiten der nächsten 7 Tage als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
+      <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 7 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe auf der Uhr</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
@@ -1343,8 +1343,11 @@ function icuCall(method, path, body){ return window.__bridgeCall('intervals', bo
 function icuHash(x){ const t=JSON.stringify(x); let h=0; for(let i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; } return String(h); }
 function icuSessions(){
   const t = today(), end = addDays(t,6), out = [];
-  active().filter(s => s.date>=t && s.date<=end && normSport(s.sport)!=='rest' && !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport)))
-    .forEach(s => { const n = out.filter(o=>o.s.date===s.date).length; out.push({s, ext:'laufdoch-'+s.date+'-'+n}); });
+  active().filter(s => s.date>=t && s.date<=end && ['run','ride'].includes(normSport(s.sport)) && !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport)))
+    .forEach(s0 => {
+      // Kraft, Gymnastik und Dehnen bleiben in der App; Garmin würde sie als Laufabschnitt werten
+      const s = Object.assign({}, s0, {steps:(s0.steps||[]).filter(st => !EXERCISE.test((st.label||'')+' '+(st.detail||'')))});
+      const n = out.filter(o=>o.s.date===s.date).length; out.push({s, ext:'laufdoch-'+s.date+'-'+n}); });
   return out;
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
@@ -1360,7 +1363,7 @@ Regeln:
 - Hinweis kurz auf Deutsch, immer mit der Belastung, z. B. „Locker, Belastung 2–3“ (Bereich mit Halbgeviertstrich).
 - Ziel: ${mode==='hr'?'„Z2 HR“ oder „Z1-Z2 HR“':mode==='pace'?'„5:35-5:20/km Pace“ (langsamere Pace zuerst), sonst „Z2 HR“':'kein Ziel, Zeile endet nach der Dauer'}.
 - Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
-- Krafteinheiten (Sportart strength): nur Textzeilen ohne Bindestrich, je Übung eine Zeile mit Umfang.
+- Nur der Lauf- bzw. Radteil. Lass Kraftübungen, Gymnastik, Dehnen und Mobilisation komplett weg, auch nicht als Text- oder Überschriftzeile; sie würden auf der Uhr als Laufabschnitt erscheinen.
 
 Einheiten:
 ${JSON.stringify(items.map(({s,ext})=>({key:ext, sportart:normSport(s.sport), titel:s.title, ziel:s.goal, km:s.distanceKm, minuten:s.durationMin, schritte:s.steps})))}
@@ -1378,7 +1381,7 @@ async function icuSync(manual){
   try{
     const mode = icuMode(), items = icuSessions();
     const sent = Object.assign({}, S.plan.icuSent||{});
-    const changed = items.filter(({s,ext}) => sent[ext] !== icuHash([s,mode]));
+    const changed = items.filter(({s,ext}) => sent[ext] !== icuHash(['v2',s,mode]));
     let created = 0, deleted = 0;
     if(changed.length){
       const texts = await icuTexts(changed, mode);
@@ -1389,7 +1392,7 @@ async function icuSync(manual){
       if(events.length){
         icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
         await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
-        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash([it.s,mode]); });
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v2',it.s,mode]); });
         created = events.length;
       }
     }
