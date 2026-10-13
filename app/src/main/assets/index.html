@@ -225,6 +225,10 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .brand .logo{display:inline-block;width:30px;height:30px;border-radius:8px;vertical-align:middle;margin:-4px 9px 0 0}
 .chk{display:flex;align-items:center;gap:8px;font-size:15px}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
+.icubar{display:flex}
+.icubar .btn{width:100%}
+.btn.icu{border-color:var(--accent);color:var(--accent)}
+.icuok{align-self:center;font-size:13px;color:var(--ok);font-weight:600}
 /* Kompakte Höhen */
 header.bar{padding:8px 16px}
 .brand h1{font-size:21px}
@@ -514,7 +518,9 @@ function moveControl(s){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
-  return `<div class="move"><button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
+  const is = icuState(s);
+  const icuBtn = is==='new'||is==='changed' ? `<button class="btn icu" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${is==='changed'?'Änderung an Uhr senden':'An Uhr senden'}</button>` : is==='ok' ? `<span class="icuok">✓ auf der Uhr</span>` : '';
+  return `<div class="move">${icuBtn}<button class="btn" data-action="move-open" ${da}>Verschieben</button><button class="btn" data-action="swap-open" ${da}>Umplanen</button><button class="btn" data-action="cancel-open" ${da}>Absagen</button></div>`;
 }
 function cancelledCard(s){
   return `<div class="card cancelled"><div class="card-head"><span class="tag extra">Abgesagt</span><span class="sport">${esc(SPORT[normSport(s.sport)])} · ${esc(fmtDay(s.date))}</span></div>
@@ -829,7 +835,11 @@ function renderPlan(){
   }
   const plan = S.plan;
   const rat = plan && plan.rationale ? `<div class="card"><div class="row"><h2>Begründung und Schwerpunkte</h2>${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · Version '+plan.revision:''}</span>`:''}</div><div class="rationale md">${md(plan.rationale)}</div></div>` : '';
+  const icuOn = IN_APP && appStatus().icuKey;
+  const icuOpen = icuOn ? icuSessions().filter(x => icuState(x.s0)!=='ok').length : 0;
   return goal + `<div class="row"><h2>Die nächsten 14 Tage</h2><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
+    ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuBusy?'Wird gesendet …':icuOpen?`7 Tage an die Uhr senden (${icuOpen})`:'7 Tage: alles auf der Uhr'}</button></div>`:''}
+    ${icuOn&&icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
     <div class="days">${rows.join('')}</div>` + rat;
 }
 
@@ -981,8 +991,7 @@ function connCard(){
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe auf der Uhr</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
-      <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button>${st.icuKey?`<button class="btn primary" data-action="icu-sync" ${icuBusy?'disabled':''}>${icuBusy?'Wird gesendet …':'Jetzt an die Uhr senden'}</button>`:''}</div>
-      ${icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
+      <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
       ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>
     <div class="fld"><span>Datensicherung</span>
       <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei in „Downloads“. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
@@ -1341,14 +1350,24 @@ const icuAuto = () => !!(profile().icu && profile().icu.auto);
 let icuBusy = false, icuMsg = null, icuTimer = null;
 function icuCall(method, path, body){ return window.__bridgeCall('intervals', body===undefined?{method, path}:{method, path, body}); }
 function icuHash(x){ const t=JSON.stringify(x); let h=0; for(let i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; } return String(h); }
-function icuSessions(){
-  const t = today(), end = addDays(t,6), out = [];
-  active().filter(s => s.date>=t && s.date<=end && ['run','ride'].includes(normSport(s.sport)) && !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport)))
+function icuAll(){
+  const t = today(), out = [];
+  active().filter(s => s.date>=t && ['run','ride'].includes(normSport(s.sport)) && !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport)))
+    .sort((a,b)=>a.date.localeCompare(b.date))
     .forEach(s0 => {
       // Kraft, Gymnastik und Dehnen bleiben in der App; Garmin würde sie als Laufabschnitt werten
       const s = Object.assign({}, s0, {steps:(s0.steps||[]).filter(st => !EXERCISE.test((st.label||'')+' '+(st.detail||'')))});
-      const n = out.filter(o=>o.s.date===s.date).length; out.push({s, ext:'laufdoch-'+s.date+'-'+n}); });
+      const n = out.filter(o=>o.s.date===s.date).length; out.push({s, s0, ext:'laufdoch-'+s.date+'-'+n}); });
   return out;
+}
+function icuSessions(){ const end = addDays(today(),6); return icuAll().filter(x => x.s.date<=end); }
+function icuEntry(s0){ return icuAll().find(x => x.s0===s0 || (x.s0.date===s0.date && x.s0.title===s0.title)); }
+/* Status einer Einheit: null = nicht übertragbar, 'new' = noch nicht gesendet, 'changed' = geändert, 'ok' = aktuell auf der Uhr */
+function icuState(s0){
+  if(!IN_APP || !appStatus().icuKey) return null;
+  const e = icuEntry(s0); if(!e) return null;
+  const h = (S.plan && S.plan.icuSent || {})[e.ext];
+  return !h ? 'new' : h===icuHash(['v2',e.s,icuMode()]) ? 'ok' : 'changed';
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
 async function icuTexts(items, mode){
@@ -1373,13 +1392,13 @@ Antworte nur mit JSON: {"workouts":[{"key":"…","text":"…"}]}`;
   const map = {}; (res && res.workouts || []).forEach(w => { if(w && w.key && w.text) map[w.key] = String(w.text).slice(0,4000); });
   return map;
 }
-async function icuSync(manual){
+async function icuSync(manual, onlyExt){
   if(!IN_APP || icuBusy || !S.plan) return;
   const st = appStatus(); if(!st.icuKey){ if(manual){ icuMsg={err:true,text:'Bitte zuerst den intervals.icu-API-Schlüssel speichern.'}; render(); } return; }
   if(!sample){ icuMsg={err:true,text:'Claude ist nicht verfügbar.'}; render(); return; }
   icuBusy = true; icuMsg = {text:'Einheiten werden umgewandelt …'}; render();
   try{
-    const mode = icuMode(), items = icuSessions();
+    const mode = icuMode(), items = onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions();
     const sent = Object.assign({}, S.plan.icuSent||{});
     const changed = items.filter(({s,ext}) => sent[ext] !== icuHash(['v2',s,mode]));
     let created = 0, deleted = 0;
@@ -1396,13 +1415,16 @@ async function icuSync(manual){
         created = events.length;
       }
     }
-    const keep = new Set(items.map(i=>i.ext));
-    const stale = Object.keys(sent).filter(k => !keep.has(k));
+    const keep = new Set(icuAll().map(i=>i.ext));
+    const t0 = today();
+    Object.keys(sent).forEach(k => { if(k.slice(9,19) < t0) delete sent[k]; });   // Vergangenes nur lokal vergessen
+    const stale = onlyExt ? [] : Object.keys(sent).filter(k => !keep.has(k));
     if(stale.length){
       await icuCall('PUT','/athlete/0/events/bulk-delete', stale.map(k=>({external_id:k})));
       stale.forEach(k => delete sent[k]); deleted = stale.length;
     }
     S.plan.icuSent = sent; S.plan.icuLast = new Date().toISOString(); await save('plan');
+    if(onlyExt && created) window.Android.toast('Einheit an intervals.icu gesendet.');
     icuMsg = {text: created||deleted ? `${created} Einheit${created===1?'':'en'} gesendet${deleted?`, ${deleted} entfernt`:''}. Garmin Connect übernimmt sie in der Regel innerhalb weniger Minuten.` : 'Alles aktuell, nichts zu senden.'};
   }catch(e){
     const c = e && e.code;
@@ -1568,6 +1590,7 @@ document.addEventListener('click', async e => {
     render();
   }
   else if(a==='icu-sync'){ icuSync(true); }
+  else if(a==='icu-one'){ const s0 = sessions().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); const e = s0 && icuEntry(s0); if(e) icuSync(true, e.ext); }
   else if(a==='cf-export'){ if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(window.__ldExport()))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); }
   else if(a==='cf-import'){ window.Android.pickBackup(); }
   else if(a==='cf-import-no'){ confirmImport=null; render(); }
