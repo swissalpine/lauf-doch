@@ -1367,7 +1367,7 @@ function icuState(s0){
   if(!IN_APP || !appStatus().icuKey) return null;
   const e = icuEntry(s0); if(!e) return null;
   const h = (S.plan && S.plan.icuSent || {})[e.ext];
-  return !h ? 'new' : h===icuHash(['v2',e.s,icuMode()]) ? 'ok' : 'changed';
+  return !h ? 'new' : h===icuHash(['v3',e.s,icuMode()]) ? 'ok' : 'changed';
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
 async function icuTexts(items, mode){
@@ -1381,6 +1381,7 @@ Regeln:
 - Jeder Schritt: „- <Hinweis> <Dauer> <Ziel>“. Dauer als Zeit (10m, 30s, 1m30) oder Strecke mit Dezimalpunkt (1.5km). „m“ heißt Minuten. Keine weiteren Zahlen mit Einheit im Hinweis.
 - Hinweis kurz auf Deutsch, immer mit der Belastung, z. B. „Locker, Belastung 2–3“ (Bereich mit Halbgeviertstrich).
 - Ziel: ${mode==='hr'?'„Z2 HR“ oder „Z1-Z2 HR“':mode==='pace'?'„5:35-5:20/km Pace“ (langsamere Pace zuerst), sonst „Z2 HR“':'kein Ziel, Zeile endet nach der Dauer'}.
+- Nur echte zeitliche Abschnitte werden Schritte (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen). Verhaltenshinweise ohne eigene Dauer, z. B. „Bergab: steilere Abstiege gehen“, „Kadenz hoch halten“ oder „flache Strecke wählen“, sind kein eigener Schritt und keine eigene Überschrift; nimm sie kurz in den Hinweis des Laufschritts auf, zu dem sie gehören (z. B. „Locker, bergab gehen, Belastung 3–4“).
 - Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
 - Nur der Lauf- bzw. Radteil. Lass Kraftübungen, Gymnastik, Dehnen und Mobilisation komplett weg, auch nicht als Text- oder Überschriftzeile; sie würden auf der Uhr als Laufabschnitt erscheinen.
 
@@ -1400,7 +1401,7 @@ async function icuSync(manual, onlyExt){
   try{
     const mode = icuMode(), items = onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions();
     const sent = Object.assign({}, S.plan.icuSent||{});
-    const changed = items.filter(({s,ext}) => sent[ext] !== icuHash(['v2',s,mode]));
+    const changed = items.filter(({s,ext}) => sent[ext] !== icuHash(['v3',s,mode]));
     let created = 0, deleted = 0;
     if(changed.length){
       const texts = await icuTexts(changed, mode);
@@ -1411,7 +1412,7 @@ async function icuSync(manual, onlyExt){
       if(events.length){
         icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
         await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
-        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v2',it.s,mode]); });
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v3',it.s,mode]); });
         created = events.length;
       }
     }
