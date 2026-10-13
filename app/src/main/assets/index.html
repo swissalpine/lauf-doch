@@ -275,6 +275,11 @@ nav.tabs button{padding:4px 2px}
 .rationale.md,.summary.md{white-space:normal}
 .tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tg{font-size:12.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums}
+.rpepick{display:flex;flex-direction:column;gap:4px}
+.rpepick > span{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rpebtns{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.rpebtns button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 0;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer}
+.rpebtns button:hover{border-color:var(--accent);color:var(--accent)}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
 .move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
@@ -657,6 +662,7 @@ function doneCard(a, planned, extra){
     <h3>${esc(a.name)}</h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
+    ${rpeOf(a)?'':`<div class="rpepick"><span>Belastung</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="Belastung ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${(f && (f.painDuring!=null||f.painAfter!=null||f.note)) || (!careMode() && rp) ?`<div class="chips">${chips.join('')}</div>`:`${chips.length?`<div class="chips">${chips.join('')}</div>`:''}<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'}${rp?'':' und Belastung'}.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>`}
     ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div></div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
     ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
@@ -1293,6 +1299,12 @@ document.addEventListener('click', async e => {
     pr.complaints = list; markChange('complaints', 'Beschwerden: '+(list.join(', ')||'keine')); render(); save('profile');
   }
   else if(a==='replan-changes') replanFromChanges();
+  else if(a==='rpe-set'){
+    const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+    log.feedback = log.feedback||{};
+    log.feedback[b.dataset.id] = Object.assign({}, log.feedback[b.dataset.id], {rpe:Number(b.dataset.v)});
+    render(); save('log');
+  }
   else if(a==='bg-open'){ bgDlg={edit:false}; renderMoveDialog(); }
   else if(a==='bg-close'){ bgDlg=null; renderMoveDialog(); }
   else if(a==='bg-edit'){ bgDlg.edit=true; renderMoveDialog(); }
