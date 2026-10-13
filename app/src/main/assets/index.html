@@ -1185,6 +1185,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
   · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
   · Rad: IF und TSS bezogen auf die FTP.
   · Formentwicklung über die Wochen (Effizienz, Belastung) nur mit Vorsicht, solange wenige Daten vorliegen.
+- "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, Belastung, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD): 2–5 Sätze in Stichworten zu Umfang, ${care?'Beschwerdesignalen':'Befinden'}, Belastung und Trainingswirkung, Auswertung und was im Dialog besprochen oder entschieden wurde. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
@@ -1202,7 +1203,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "background":"aktualisierter Hintergrundtext",
    "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
-   "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}Belastung, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"eine Zeile in Stichworten"}],
+   "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}Belastung, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
  }}
 Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" ist immer die vollständige Liste. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.`,

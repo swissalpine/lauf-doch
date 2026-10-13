@@ -10,8 +10,8 @@ android {
         applicationId = "de.laufdoch"
         minSdk = 29
         targetSdk = 34
-        versionCode = 18
-        versionName = "1.17"
+        versionCode = 19
+        versionName = "1.18"
     }
 
     // Fester Schlüssel, damit Updates ohne Deinstallation installiert werden können.
