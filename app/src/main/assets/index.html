@@ -223,6 +223,8 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .brand h1{display:block;margin:0;line-height:30px;white-space:nowrap}
 .brand .date{line-height:1}
 .brand .logo{display:inline-block;width:30px;height:30px;border-radius:8px;vertical-align:middle;margin:-4px 9px 0 0}
+.chk{display:flex;align-items:center;gap:8px;font-size:15px}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
 /* Kompakte Höhen */
 header.bar{padding:8px 16px}
 .brand h1{font-size:21px}
@@ -973,6 +975,15 @@ function connCard(){
       <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>
+    <div class="fld"><span>Garmin (über intervals.icu)</span>
+      <p class="note">Schickt die Einheiten der nächsten 7 Tage als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
+      <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
+      <label class="fld" for="cfIcuMode"><span>Zielvorgabe auf der Uhr</span>
+        <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','Belastung als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
+      <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button>${st.icuKey?`<button class="btn primary" data-action="icu-sync" ${icuBusy?'disabled':''}>${icuBusy?'Wird gesendet …':'Jetzt an die Uhr senden'}</button>`:''}</div>
+      ${icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
+      ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>
     <div class="fld"><span>Datensicherung</span>
       <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei in „Downloads“. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
       ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p><div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
@@ -1258,7 +1269,7 @@ async function applyUpdates(u){
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
     S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
-      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[]};
+      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[], icuSent:(S.plan&&S.plan.icuSent)||{}, icuLast:(S.plan&&S.plan.icuLast)||null};
     plc=true;
   }
   const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
@@ -1283,6 +1294,7 @@ async function applyUpdates(u){
   });
   if(plc && pr.pendingChanges && Object.keys(pr.pendingChanges).length){ pr.pendingChanges = {}; pc=true; }
   if(pc) await save('profile'); if(plc) await save('plan'); if(lc) await save('log');
+  if(plc) icuAutoSync();
 }
 
 function errText(e){
@@ -1323,6 +1335,79 @@ async function askClaude(text, opt={}){
 }
 function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; draft=''; askClaude(v); }
 
+/* ---------- Garmin über intervals.icu ---------- */
+const icuMode = () => (profile().icu && profile().icu.mode) || 'hr';
+const icuAuto = () => !!(profile().icu && profile().icu.auto);
+let icuBusy = false, icuMsg = null, icuTimer = null;
+function icuCall(method, path, body){ return window.__bridgeCall('intervals', body===undefined?{method, path}:{method, path, body}); }
+function icuHash(x){ const t=JSON.stringify(x); let h=0; for(let i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; } return String(h); }
+function icuSessions(){
+  const t = today(), end = addDays(t,6), out = [];
+  active().filter(s => s.date>=t && s.date<=end && normSport(s.sport)!=='rest' && !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport)))
+    .forEach(s => { const n = out.filter(o=>o.s.date===s.date).length; out.push({s, ext:'laufdoch-'+s.date+'-'+n}); });
+  return out;
+}
+const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
+async function icuTexts(items, mode){
+  const z = S.log && S.log.zones && S.log.zones.hrMins;
+  const prompt = `Wandle Trainingseinheiten in die Workout-Syntax von intervals.icu um (für die Übertragung auf eine Garmin-Uhr).
+Zielvorgabe: ${mode==='hr'?'Herzfrequenz-Zonen':mode==='pace'?'Pace (nur wo die Einheit eine Pace nennt; sonst HF-Zone)':'keine Zielbereiche, Belastung nur als Text'}.
+HF-Zonen (Untergrenzen Z1–Z5): ${z?z.join(', '):'unbekannt'}.
+
+Regeln:
+- Abschnitte als Überschriftzeilen ohne Bindestrich, z. B. „Einlaufen“, „Hauptteil 4x“, „Auslaufen“. Wiederholungen nur als „… 4x“ in der Überschrift, keine verschachtelten Wiederholungen, je eine Leerzeile vor und nach einem Wiederholungsblock.
+- Jeder Schritt: „- <Hinweis> <Dauer> <Ziel>“. Dauer als Zeit (10m, 30s, 1m30) oder Strecke mit Dezimalpunkt (1.5km). „m“ heißt Minuten. Keine weiteren Zahlen mit Einheit im Hinweis.
+- Hinweis kurz auf Deutsch, immer mit der Belastung, z. B. „Locker, Belastung 2–3“ (Bereich mit Halbgeviertstrich).
+- Ziel: ${mode==='hr'?'„Z2 HR“ oder „Z1-Z2 HR“':mode==='pace'?'„5:35-5:20/km Pace“ (langsamere Pace zuerst), sonst „Z2 HR“':'kein Ziel, Zeile endet nach der Dauer'}.
+- Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
+- Krafteinheiten (Sportart strength): nur Textzeilen ohne Bindestrich, je Übung eine Zeile mit Umfang.
+
+Einheiten:
+${JSON.stringify(items.map(({s,ext})=>({key:ext, sportart:normSport(s.sport), titel:s.title, ziel:s.goal, km:s.distanceKm, minuten:s.durationMin, schritte:s.steps})))}
+
+Antworte nur mit JSON: {"workouts":[{"key":"…","text":"…"}]}`;
+  const res = await sample.json(prompt, {cache:false});
+  const map = {}; (res && res.workouts || []).forEach(w => { if(w && w.key && w.text) map[w.key] = String(w.text).slice(0,4000); });
+  return map;
+}
+async function icuSync(manual){
+  if(!IN_APP || icuBusy || !S.plan) return;
+  const st = appStatus(); if(!st.icuKey){ if(manual){ icuMsg={err:true,text:'Bitte zuerst den intervals.icu-API-Schlüssel speichern.'}; render(); } return; }
+  if(!sample){ icuMsg={err:true,text:'Claude ist nicht verfügbar.'}; render(); return; }
+  icuBusy = true; icuMsg = {text:'Einheiten werden umgewandelt …'}; render();
+  try{
+    const mode = icuMode(), items = icuSessions();
+    const sent = Object.assign({}, S.plan.icuSent||{});
+    const changed = items.filter(({s,ext}) => sent[ext] !== icuHash([s,mode]));
+    let created = 0, deleted = 0;
+    if(changed.length){
+      const texts = await icuTexts(changed, mode);
+      const events = changed.filter(({ext})=>texts[ext]).map(({s,ext}) => ({
+        category:'WORKOUT', start_date_local:s.date+'T00:00:00', type:ICU_TYPE[normSport(s.sport)]||'Run',
+        name:s.title||'Training', description:texts[ext], external_id:ext,
+        moving_time: s.durationMin ? s.durationMin*60 : undefined }));
+      if(events.length){
+        icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
+        await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash([it.s,mode]); });
+        created = events.length;
+      }
+    }
+    const keep = new Set(items.map(i=>i.ext));
+    const stale = Object.keys(sent).filter(k => !keep.has(k));
+    if(stale.length){
+      await icuCall('PUT','/athlete/0/events/bulk-delete', stale.map(k=>({external_id:k})));
+      stale.forEach(k => delete sent[k]); deleted = stale.length;
+    }
+    S.plan.icuSent = sent; S.plan.icuLast = new Date().toISOString(); await save('plan');
+    icuMsg = {text: created||deleted ? `${created} Einheit${created===1?'':'en'} gesendet${deleted?`, ${deleted} entfernt`:''}. Garmin Connect übernimmt sie in der Regel innerhalb weniger Minuten.` : 'Alles aktuell, nichts zu senden.'};
+  }catch(e){
+    const c = e && e.code;
+    icuMsg = {err:true, text: c==='bad_key' ? 'Der intervals.icu-Schlüssel ist ungültig.' : c==='not_configured' ? 'Bitte zuerst den intervals.icu-API-Schlüssel speichern.' : c==='server_unavailable' ? 'intervals.icu ist gerade nicht erreichbar.' : 'Senden fehlgeschlagen: '+((e&&e.message)||'unbekannter Fehler')};
+  }finally{ icuBusy = false; render(); }
+}
+function icuAutoSync(){ if(!IN_APP || !icuAuto()) return; clearTimeout(icuTimer); icuTimer = setTimeout(() => { if(!busy) icuSync(false); else icuAutoSync(); }, 3000); }
+
 /* ---------- Ausgelassene Einheiten: einmalig melden und Umplanung anstoßen ---------- */
 function missedSessions(){
   const t = today(), since = addDays(t,-3);
@@ -1349,7 +1434,7 @@ async function checkMissed(){
     await q;
   } finally { missedBusy = false; }
 }
-window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); });
+window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); icuAutoSync(); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
 
 /* ---------- Ereignisse ---------- */
@@ -1426,7 +1511,7 @@ document.addEventListener('click', async e => {
     const s = S.plan.sessions.find(x=>x.date===date && (x.title||'')===title && !x.cancelled); if(!s) return;
     s.cancelled = {reason, ts:new Date().toISOString()};
     S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
-    render(); await save('plan');
+    render(); await save('plan'); icuAutoSync();
     if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung der nächsten 14 Tage: Bei Krankheit oder Beschwerden die Belastung danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
   }
   else if(a==='move-open'){ moveDlg={from:b.dataset.date, title:b.dataset.title, to:null}; renderMoveDialog(); }
@@ -1443,7 +1528,7 @@ document.addEventListener('click', async e => {
     S.plan.allowDates = uniq([...(S.plan.allowDates||[]), to]);
     S.plan.blockedDates = uniq([...(S.plan.blockedDates||[]).filter(d=>d!==to), from]);
     S.plan.sessions.sort((x,y)=>x.date.localeCompare(y.date));
-    render(); await save('plan');
+    render(); await save('plan'); icuAutoSync();
     if(sample && !busy) askClaude(`Ich habe „${s.title}“ von ${fmtDay(from)} auf ${fmtDay(to)} verschoben, weil ich am ${fmtDay(from)} nicht kann. Die Einheit bleibt am ${fmtDay(to)}, am ${fmtDay(from)} bitte nichts planen. Prüfe Abstände und Belastung der angrenzenden Einheiten und passe den Plan an: Einheiten bei Bedarf kürzen oder tauschen und dafür andere verlängern, damit der Wochenumfang passt.`, {auto:true});
   }
   else if(a==='rm-complaint'){ confirmRm=Number(b.dataset.i); render(); }
@@ -1469,6 +1554,17 @@ document.addEventListener('click', async e => {
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
   else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
   else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
+  else if(a==='cf-icu-save'){
+    const k=document.getElementById('cfIcu'); if(k && k.value.trim()) window.Android.setIntervals(k.value.trim());
+    const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+    const m=document.getElementById('cfIcuMode'), au=document.getElementById('cfIcuAuto');
+    const oldMode = icuMode();
+    pr.icu = {mode: m?m.value:'hr', auto: !!(au&&au.checked)};
+    await save('profile'); window.Android.toast('Garmin-Einstellungen gespeichert.');
+    if(oldMode!==pr.icu.mode && S.plan) { S.plan.icuSent = {}; }
+    render();
+  }
+  else if(a==='icu-sync'){ icuSync(true); }
   else if(a==='cf-export'){ if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(window.__ldExport()))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); }
   else if(a==='cf-import'){ window.Android.pickBackup(); }
   else if(a==='cf-import-no'){ confirmImport=null; render(); }
@@ -1492,7 +1588,7 @@ render();
   ['profile','plan','log','chat'].forEach(name => {
     db.doc('data/users/'+uid+'/'+name).onSnapshot(snap => {
       S[name] = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
-      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); } }
+      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); icuAutoSync(); } }
       if(!(busy && name==='chat')) render();
     }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
   });

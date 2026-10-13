@@ -168,4 +168,5 @@
   const caps = {db: db, user: user, mcp: mcp, sample: sample};
   window.claude = { use: function(name){ return Promise.resolve(caps[name] || null); } };
   window.IN_APP = true;
+  window.__bridgeCall = call;
 })();

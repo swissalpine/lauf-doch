@@ -213,6 +213,25 @@ public class MainActivity extends Activity {
         return r.body;
     }
 
+    // ---------------------------------------------------------------- intervals.icu
+
+    /** Aufruf der intervals.icu-API; payload = {method, path, body}. Liefert {"status":…, "body":…}. */
+    private String intervals(JSONObject p) throws Exception {
+        String key = prefs.getString("icu_key", "");
+        if (key.isEmpty()) throw new BridgeError("not_configured", "Kein intervals.icu-API-Schlüssel hinterlegt.");
+        String auth = "Basic " + android.util.Base64.encodeToString(("API_KEY:" + key).getBytes(StandardCharsets.UTF_8), android.util.Base64.NO_WRAP);
+        String method = p.optString("method", "GET");
+        String body = p.has("body") ? p.get("body").toString() : null;
+        Resp r = http(method, "https://intervals.icu/api/v1" + p.getString("path"), body != null ? "application/json" : null, body, auth);
+        if (r.status == 401 || r.status == 403) throw new BridgeError("bad_key", "intervals.icu-Schlüssel ungültig.");
+        if (r.status >= 500) throw new BridgeError("server_unavailable", "intervals.icu antwortet nicht (HTTP " + r.status + ").");
+        if (r.status >= 400) throw new BridgeError("tool_error", "intervals.icu-Fehler HTTP " + r.status + ": " + r.body);
+        JSONObject out = new JSONObject();
+        out.put("status", r.status);
+        out.put("body", r.body);
+        return out.toString();
+    }
+
     // ---------------------------------------------------------------- Claude
 
     /** Anthropic Messages API; payload = {system, messages:[{role, content}]}. Liefert {"text": …}. */
@@ -281,6 +300,7 @@ public class MainActivity extends Activity {
                     JSONObject p = new JSONObject(payload);
                     if ("claude".equals(kind)) result = claude(p);
                     else if ("strava".equals(kind)) result = strava(p);
+                    else if ("intervals".equals(kind)) result = intervals(p);
                     else throw new BridgeError("bad_request", "Unbekannter Aufruf.");
                 } catch (BridgeError e) {
                     ok = false;
@@ -306,6 +326,7 @@ public class MainActivity extends Activity {
                 j.put("stravaClientId", prefs.getString("strava_client_id", ""));
                 j.put("stravaConnected", prefs.getString("strava_refresh", null) != null);
                 j.put("stravaAthlete", prefs.getString("strava_athlete", ""));
+                j.put("icuKey", !prefs.getString("icu_key", "").isEmpty());
                 return j.toString();
             } catch (Exception e) {
                 return "{}";
@@ -319,6 +340,12 @@ public class MainActivity extends Activity {
             if (model != null && !model.trim().isEmpty()) e.putString("claude_model", model.trim());
             e.apply();
             toast("Claude-Einstellungen gespeichert.");
+        }
+
+        @JavascriptInterface
+        public void setIntervals(String key) {
+            if (key == null || key.trim().isEmpty()) prefs.edit().remove("icu_key").apply();
+            else prefs.edit().putString("icu_key", key.trim()).apply();
         }
 
         @JavascriptInterface
