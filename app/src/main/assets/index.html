@@ -1579,9 +1579,9 @@ const icuAuto = () => !!(profile().icu && profile().icu.auto);
 let icuBusy = false, icuMsg = null, icuTimer = null;
 function icuCall(method, path, body){ return window.__bridgeCall('intervals', body===undefined?{method, path}:{method, path, body}); }
 function icuHash(x){ const t=JSON.stringify(x); let h=0; for(let i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; } return String(h); }
-function icuAll(){
+function icuAll(withDone){
   const t = today(), out = [];
-  active().filter(s => s.date>=t && ['run','ride'].includes(normSport(s.sport)) && !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport)))
+  active().filter(s => s.date>=t && ['run','ride'].includes(normSport(s.sport)) && (withDone || !acts().some(a=>a.date===s.date && a.sport===normSport(s.sport))))
     .sort((a,b)=>a.date.localeCompare(b.date))
     .forEach(s0 => {
       // Kraft, Gymnastik und Dehnen bleiben in der App; Garmin würde sie als Laufabschnitt werten
@@ -1622,6 +1622,26 @@ Antworte nur mit JSON: {"workouts":[{"key":"…","text":"…"}]}`;
   const map = {}; (res && res.workouts || []).forEach(w => { if(w && w.key && w.text) map[w.key] = String(w.text).slice(0,4000); });
   return map;
 }
+/* Auf intervals.icu Einheiten löschen, die es im Plan nicht mehr gibt (verschoben, abgesagt, ersetzt). Ändert sent. */
+async function icuPurge(sent){
+  const keep = new Set(icuAll(true).map(i=>i.ext)), t0 = today();
+  Object.keys(sent).forEach(k => { if(k.slice(9,19) < t0) delete sent[k]; });   // Vergangenes nur lokal vergessen
+  const stale = Object.keys(sent).filter(k => !keep.has(k));
+  if(!stale.length) return 0;
+  await icuCall('PUT','/athlete/0/events/bulk-delete', stale.map(k=>({external_id:k})));
+  stale.forEach(k => { delete sent[k]; if(S.plan.icuModes) delete S.plan.icuModes[k]; });
+  return stale.length;
+}
+async function icuCleanup(){
+  if(!IN_APP || icuBusy || !S.plan || !appStatus().icuKey) return;
+  icuBusy = true;
+  try{
+    const sent = Object.assign({}, S.plan.icuSent||{});
+    const n = await icuPurge(sent);
+    if(n){ S.plan.icuSent = sent; await save('plan'); icuMsg = {text:`${n} Einheit${n===1?'':'en'} von der Uhr entfernt.`}; }
+  }catch(e){ /* beim nächsten Senden erneut */ }
+  finally{ icuBusy = false; render(); }
+}
 async function icuSync(manual, onlyExt, forceMode){
   if(!IN_APP || icuBusy || !S.plan) return;
   const st = appStatus(); if(!st.icuKey){ if(manual){ icuMsg={err:true,text:'Bitte zuerst den intervals.icu-API-Schlüssel speichern.'}; render(); } return; }
@@ -1646,14 +1666,7 @@ async function icuSync(manual, onlyExt, forceMode){
         created = events.length;
       }
     }
-    const keep = new Set(icuAll().map(i=>i.ext));
-    const t0 = today();
-    Object.keys(sent).forEach(k => { if(k.slice(9,19) < t0) delete sent[k]; });   // Vergangenes nur lokal vergessen
-    const stale = onlyExt ? [] : Object.keys(sent).filter(k => !keep.has(k));
-    if(stale.length){
-      await icuCall('PUT','/athlete/0/events/bulk-delete', stale.map(k=>({external_id:k})));
-      stale.forEach(k => { delete sent[k]; if(S.plan.icuModes) delete S.plan.icuModes[k]; }); deleted = stale.length;
-    }
+    deleted = await icuPurge(sent);
     S.plan.icuSent = sent; S.plan.icuLast = new Date().toISOString(); await save('plan');
     if(onlyExt && created) window.Android.toast(`Einheit mit Zielvorgabe ${ICU_LABEL[items[0].mode]} gesendet.`);
     icuMsg = {text: created||deleted ? `${created} Einheit${created===1?'':'en'} gesendet${deleted?`, ${deleted} entfernt`:''}. Garmin Connect übernimmt sie in der Regel innerhalb weniger Minuten.` : 'Alles aktuell, nichts zu senden.'};
@@ -1662,7 +1675,7 @@ async function icuSync(manual, onlyExt, forceMode){
     icuMsg = {err:true, text: c==='bad_key' ? 'Der intervals.icu-Schlüssel ist ungültig.' : c==='not_configured' ? 'Bitte zuerst den intervals.icu-API-Schlüssel speichern.' : c==='server_unavailable' ? 'intervals.icu ist gerade nicht erreichbar.' : 'Senden fehlgeschlagen: '+((e&&e.message)||'unbekannter Fehler')};
   }finally{ icuBusy = false; render(); }
 }
-function icuAutoSync(){ if(!IN_APP || !icuAuto()) return; clearTimeout(icuTimer); icuTimer = setTimeout(() => { if(!busy) icuSync(false); else icuAutoSync(); }, 3000); }
+function icuAutoSync(){ if(!IN_APP) return; if(!icuAuto()){ clearTimeout(icuTimer); icuTimer = setTimeout(() => { if(!busy) icuCleanup(); else icuAutoSync(); }, 1500); return; } clearTimeout(icuTimer); icuTimer = setTimeout(() => { if(!busy) icuSync(false); else icuAutoSync(); }, 3000); }
 
 /* ---------- Ausgelassene Einheiten: einmalig melden und Umplanung anstoßen ---------- */
 function missedSessions(){
