@@ -342,6 +342,16 @@ nav.tabs button{padding:4px 2px}
 .madv{background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:14px}
 .mnote{font-size:14px;background:var(--warn-soft);color:var(--ink);border-radius:8px;padding:8px 10px}
 .phhint{font-size:13px;color:var(--muted);margin:-6px 0 0}
+.p14{padding:0;gap:0;overflow:hidden}
+.p14 .p14head{padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.p14 .phhint{margin:2px 0 0;line-height:1.3}
+.p14 .p14t{display:flex;flex-direction:column;min-width:0}
+.p14 .p14head .row{align-items:center}
+.p14 .days{border:0;border-radius:0;border-top:1px solid var(--line)}
+.p14 .why{border:0;border-radius:0;border-top:1px solid var(--line)}
+.p14 .why>summary{padding:12px 16px}
+.p14 .why .rationale{padding:0 16px 14px}
+.p14 .icubar,.p14 .status{margin:0}
 .summary.md ul{list-style:none;padding-left:0}
 .summary.md li{margin:0 0 .45em}
 .tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
@@ -1029,11 +1039,10 @@ function renderPlan(){
   const icuOn = IN_APP && appStatus().icuKey;
   const icuOpen = icuOn ? icuSessions().filter(x => icuState(x.s0)!=='ok').length : 0;
   const mi = macroInfo();
-  return goal + renderMacro() + `<div class="row"><h2>Die nächsten 14 Tage</h2><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
-    ${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}
+  return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Die nächsten 14 Tage</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
     ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuBusy?'Wird gesendet …':icuOpen?`7 Tage an die Uhr senden (${icuOpen})`:'7 Tage: alles auf der Uhr'}</button></div>`:''}
     ${icuOn&&icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
-    <div class="days">${rows.join('')}</div>` + rat;
+    </div><div class="days">${rows.join('')}</div>${rat}</div>`;
 }
 
 function weekSummary(mon){ return (S.log && S.log.weekSummaries && S.log.weekSummaries[mon]) || null; }
