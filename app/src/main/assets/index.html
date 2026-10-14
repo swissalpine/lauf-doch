@@ -1193,7 +1193,7 @@ function connCard(){
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>
     <div class="fld"><span>Garmin (über intervals.icu)</span>
-      <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 7 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
+      <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 14 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
@@ -1589,7 +1589,7 @@ function icuAll(withDone){
       const n = out.filter(o=>o.s.date===s.date).length; out.push({s, s0, ext:'laufdoch-'+s.date+'-'+n}); });
   return out;
 }
-function icuSessions(){ const end = addDays(today(),6); return icuAll().filter(x => x.s.date<=end); }
+function icuSessions(){ const end = addDays(today(),13); return icuAll().filter(x => x.s.date<=end); }
 function icuEntry(s0){ return icuAll().find(x => x.s0===s0 || (x.s0.date===s0.date && x.s0.title===s0.title)); }
 /* Status einer Einheit: null = nicht übertragbar, 'new' = noch nicht gesendet, 'changed' = geändert, 'ok' = aktuell auf der Uhr */
 function icuState(s0){
