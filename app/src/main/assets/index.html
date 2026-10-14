@@ -136,6 +136,8 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .weeknav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}
 .weeknav button{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:20px;cursor:pointer}
 .weeknav button[disabled]{opacity:.35;cursor:default}
+.wcard .weeknav{margin:-4px -4px 0;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.wcard .weeknav button{border:0;background:var(--sunk);border-radius:50%;width:40px;height:40px;justify-self:center}
 .weeknav .wl{text-align:center;line-height:1.2}
 .weeknav .wl b{display:block;font-family:var(--f-display);font-size:24px;font-weight:600}
 .weeknav .wl span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -1152,12 +1154,11 @@ function renderHistory(){
   }
   const ws = weekSummary(mon);
   const msgs = ((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun).length;
-  return `<div class="weeknav">
+  return `<div class="card wcard"><div class="weeknav">
       <button data-action="week-prev" aria-label="Vorherige Woche" ${mon<=first?'disabled':''}>‹</button>
       <div class="wl"><b>${esc(label)}</b><span>${esc(range)}</span></div>
       <button data-action="week-next" aria-label="Nächste Woche" ${weekOffset===0?'disabled':''}>›</button>
-    </div>
-    <div class="card"><div class="wsum">${metrics.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
+    </div><div class="wsum">${metrics.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
     ${(() => { const st=weekStats(mon), pv=weekStats(addDays(mon,-7)); const [cls,lbl]=acwrInfo(st.acwr);
       const efd = st.ef && pv.ef ? (st.ef-pv.ef)/pv.ef*100 : null;
       return `<div class="card"><div class="row"><div class="ht"><h2>Trainingslast und Form</h2><button class="info" data-action="info" aria-expanded="${infoOpen}" aria-label="Erklärung der Kennzahlen">i</button></div><span class="badge ${cls}">Trainingslast ${lbl}</span></div>
