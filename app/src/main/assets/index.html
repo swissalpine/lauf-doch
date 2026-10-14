@@ -1396,7 +1396,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
 - Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder die Entwicklung deutlich abweicht (dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum). Sonst lass ihn weg. Der 14-Tage-Plan leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diese 14 Tage betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
-- Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
+- Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg. Halte die Antwort kompakt und gültiges JSON: Anführungszeichen innerhalb von Texten als „…“ schreiben.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
 {"reply":"Text an ${nm}",
@@ -1522,7 +1522,17 @@ async function askClaude(text, opt={}){
   S.chat.messages.filter(m=>!m.error && (m.ts||0)>=dialogSince).slice(-16).forEach(m => turns.push({role:m.role, content:m.full||m.text}));
   ctl = new AbortController();
   try{
-    const res = await sample.json(turns, {cache:false, signal:ctl.signal, onText:()=>{ const el=document.getElementById('thinkTxt'); if(el) el.textContent='Claude schreibt …'; }});
+    const onText = ()=>{ const el=document.getElementById('thinkTxt'); if(el) el.textContent='Claude schreibt …'; };
+    let res;
+    try{ res = await sample.json(turns, {cache:false, signal:ctl.signal, onText}); }
+    catch(e1){
+      if(!e1 || e1.code!=='invalid_json') throw e1;
+      // Einmal automatisch knapper wiederholen
+      const cut = /abgeschnitten/.test(e1.message||'');
+      const el=document.getElementById('thinkTxt'); if(el) el.textContent = cut ? 'Antwort zu lang – Claude fasst sich kürzer …' : 'Antwort unlesbar – Claude versucht es erneut …';
+      console.warn('Claude-Antwort unbrauchbar', e1.message, String(e1.text||'').slice(-400));
+      res = await sample.json(turns.concat([{role:'user', content:`Deine vorige Antwort ${cut?'war zu lang und wurde abgeschnitten':'war kein gültiges JSON'}. Antworte erneut auf die letzte Nachricht, als gültiges JSON und deutlich knapper: "reply" höchstens 4 Sätze, nur die nötigen Felder in "updates", Einheiten mit höchstens 5 Schritten und kurzen Details, Gesamtplan-Begründung höchstens 4 Stichpunkte. Anführungszeichen innerhalb von Texten als „…“ schreiben.`}]), {cache:false, signal:ctl.signal, onText});
+    }
     await applyUpdates(res && res.updates);
     const reply = res && typeof res.reply==='string' && res.reply.trim() ? res.reply.trim() : 'Erledigt.';
     push({role:'assistant', text:reply, ts:Date.now()});

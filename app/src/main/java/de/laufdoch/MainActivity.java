@@ -240,14 +240,14 @@ public class MainActivity extends Activity {
         if (key.isEmpty()) throw new BridgeError("not_configured", "Kein Claude-API-Schlüssel hinterlegt.");
         JSONObject req = new JSONObject();
         req.put("model", prefs.getString("claude_model", DEFAULT_MODEL));
-        req.put("max_tokens", 8000);
+        req.put("max_tokens", 20000);
         if (p.has("system")) req.put("system", p.getString("system"));
         req.put("messages", p.getJSONArray("messages"));
 
         HttpURLConnection c = (HttpURLConnection) new URL("https://api.anthropic.com/v1/messages").openConnection();
         c.setRequestMethod("POST");
         c.setConnectTimeout(20000);
-        c.setReadTimeout(240000);
+        c.setReadTimeout(420000);
         c.setDoOutput(true);
         c.setRequestProperty("content-type", "application/json");
         c.setRequestProperty("x-api-key", key);
