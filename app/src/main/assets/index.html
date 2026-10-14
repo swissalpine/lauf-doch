@@ -298,6 +298,14 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.goal .ghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:-4px}
+.goal .gedit{width:36px;height:36px;margin:-8px -8px -8px 0;border:0;border-radius:50%;background:transparent;color:var(--accent-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.goal .gedit:active{background:rgba(255,255,255,.18)}
+.goal .gedit svg,.goal-add svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.why{border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.why>summary{cursor:pointer;padding:10px 14px;display:flex;gap:8px;align-items:baseline;font-weight:600}
+.why>summary .note{margin-left:auto;font-weight:400}
+.why .rationale{padding:0 14px 12px}
 .macro{gap:0;padding:0}
 .macro>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .macro>summary::-webkit-details-marker{display:none}
@@ -599,6 +607,7 @@ let moveDlg = null; // {from, title, to}
 let cancelDlg = null; // {date, title, preset, reason}
 let swapDlg = null; // {date, title, text}
 let insightDlg = null; // {edit: index|null}
+let goalDlg = null; // {text,date}
 let bgDlg = null;   // {edit:bool}
 let icuDlg = null; // {ext, title, date, sport, mode}
 function renderIcuDialog(el){
@@ -665,6 +674,18 @@ Enthält der Schritt mehrere Übungen, liefere jede einzeln. 3–6 Ausführungss
   d.loading = false; if(guideDlg===d) renderMoveDialog();
 }
 let histDlg = null; // {confirm:bool}
+function renderGoalDialog(el){
+  el.innerHTML = `<button class="overlay" data-action="goal-close" aria-label="Schließen" tabindex="-1"></button>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="goalTitle">
+      <h2 id="goalTitle">Ziel bearbeiten</h2>
+      <label class="fld" for="goalText"><span>Ziel</span><textarea id="goalText" rows="3" placeholder="z. B. Schmerzfrei 23 km auf dem Trail">${esc(goalDlg.text||'')}</textarea></label>
+      <label class="fld" for="goalDate"><span>Zieldatum (optional)</span><input id="goalDate" type="date" value="${esc(goalDlg.date||'')}"></label>
+      <p class="muted">Ohne Datum berechnet Claude ein realistisches Enddatum. Nach dem Speichern passt Claude Gesamtplan und 14-Tage-Plan an.</p>
+      <div class="row end"><button class="btn" data-action="goal-close">Abbrechen</button><button class="btn primary" data-action="goal-save">Speichern</button></div>
+    </div>`;
+  const ta = document.getElementById('goalText'); if(ta){ ta.focus(); ta.addEventListener('input', () => { goalDlg.text = ta.value; }); }
+  const di = document.getElementById('goalDate'); if(di) di.addEventListener('change', () => { goalDlg.date = di.value; });
+}
 function renderBgDialog(el){
   const bg = profile().background || '';
   el.innerHTML = `<button class="overlay" data-action="bg-close" aria-label="Schließen" tabindex="-1"></button>
@@ -754,6 +775,7 @@ function renderMoveDialog(){
   if(cancelDlg){ renderCancelDialog(el); return; }
   if(swapDlg){ renderSwapDialog(el); return; }
   if(insightDlg){ renderInsightDialog(el); return; }
+  if(goalDlg){ renderGoalDialog(el); return; }
   if(bgDlg){ renderBgDialog(el); return; }
   if(histDlg){ renderHistDialog(el); return; }
   if(guideDlg){ renderGuideDialog(el); return; }
@@ -971,9 +993,9 @@ function cleanMacro(x){
 }
 function renderPlan(){
   const pr = profile(), g = pr.goal;
-  const goal = g && g.text ? `<div class="card goal"><p class="eyebrow">Ziel</p><p class="gtext">${esc(g.text)}</p>
+  const goal = g && g.text ? `<div class="card goal"><div class="ghead"><p class="eyebrow">Ziel</p><button class="gedit" data-action="goal-open" aria-label="Ziel bearbeiten">${IC.edit}</button></div><p class="gtext">${esc(g.text)}</p>
       ${g.date?`<div class="gdate"><span>Zieldatum: <b>${esc(parseYmd(g.date).toLocaleDateString('de-DE'))}</b></span><span>noch ${daysUntil(g.date)} Tage</span></div>`:(macro()&&macro().end?`<div class="gdate"><span>Zieldatum (geschätzt): <b>${esc(dmyy(macro().end))}</b></span><span>noch ${daysUntil(macro().end)} Tage</span></div>`:'')}</div>`
-    : `<div class="empty">Noch kein Ziel festgelegt. Beschreibe dein Ziel unten im Dialog, z. B. „10 km unter 50 Minuten bis Ende März“.</div>`;
+    : `<div class="empty">Noch kein Ziel festgelegt. <button class="btn goal-add" data-action="goal-open">${IC.edit} Ziel festlegen</button></div>`;
   const t = today(); const rows = [];
   for(let i=0;i<14;i++){
     const d = addDays(t,i);
@@ -994,7 +1016,7 @@ function renderPlan(){
       <div class="items">${items || (doneLine?'':'<span class="restline">Ruhe</span>')}${doneLine}</div></div>`);
   }
   const plan = S.plan;
-  const rat = plan && plan.rationale ? `<div class="card"><div class="row"><h2>Begründung und Schwerpunkte</h2>${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · Version '+plan.revision:''}</span>`:''}</div><div class="rationale md">${md(plan.rationale)}</div></div>` : '';
+  const rat = plan && plan.rationale ? `<details class="why" data-k="why14"><summary>Warum diese 14 Tage?${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · V'+plan.revision:''}</span>`:''}</summary><div class="rationale md">${md(plan.rationale)}</div></details>` : '';
   const icuOn = IN_APP && appStatus().icuKey;
   const icuOpen = icuOn ? icuSessions().filter(x => icuState(x.s0)!=='ok').length : 0;
   const mi = macroInfo();
@@ -1033,7 +1055,7 @@ document.addEventListener('change', e => {
   else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
   save('profile');
 });
-document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg||icuDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
+document.addEventListener('keydown', e => { if(e.key==='Enter' && e.target && e.target.id==='insNew'){ e.preventDefault(); const b=document.querySelector('[data-action="ins-add"]'); if(b) b.click(); return; } if(e.key==='Escape' && (moveDlg||cancelDlg||swapDlg||insightDlg||goalDlg||bgDlg||histDlg||guideDlg||icuDlg)){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; goalDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return; } if(e.key==='Enter' && e.target && e.target.id==='newComplaint'){ e.preventDefault(); document.querySelector('[data-action="add-complaint"]').click(); } });
 const GLOSSAR = `<dl class="gloss">
   <div><dt>RE · Relative Effort</dt><dd>Stravas Trainingslast-Wert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 niedrig (Entlastung), 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
@@ -1172,7 +1194,7 @@ window.onBackupLoaded = text => {
   confirmImport = obj; tab='einstellungen'; render();
 };
 window.appBack = () => {
-  if(moveDlg||cancelDlg||swapDlg||insightDlg||bgDlg||histDlg||guideDlg||icuDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return true; }
+  if(moveDlg||cancelDlg||swapDlg||insightDlg||goalDlg||bgDlg||histDlg||guideDlg||icuDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; goalDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return true; }
   if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
   return false;
 };
@@ -1186,7 +1208,7 @@ function renderSettings(){
       <div class="fld"><span>Sportarten</span><div class="sports">${['run','ride','strength','walk'].map(s=>`<button class="toggle" data-action="sport" data-sport="${s}" aria-pressed="${sp.has(s)}">${SPORT[s]}</button>`).join('')}</div>
         <p class="note">Laufen ist der Schwerpunkt, weitere Sportarten plant Claude ergänzend ein.</p></div>
       <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label></div>
-    <div class="card"><h2>Trainingstage</h2><p class="muted">An diesen Tagen plant Claude Einheiten. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p>
+    <div class="card"><h2>Trainingstage</h2><p class="muted">An diesen Tagen kann Claude Einheiten planen. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p>
       <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div></div>
     <div class="card"><h2>Fitness und Beschwerden</h2>
       <p class="muted">${cs.length?'Claude plant vorsichtig, fragt nach Schmerz an diesen Stellen und steigert nur bei stabilen Signalen.':'Keine Beschwerden eingetragen. Claude plant leistungsorientiert auf dein Ziel hin.'}</p>
@@ -1373,7 +1395,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
-- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder die Entwicklung deutlich abweicht (dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum). Sonst lass ihn weg. Der 14-Tage-Plan leitet sich aus aktueller Phase und Wochen-Soll ab.
+- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder die Entwicklung deutlich abweicht (dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum). Sonst lass ihn weg. Der 14-Tage-Plan leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diese 14 Tage betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -1387,7 +1409,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "trainingDays":[2,4,6],
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
-   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Warum diese 14 Tage: 2–4 Stichpunkte"},
    "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
@@ -1405,7 +1427,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `SPORTARTEN: ${(pr.sports||[]).map(s=>SPORT[s]).join(', ')}`,
 `HINTERGRUND: ${pr.background||'–'}`,
 `AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
-`BEGRÜNDUNG DES AKTUELLEN PLANS: ${S.plan&&S.plan.rationale||'–'}`,
+`BEGRÜNDUNG DER 14 TAGE: ${S.plan&&S.plan.rationale||'–'}`,
 `GESAMTPLAN: ${macro()?JSON.stringify(Object.assign({}, macro(), {weeks:(macro().weeks||[]).map(w=>Object.assign({}, w, w.week<=today()?{istKm:Math.round(weekStats(w.week).km*10)/10}:{}))})):'noch keiner – bitte unter "macro" anlegen'}`,
 `AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen): ${JSON.stringify(al)}`,
 `HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
@@ -1694,6 +1716,18 @@ document.addEventListener('click', async e => {
   else if(a==='guide'){ e.preventDefault(); const st={label:b.dataset.label, detail:b.dataset.detail}; guideDlg={label:st.label, detail:st.detail, key:guideKey(st), loading:false, error:null}; renderMoveDialog(); loadGuide(false); }
   else if(a==='guide-close'){ guideDlg=null; renderMoveDialog(); }
   else if(a==='guide-redo'){ loadGuide(true); }
+  else if(a==='goal-open'){ const g = profile().goal||{}; goalDlg={text:g.text||'', date:g.date||''}; renderMoveDialog(); }
+  else if(a==='goal-close'){ goalDlg=null; renderMoveDialog(); }
+  else if(a==='goal-save'){
+    const txt = (goalDlg.text||'').trim().slice(0,200), dt = isDate(goalDlg.date) ? goalDlg.date : null;
+    const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+    const old = pr.goal || {}; goalDlg=null; renderMoveDialog();
+    if(txt===(old.text||'') && dt===(old.date||null)) return;
+    pr.goal = txt ? {text:txt, date:dt} : null; await save('profile'); render();
+    const desc = txt ? `„${txt}“${dt?' bis '+dmyy(dt):' ohne festes Datum'}` : 'entfernt';
+    if(sample && !busy) askClaude(`Ich habe mein Ziel geändert: ${desc}. Bitte passe den Gesamtplan (vollständig unter "macro"${dt?'':', Enddatum realistisch schätzen'}) und den 14-Tage-Plan daran an.`, {display:`Ziel geändert: ${desc}`});
+    else { markChange('goal', 'Ziel: '+desc); render(); }
+  }
   else if(a==='bg-open'){ bgDlg={edit:false}; renderMoveDialog(); }
   else if(a==='bg-close'){ bgDlg=null; renderMoveDialog(); }
   else if(a==='bg-edit'){ bgDlg.edit=true; renderMoveDialog(); }
