@@ -298,6 +298,8 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.summary.md ul{list-style:none;padding-left:0}
+.summary.md li{margin:0 0 .45em}
 .tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tg{font-size:12.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums}
 .rpepick{display:flex;flex-direction:column;gap:4px}
@@ -1254,7 +1256,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
   · Formentwicklung über die Wochen (Effizienz, Trainingslast) nur mit Vorsicht, solange wenige Daten vorliegen.
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
-- Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD): 2–5 Sätze in Stichworten zu Umfang, ${care?'Beschwerdesignalen':'Befinden'}, RPE, Trainingslast und Trainingswirkung, Auswertung und was im Dialog besprochen oder entschieden wurde. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
+- Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -1346,7 +1348,7 @@ async function applyUpdates(u){
   if(Array.isArray(u.weekSummaries)) u.weekSummaries.forEach(w => {
     if(!w || !isDate(w.week) || !w.text) return;
     log.weekSummaries = log.weekSummaries||{};
-    log.weekSummaries[mondayOf(w.week)] = {text:String(w.text).slice(0,1200), ts:new Date().toISOString()}; lc=true;
+    log.weekSummaries[mondayOf(w.week)] = {text:String(w.text).slice(0,1600), ts:new Date().toISOString()}; lc=true;
   });
   if(plc && pr.pendingChanges && Object.keys(pr.pendingChanges).length){ pr.pendingChanges = {}; pc=true; }
   if(pc) await save('profile'); if(plc) await save('plan'); if(lc) await save('log');
@@ -1639,7 +1641,7 @@ document.addEventListener('click', async e => {
     const mon=b.dataset.mon, sun=addDays(mon,6);
     const dlg=((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun)
       .map(m=>(m.role==='user'?userName()+': ':'Claude: ')+m.text.slice(0,400)).join('\n').slice(-6000);
-    askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): Training in Stichworten, ${careMode()?'Beschwerdesignale':'Befinden'}, RPE, Trainingslast, Auswertung und was im Dialog besprochen wurde. Liefere unter "assessments" für jede Einheit dieser Woche (IDs ${acts().filter(x=>x.date>=mon&&x.date<=sun&&x.sport!=='walk').map(x=>x.id).join(', ')}) eine Einschätzung mit "text" und "short" nach den aktuellen Regeln, auch wenn schon eine existiert${(()=>{const st=acts().filter(x=>x.date>=mon&&x.date<=sun&&staleAssess(x)).map(x=>x.id);return st.length?' und erneuere die durch neuere Rückmeldungen überholten Einschätzungen (IDs '+st.join(', ')+')':'';})()}. Stütze dich nur auf den aktuellen Stand der Rückmeldungen.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`, {auto:true, display:`Wochenfazit für die Woche ab ${fmtDay(mon)} aktualisieren`});
+    askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): als Markdown-Liste mit fettem Stichwort je Zeile (Umfang, ${careMode()?'Beschwerden':'Befinden'}, Trainingslast, Auswertung, Besprochen, Ausblick), kein Fließtext. Liefere unter "assessments" für jede Einheit dieser Woche (IDs ${acts().filter(x=>x.date>=mon&&x.date<=sun&&x.sport!=='walk').map(x=>x.id).join(', ')}) eine Einschätzung mit "text" und "short" nach den aktuellen Regeln, auch wenn schon eine existiert${(()=>{const st=acts().filter(x=>x.date>=mon&&x.date<=sun&&staleAssess(x)).map(x=>x.id);return st.length?' und erneuere die durch neuere Rückmeldungen überholten Einschätzungen (IDs '+st.join(', ')+')':'';})()}. Stütze dich nur auf den aktuellen Stand der Rückmeldungen.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`, {auto:true, display:`Wochenfazit für die Woche ab ${fmtDay(mon)} aktualisieren`});
   }
   else if(a==='replan') askClaude('Bitte plane die nächsten 14 Tage auf Basis meiner letzten Einheiten und Rückmeldungen neu.');
   else if(a==='day' || a==='sport'){
