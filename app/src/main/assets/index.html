@@ -1046,7 +1046,7 @@ function renderPlan(){
   const mi = macroInfo();
   const replanBtn = `<button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button>`;
   return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Die nächsten 14 Tage</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div>${icuOn?'':replanBtn}</div>
-    ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuOpen?IC.watch:IC.watchOk}${icuBusy?'Wird gesendet …':icuOpen?`An die Uhr senden (${icuOpen})`:'Alles auf der Uhr'}</button>${replanBtn}</div>`:''}
+    ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuOpen?IC.watch:IC.watchOk}${icuBusy?'Wird gesendet …':icuOpen?`Senden (${icuOpen})`:'Alles gesendet'}</button>${replanBtn}</div>`:''}
     ${icuOn&&icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
     </div><div class="days">${rows.join('')}</div>${rat}</div>`;
 }
@@ -1193,7 +1193,7 @@ function connCard(){
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>
     <div class="fld"><span>Garmin (über intervals.icu)</span>
-      <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 14 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu, von dort an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
+      <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 14 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu. intervals.icu überträgt davon täglich die nächsten 7 Tage an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
@@ -1669,7 +1669,7 @@ async function icuSync(manual, onlyExt, forceMode){
     deleted = await icuPurge(sent);
     S.plan.icuSent = sent; S.plan.icuLast = new Date().toISOString(); await save('plan');
     if(onlyExt && created) window.Android.toast(`Einheit mit Zielvorgabe ${ICU_LABEL[items[0].mode]} gesendet.`);
-    icuMsg = {text: created||deleted ? `${created} Einheit${created===1?'':'en'} gesendet${deleted?`, ${deleted} entfernt`:''}. Garmin Connect übernimmt sie in der Regel innerhalb weniger Minuten.` : 'Alles aktuell, nichts zu senden.'};
+    icuMsg = {text: created||deleted ? `${created?`${created} Einheit${created===1?'':'en'} an intervals.icu gesendet`:''}${created&&deleted?', ':''}${deleted?`${deleted} entfernt`:''}. intervals.icu überträgt die nächsten 7 Tage an Garmin Connect, spätere Einheiten folgen täglich.` : 'Alles aktuell, nichts zu senden.'};
   }catch(e){
     const c = e && e.code;
     icuMsg = {err:true, text: c==='bad_key' ? 'Der intervals.icu-Schlüssel ist ungültig.' : c==='not_configured' ? 'Bitte zuerst den intervals.icu-API-Schlüssel speichern.' : c==='server_unavailable' ? 'intervals.icu ist gerade nicht erreichbar.' : 'Senden fehlgeschlagen: '+((e&&e.message)||'unbekannter Fehler')};
