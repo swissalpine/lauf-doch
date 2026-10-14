@@ -161,8 +161,8 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .lcol .lv{font-size:11px;color:var(--muted);line-height:1}
 .lcol .lb{width:100%;max-width:26px;background:var(--line);border-radius:3px 3px 0 0;min-height:2px}
 .lcol .lk{font-size:11px;color:var(--muted);line-height:1.2}
-.lcol.sel .lb{background:var(--accent)}
-.lcol.sel .lv,.lcol.sel .lk{color:var(--ink);font-weight:600}
+.lcol.cur .lb{background:var(--accent)}
+.lcol.cur .lv,.lcol.cur .lk{color:var(--ink);font-weight:600}
 .entry .pl{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ht{display:flex;align-items:center;gap:8px}
 .banner{background:var(--warn-soft);border-color:var(--warn-soft);color:var(--ink)}
@@ -891,7 +891,7 @@ function loadChart(mon){
   const vals = weeks.map(w=>weekStats(w).re);
   const max = Math.max(1,...vals);
   return `<div class="lc" role="img" aria-label="Relative Effort der letzten 8 Wochen">${weeks.map((w,i)=>
-    `<div class="lcol ${i===7?'sel':''}"><span class="lv">${vals[i]||''}</span><span class="lb" style="height:${Math.round(vals[i]/max*36)}px"></span><span class="lk">${isoWeek(w)}</span></div>`).join('')}</div>`;
+    `<div class="lcol ${i===7?'cur':''}"><span class="lv">${vals[i]||''}</span><span class="lb" style="height:${Math.round(vals[i]/max*36)}px"></span><span class="lk">${isoWeek(w)}</span></div>`).join('')}</div>`;
 }
 
 function syncBlock(){
