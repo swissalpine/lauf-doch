@@ -282,6 +282,7 @@ public class MainActivity extends Activity {
         JSONObject out = new JSONObject();
         out.put("text", text.toString());
         out.put("truncated", "max_tokens".equals(res.optString("stop_reason")));
+        if (res.has("usage")) out.put("usage", res.getJSONObject("usage"));
         return out.toString();
     }
 

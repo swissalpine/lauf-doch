@@ -150,7 +150,17 @@
   }
   async function ask(input, opts, system){
     const messages = typeof input === 'string' ? [{role:'user', content:input}] : merge(input);
+    // Feste Regeln (bis zur Marke) als zwischengespeicherten Block senden (Prompt-Caching)
+    const MARK = '\n<<<CACHE>>>';
+    if (messages[0] && typeof messages[0].content === 'string' && messages[0].content.indexOf(MARK) > 0) {
+      const c = messages[0].content, i = c.indexOf(MARK);
+      messages[0].content = [
+        {type:'text', text:c.slice(0, i), cache_control:{type:'ephemeral'}},
+        {type:'text', text:c.slice(i + MARK.length).replace(/^\s+/, '')}
+      ];
+    }
     const res = await call('claude', {messages: messages, system: system});
+    if (res && res.usage) console.log('Claude-Token', JSON.stringify(res.usage));
     if (opts && typeof opts.onText === 'function') { try { opts.onText({text: res.text, delta: res.text}); } catch(e) {} }
     return res;
   }
