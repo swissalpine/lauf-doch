@@ -226,7 +226,10 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .chk{display:flex;align-items:center;gap:8px;font-size:15px}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
 .icubar{display:flex}
-.icubar .btn{width:100%}
+.icubar{gap:10px}
+.icubar .btn[data-action="icu-sync"]{flex:1;min-width:0}
+.icubar .btn{white-space:nowrap}
+.icubar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none;margin-right:-4px}
 .btn.icu{border-color:var(--accent);color:var(--accent)}
 .btn.icuok{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -1039,8 +1042,9 @@ function renderPlan(){
   const icuOn = IN_APP && appStatus().icuKey;
   const icuOpen = icuOn ? icuSessions().filter(x => icuState(x.s0)!=='ok').length : 0;
   const mi = macroInfo();
-  return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Die nächsten 14 Tage</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
-    ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuBusy?'Wird gesendet …':icuOpen?`7 Tage an die Uhr senden (${icuOpen})`:'7 Tage: alles auf der Uhr'}</button></div>`:''}
+  const replanBtn = `<button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button>`;
+  return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Die nächsten 14 Tage</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div>${icuOn?'':replanBtn}</div>
+    ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuOpen?IC.watch:IC.watchOk}${icuBusy?'Wird gesendet …':icuOpen?`An die Uhr senden (${icuOpen})`:'Alles auf der Uhr'}</button>${replanBtn}</div>`:''}
     ${icuOn&&icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
     </div><div class="days">${rows.join('')}</div>${rat}</div>`;
 }
