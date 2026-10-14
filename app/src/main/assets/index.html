@@ -298,6 +298,42 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.macro{gap:0;padding:0}
+.macro>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.macro>summary::-webkit-details-marker{display:none}
+.macro .mhead{display:flex;align-items:baseline;gap:8px}
+.macro .mhead .note{margin-left:auto}
+.macro .chev{transition:transform .15s;color:var(--muted);font-size:13px}
+.macro[open] .chev{transform:rotate(180deg)}
+.mtl{position:relative;display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;background:var(--surface)}
+.mtl span{display:block;height:100%;min-width:3px}
+.mtl .now{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;background:var(--ink);border-radius:2px}
+.mtl-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:-4px}
+.mcur{font-size:14px}
+.mbody{padding:0 16px 16px;display:flex;flex-direction:column;gap:14px}
+.mchart{display:flex;align-items:flex-end;gap:2px;height:84px;border-bottom:1px solid var(--line);padding-top:4px}
+.mchart .w{flex:1;min-width:0;height:100%;position:relative;display:flex;align-items:flex-end}
+.mchart .soll{width:100%;background:var(--accent-soft);border-radius:2px 2px 0 0}
+.mchart .w.rec .soll{background:repeating-linear-gradient(135deg,var(--accent-soft) 0 3px,transparent 3px 5px)}
+.mchart .ist{position:absolute;left:25%;right:25%;bottom:0;background:var(--accent);border-radius:2px 2px 0 0}
+.mchart .w.cur .soll{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.mtl-lbl{position:relative}
+.mtl-lbl .today{position:absolute;transform:translateX(-50%);color:var(--ink);font-weight:600}
+.mlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.mlegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.mphase{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.mphase .ph{display:flex;gap:8px;align-items:baseline}
+.mphase .ph b{font-family:var(--f-display);font-size:18px;font-weight:600}
+.mphase .ph .note{margin-left:auto;white-space:nowrap}
+.mphase.cur .ph b{color:var(--accent)}
+.mphase .dot{width:10px;height:10px;border-radius:3px;flex:none;align-self:center}
+.mphase .chips{display:flex;flex-wrap:wrap;gap:6px}
+.mphase .kv{font-size:14px;color:var(--muted)}
+.mphase .kv b{color:var(--ink);font-weight:600}
+.mphase ul{margin:0;padding-left:1.2em;font-size:14px}
+.madv{background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:14px}
+.mnote{font-size:14px;background:var(--warn-soft);color:var(--ink);border-radius:8px;padding:8px 10px}
+.phhint{font-size:13px;color:var(--muted);margin:-6px 0 0}
 .summary.md ul{list-style:none;padding-left:0}
 .summary.md li{margin:0 0 .45em}
 .tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
@@ -855,10 +891,88 @@ function renderToday(){
   return syncBlock() + out.join('');
 }
 
+/* ---------- Gesamtplan ---------- */
+const macro = () => (S.plan && S.plan.macro) || null;
+const PH_COLORS = ['#0053FA','#3D7BFF','#7AA4FF','#2A3F8F','#5C6FD6','#9BB8FF'];
+const dmy = d => { const x = parseYmd(d); return x.getDate()+'.'+(x.getMonth()+1)+'.'; };
+const dmyy = d => parseYmd(d).toLocaleDateString('de-DE');
+function macroPhaseAt(m, d){ return (m.phases||[]).findIndex(p => d>=p.from && d<=p.to); }
+function macroInfo(){
+  const m = macro(); if(!m || !(m.phases||[]).length) return null;
+  const t = today(), i = macroPhaseAt(m, t);
+  if(i < 0) return {m, i:-1};
+  const p = m.phases[i];
+  const wk = Math.floor((parseYmd(mondayOf(t)) - parseYmd(mondayOf(p.from))) / 6048e5) + 1;
+  const wn = Math.round((parseYmd(mondayOf(p.to)) - parseYmd(mondayOf(p.from))) / 6048e5) + 1;
+  return {m, i, p, wk, wn};
+}
+const rng = (a, u) => Array.isArray(a) && a.length ? (a[0]===a[1]||a.length===1 ? fmtNum(a[0],0) : fmtNum(a[0],0)+'–'+fmtNum(a[1],0)) + ' ' + u : '';
+function renderMacro(){
+  const m = macro();
+  if(!m || !(m.phases||[]).length){
+    return `<div class="card"><div class="row"><h2>Gesamtplan</h2></div>
+      <p class="muted">Noch kein Gesamtplan. Claude legt Phasen, Schwerpunkte und Steigerung bis zum Ziel fest${profile().goal&&profile().goal.date?'':' und schätzt ein realistisches Zieldatum'}.</p>
+      <div><button class="btn primary" data-action="macro-create" ${sample&&!busy?'':'disabled'}>Gesamtplan erstellen</button></div></div>`;
+  }
+  const t = today(), ph = m.phases;
+  const t0 = parseYmd(m.start||ph[0].from), t1 = parseYmd(m.end||ph[ph.length-1].to);
+  const span = Math.max(1, (t1 - t0) / 864e5 + 1);
+  const bars = ph.map((p,k) => { const w = Math.max(1, (parseYmd(p.to)-parseYmd(p.from))/864e5+1); return `<span style="flex:${w};background:${PH_COLORS[k%PH_COLORS.length]};opacity:${p.to<t?.45:1}" title="${esc(p.name)}"></span>`; }).join('');
+  const nowPct = Math.max(0, Math.min(100, (parseYmd(t)-t0)/864e5/span*100));
+  const mi = macroInfo();
+  const cur = mi && mi.i>=0 ? `<div class="mcur"><b>Phase ${mi.i+1} von ${ph.length}: ${esc(mi.p.name)}</b> · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</div>`
+    : `<div class="mcur muted">${t < (m.start||ph[0].from) ? 'Beginnt am '+dmyy(m.start||ph[0].from) : 'Zeitraum abgeschlossen'}</div>`;
+  // Wochenbalken Soll/Ist
+  const weeks = (m.weeks||[]).filter(w=>isDate(w.week));
+  const ist = weeks.map(w => w.week<=t ? weekStats(w.week).km : null);
+  const max = Math.max(1, ...weeks.map(w=>Number(w.km)||0), ...ist.map(x=>x||0));
+  const curMon = mondayOf(t);
+  const chart = weeks.length ? `<div class="mchart" role="img" aria-label="Wochenumfang Soll und Ist">${weeks.map((w,k)=>{
+      const s = (Number(w.km)||0)/max*100, a = ist[k]!=null ? ist[k]/max*100 : null;
+      return `<div class="w ${w.type==='recover'?'rec':''} ${w.week===curMon?'cur':''}" title="${esc(dmy(w.week))}: Soll ${fmtNum(Number(w.km)||0,0)} km${ist[k]!=null?', Ist '+fmtNum(ist[k],1)+' km':''}${w.type==='recover'?' (Entlastung)':''}"><div class="soll" style="height:${s}%"></div>${a!=null?`<div class="ist" style="height:${a}%"></div>`:''}</div>`; }).join('')}</div>
+    <div class="mtl-lbl" style="margin-top:0"><span>${dmy(weeks[0].week)}</span><span>max. ${fmtNum(max,0)} km/Woche</span><span>${dmy(weeks[weeks.length-1].week)}</span></div>
+    <div class="mlegend"><span><i style="background:var(--accent-soft)"></i>Soll</span><span><i style="background:var(--accent)"></i>Ist (Strava)</span><span><i style="background:repeating-linear-gradient(135deg,var(--accent-soft) 0 3px,transparent 3px 5px);border:1px solid var(--line)"></i>Entlastung</span></div>` : '';
+  const phases = ph.map((p,k) => {
+    const isCur = mi && mi.i===k;
+    const kv = [rng(p.weeklyKm,'km/Woche'), p.longRunKm?'längster Lauf '+rng(p.longRunKm,'km'):''].filter(Boolean).join(' · ');
+    return `<div class="mphase ${isCur?'cur':''}"><div class="ph"><span class="dot" style="background:${PH_COLORS[k%PH_COLORS.length]}"></span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span></div>
+      ${(p.focus||[]).length?`<div class="chips">${p.focus.map(f=>`<span class="tag plan">${esc(f)}</span>`).join('')}</div>`:''}
+      ${kv?`<div class="kv">${esc(kv)}</div>`:''}
+      ${(p.keySessions||[]).length?`<ul>${p.keySessions.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+      ${p.advance && k<ph.length-1?`<div class="madv"><b>Weiter, wenn:</b> ${esc(p.advance)}</div>`:''}</div>`;
+  }).join('');
+  const endTxt = (m.endEstimated ? 'bis ca. ' : 'bis ') + dmyy(m.end||ph[ph.length-1].to);
+  return `<details class="card macro" data-k="macro"><summary>
+      <div class="mhead"><h2>Gesamtplan</h2><span class="note">${esc(endTxt)}</span><span class="chev">▼</span></div>
+      <div class="mtl">${bars}<i class="now" style="left:${nowPct}%"></i></div>
+      <div class="mtl-lbl"><span>${dmy(m.start||ph[0].from)}</span>${nowPct>14&&nowPct<86?`<span class="today" style="left:${nowPct}%">heute</span>`:''}<span>${m.endEstimated?'ca. ':''}${dmy(m.end||ph[ph.length-1].to)}</span></div>
+      ${cur}</summary>
+    <div class="mbody">
+      ${m.note?`<div class="mnote"><b>Angepasst${m.updatedAt?' am '+dmyy(m.updatedAt.slice(0,10)):''}:</b> ${esc(m.note)}</div>`:''}
+      ${chart}
+      ${m.rationale?`<div class="md">${md(m.rationale)}</div>`:''}
+      ${phases}
+      <div><button class="btn" data-action="macro-create" ${sample&&!busy?'':'disabled'}>Gesamtplan überarbeiten</button></div>
+    </div></details>`;
+}
+function cleanMacro(x){
+  if(!x || !Array.isArray(x.phases)) return null;
+  const nr = a => Array.isArray(a) ? a.map(Number).filter(Number.isFinite).slice(0,2) : (Number.isFinite(Number(a)) ? [Number(a)] : undefined);
+  const phases = x.phases.filter(p=>p && isDate(p.from) && isDate(p.to) && p.from<=p.to).slice(0,8).map(p=>({
+    name:String(p.name||'Phase').slice(0,40), from:p.from, to:p.to,
+    focus:Array.isArray(p.focus)?p.focus.map(f=>String(f).slice(0,40)).slice(0,5):[],
+    weeklyKm:nr(p.weeklyKm), longRunKm:nr(p.longRunKm),
+    keySessions:Array.isArray(p.keySessions)?p.keySessions.map(f=>String(f).slice(0,120)).slice(0,5):[],
+    advance:p.advance?String(p.advance).slice(0,240):''})).sort((a,b)=>a.from.localeCompare(b.from));
+  if(!phases.length) return null;
+  const weeks = Array.isArray(x.weeks) ? x.weeks.filter(w=>w && isDate(w.week)).slice(0,80).map(w=>({week:mondayOf(w.week), km:Math.max(0,Math.round((Number(w.km)||0)*10)/10), type:['build','recover','test','taper','race'].includes(w.type)?w.type:'build'})) : [];
+  return {goal:x.goal?String(x.goal).slice(0,200):'', start:isDate(x.start)?x.start:phases[0].from, end:isDate(x.end)?x.end:phases[phases.length-1].to,
+    endEstimated:x.endEstimated===true, phases, weeks, rationale:x.rationale?String(x.rationale).slice(0,3000):'', note:x.note?String(x.note).slice(0,400):'', updatedAt:new Date().toISOString()};
+}
 function renderPlan(){
   const pr = profile(), g = pr.goal;
   const goal = g && g.text ? `<div class="card goal"><p class="eyebrow">Ziel</p><p class="gtext">${esc(g.text)}</p>
-      ${g.date?`<div class="gdate"><span>Zieldatum: <b>${esc(parseYmd(g.date).toLocaleDateString('de-DE'))}</b></span><span>noch ${daysUntil(g.date)} Tage</span></div>`:''}</div>`
+      ${g.date?`<div class="gdate"><span>Zieldatum: <b>${esc(parseYmd(g.date).toLocaleDateString('de-DE'))}</b></span><span>noch ${daysUntil(g.date)} Tage</span></div>`:(macro()&&macro().end?`<div class="gdate"><span>Zieldatum (geschätzt): <b>${esc(dmyy(macro().end))}</b></span><span>noch ${daysUntil(macro().end)} Tage</span></div>`:'')}</div>`
     : `<div class="empty">Noch kein Ziel festgelegt. Beschreibe dein Ziel unten im Dialog, z. B. „10 km unter 50 Minuten bis Ende März“.</div>`;
   const t = today(); const rows = [];
   for(let i=0;i<14;i++){
@@ -883,7 +997,9 @@ function renderPlan(){
   const rat = plan && plan.rationale ? `<div class="card"><div class="row"><h2>Begründung und Schwerpunkte</h2>${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · Version '+plan.revision:''}</span>`:''}</div><div class="rationale md">${md(plan.rationale)}</div></div>` : '';
   const icuOn = IN_APP && appStatus().icuKey;
   const icuOpen = icuOn ? icuSessions().filter(x => icuState(x.s0)!=='ok').length : 0;
-  return goal + `<div class="row"><h2>Die nächsten 14 Tage</h2><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
+  const mi = macroInfo();
+  return goal + renderMacro() + `<div class="row"><h2>Die nächsten 14 Tage</h2><button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button></div>
+    ${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}
     ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuBusy?'Wird gesendet …':icuOpen?`7 Tage an die Uhr senden (${icuOpen})`:'7 Tage: alles auf der Uhr'}</button></div>`:''}
     ${icuOn&&icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
     <div class="days">${rows.join('')}</div>` + rat;
@@ -1257,6 +1373,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
+- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder die Entwicklung deutlich abweicht (dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum). Sonst lass ihn weg. Der 14-Tage-Plan leitet sich aus aktueller Phase und Wochen-Soll ab.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -1271,6 +1388,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
    "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Begründung und Schwerpunkte der Planung"},
+   "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
@@ -1288,6 +1406,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `HINTERGRUND: ${pr.background||'–'}`,
 `AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
 `BEGRÜNDUNG DES AKTUELLEN PLANS: ${S.plan&&S.plan.rationale||'–'}`,
+`GESAMTPLAN: ${macro()?JSON.stringify(Object.assign({}, macro(), {weeks:(macro().weeks||[]).map(w=>Object.assign({}, w, w.week<=today()?{istKm:Math.round(weekStats(w.week).km*10)/10}:{}))})):'noch keiner – bitte unter "macro" anlegen'}`,
 `AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen): ${JSON.stringify(al)}`,
 `HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
 `WOCHENWERTE (letzte 6 Wochen): ${JSON.stringify(wochen)}`,
@@ -1327,9 +1446,10 @@ async function applyUpdates(u){
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
     S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
-      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[], icuSent:(S.plan&&S.plan.icuSent)||{}, icuModes:(S.plan&&S.plan.icuModes)||{}, icuLast:(S.plan&&S.plan.icuLast)||null};
+      allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[], icuSent:(S.plan&&S.plan.icuSent)||{}, icuModes:(S.plan&&S.plan.icuModes)||{}, icuLast:(S.plan&&S.plan.icuLast)||null, macro:(S.plan&&S.plan.macro)||null};
     plc=true;
   }
+  if(u.macro){ const mc = cleanMacro(u.macro); if(mc){ if(!S.plan) S.plan = {sessions:[]}; S.plan.macro = mc; plc=true; } }
   const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
   log.feedback = log.feedback||{}; log.assessments = log.assessments||{};
   const ids = new Set(acts().map(a=>a.id));
@@ -1643,6 +1763,7 @@ document.addEventListener('click', async e => {
       .map(m=>(m.role==='user'?userName()+': ':'Claude: ')+m.text.slice(0,400)).join('\n').slice(-6000);
     askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): als Markdown-Liste mit fettem Stichwort je Zeile (Umfang, ${careMode()?'Beschwerden':'Befinden'}, Trainingslast, Auswertung, Besprochen, Ausblick), kein Fließtext. Liefere unter "assessments" für jede Einheit dieser Woche (IDs ${acts().filter(x=>x.date>=mon&&x.date<=sun&&x.sport!=='walk').map(x=>x.id).join(', ')}) eine Einschätzung mit "text" und "short" nach den aktuellen Regeln, auch wenn schon eine existiert${(()=>{const st=acts().filter(x=>x.date>=mon&&x.date<=sun&&staleAssess(x)).map(x=>x.id);return st.length?' und erneuere die durch neuere Rückmeldungen überholten Einschätzungen (IDs '+st.join(', ')+')':'';})()}. Stütze dich nur auf den aktuellen Stand der Rückmeldungen.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`, {auto:true, display:`Wochenfazit für die Woche ab ${fmtDay(mon)} aktualisieren`});
   }
+  else if(a==='macro-create') askClaude(macro()?'Bitte überarbeite den Gesamtplan auf Basis meiner bisherigen Entwicklung und liefere ihn vollständig unter "macro". Passe den 14-Tage-Plan nur an, wenn nötig.':'Bitte erstelle den Gesamtplan bis zum Ziel und liefere ihn vollständig unter "macro". Passe den 14-Tage-Plan nur an, wenn er nicht dazu passt.', {display: macro()?'Gesamtplan überarbeiten':'Gesamtplan erstellen'});
   else if(a==='replan') askClaude('Bitte plane die nächsten 14 Tage auf Basis meiner letzten Einheiten und Rückmeldungen neu.');
   else if(a==='day' || a==='sport'){
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
