@@ -1155,8 +1155,7 @@ function lineChart(st, key, color, label, fmt, ranges, area){
   if(key==='alt'){ const a = st.alt.filter(v=>v!=null); if(!a.length || Math.max(...a)-Math.min(...a) < 3) return ''; }
   const W = 340, H = 92, top = 8, base = H-14, t0 = st.t[0], t1 = st.t[st.t.length-1] || 1;
   const vals = st[key].map(v => v||0), pos = vals.filter(v=>v>0);
-  if(key==='alt') area = false;
-  const lo = area ? 0 : Math.min(...pos)*0.95, hi = Math.max(...vals)*1.05 || 1;
+  const lo = key==='w' || key==='kmh' ? 0 : Math.min(...pos) - (Math.max(...pos)-Math.min(...pos))*0.1, hi = Math.max(...vals) + (Math.max(...vals)-lo)*0.05 || 1;
   const X = t => (t-t0)/(t1-t0)*W, Y = v => base - (Math.max(v,lo)-lo)/(hi-lo)*(base-top);
   const pts = st.t.map((t,i) => `${X(t).toFixed(1)},${Y(vals[i]).toFixed(1)}`).join(' ');
   const sep = (ranges||[]).slice(1).map(r => `<line x1="${X(r.from)}" x2="${X(r.from)}" y1="${top}" y2="${base}" class="lapl"/>`).join('');
@@ -1215,8 +1214,8 @@ function renderDetail(){
       ${st ? (byPower ? lineChart(st,'w','var(--accent)','Leistung',v=>Math.round(v)+' W',ranges,true)
             : isRide ? lineChart(Object.assign({}, st, {kmh:(st.v||[]).map(v=>v*3.6)}),'kmh','var(--accent)','Tempo',v=>fmtNum(v,1)+' km/h',ranges,true)
             : lineChart(st,'v','var(--accent)','Tempo',v=>fmtPace(1,1000/(v||1))+' /km',ranges,true))
-        + lineChart(st,'hr','#D2463A','Herzfrequenz',v=>Math.round(v)+' bpm',ranges,false)
-        + lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,false)
+        + lineChart(st,'hr','#D2463A','Herzfrequenz',v=>Math.round(v)+' bpm',ranges,true)
+        + lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,true)
         : (!detailBusy?'<p class="note">Sekundengenaue Daten von Strava, werden beim ersten Öffnen geladen.</p>':'')}</div>
     ${pShare||hShare?`<div class="card"><h2>Zeit in Zonen</h2>
       ${pShare?`<div class="dl-h"><b>Leistung</b><span class="note">FTP ${ftp} W</span></div>${zoneBars(pShare, PZ_COL, pzLab)}`:''}
