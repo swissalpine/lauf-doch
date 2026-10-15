@@ -108,11 +108,11 @@
       let laps = [];
       if (Array.isArray(a.splits_metric) && a.splits_metric.length) {
         laps = a.splits_metric.map(function(s){ return {
-          distance: s.distance, moving_time: s.moving_time, avg_hr: s.average_heartrate || null,
+          distance: s.distance, moving_time: s.moving_time, elapsed_time: s.elapsed_time || null, avg_hr: s.average_heartrate || null, avg_cadence: null,
           avg_grade: s.distance ? (s.elevation_difference || 0) / s.distance * 100 : null, avg_watts: null }; });
       } else if (Array.isArray(a.laps)) {
         laps = a.laps.map(function(l){ return {
-          distance: l.distance, moving_time: l.moving_time, avg_hr: l.average_heartrate || null,
+          distance: l.distance, moving_time: l.moving_time, elapsed_time: l.elapsed_time || null, avg_hr: l.average_heartrate || null, avg_cadence: l.average_cadence || null,
           avg_grade: l.distance ? (l.total_elevation_gain || 0) / l.distance * 100 : null, avg_watts: l.average_watts || null }; });
       }
       return {
@@ -121,6 +121,15 @@
         perceived_exertion: a.perceived_exertion != null ? a.perceived_exertion : null
       };
     }
+  };
+  // Verlaufsdaten (Streams), Namen wie beim Strava-Konnektor
+  strava.get_activity_streams = async function(input){
+    const map = {time:'time', watts:'watts', heart_rate:'heartrate', cadence:'cadence', velocity_smooth:'velocity_smooth', altitude:'altitude', distance:'distance'};
+    const want = (input.streams || ['time']).filter(function(k){ return map[k]; });
+    const r = await call('strava', {path:'/activities/' + encodeURIComponent(input.activity_id) + '/streams', query:{keys: want.map(function(k){ return map[k]; }).join(','), key_by_type: true}});
+    const out = {};
+    want.forEach(function(k){ const v = r && r[map[k]]; if (v && Array.isArray(v.data)) out[k] = v.data; });
+    return out;
   };
   const mcp = {
     callTool: async function(server, tool, input){

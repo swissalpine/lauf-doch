@@ -303,6 +303,30 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.dhead{display:flex;gap:10px;align-items:center}
+.dhead h2{line-height:1.15}
+.dback{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--sunk);font-size:22px;cursor:pointer}
+.dchart{width:100%;height:auto;display:block;overflow:visible}
+.dchart .bl{font-size:10px;fill:var(--ink);font-weight:600}
+.dchart .bn{font-size:10px;fill:var(--muted)}
+.dchart .avgl{stroke:var(--ink);stroke-dasharray:4 3;opacity:.55}
+.dchart .axis{stroke:var(--line)}
+.dchart .lapl{stroke:var(--line);stroke-dasharray:2 3}
+.dl-h{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px}
+table.laps{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.laps th{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 4px;border-bottom:1px solid var(--line)}
+table.laps td{text-align:right;padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+table.laps th:first-child,table.laps td:first-child{text-align:left;color:var(--muted)}
+table.laps tr.work td{background:var(--accent-soft)}
+table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.zc{display:inline-block;min-width:30px;text-align:center;border-radius:6px;padding:0 5px;font-size:12px;font-weight:700}
+.zbars{display:flex;flex-direction:column;gap:6px}
+.zb{display:grid;grid-template-columns:26px minmax(0,1fr) 40px 92px;gap:8px;align-items:center;font-size:13px;font-variant-numeric:tabular-nums}
+.zb .zt{height:12px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.zb .zt span{display:block;height:100%;border-radius:6px}
+.zb .zp{text-align:right;font-weight:600}
+.zb .zr{text-align:right;color:var(--muted);font-size:12px}
+.dlink{border:0;background:none;color:var(--accent);font-weight:600;padding:4px 0;cursor:pointer;align-self:flex-start}
 .goal .ghead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:-4px}
 .goal .gedit{width:36px;height:36px;margin:-8px -8px -8px 0;border:0;border-radius:50%;background:transparent;color:var(--accent-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .goal .gedit:active{background:rgba(255,255,255,.18)}
@@ -606,6 +630,7 @@ function render(){
   const p = document.getElementById('panel');
   const openK = new Set([...document.querySelectorAll('details[open][data-k]')].map(d=>d.dataset.k));
   const sy = window.scrollY;
+  if(detailId){ p.innerHTML = renderDetail(); const da=acts().find(x=>x.id===detailId); if(da && !getStreams(detailId) && !detailBusy && !detailErr && mcp) setTimeout(()=>loadStreams(detailId),0); renderDialog(); renderMoveDialog(); return; }
   p.innerHTML = changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
   p.querySelectorAll('details[data-k]').forEach(d=>{ if(openK.has(d.dataset.k)) d.open=true; });
   if(openK.size) window.scrollTo(0, sy);
@@ -887,6 +912,7 @@ function doneCard(a, planned, extra){
     <h3>${esc(a.name)}</h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
+    ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
     ${rpeOf(a)?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${(f && (f.painDuring!=null||f.painAfter!=null||f.note)) || (!careMode() && rp) ?`<div class="chips">${chips.join('')}</div>`:`${chips.length?`<div class="chips">${chips.join('')}</div>`:''}<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'}${rp?'':' und RPE'}.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>`}
     ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div>${staleAssess(a)?`<div class="row" style="margin-top:6px"><span class="note">Vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:''}</div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
@@ -1041,6 +1067,145 @@ function cleanMacro(x){
   return {goal:x.goal?String(x.goal).slice(0,200):'', start:isDate(x.start)?x.start:phases[0].from, end:isDate(x.end)?x.end:phases[phases.length-1].to,
     endEstimated:x.endEstimated===true, phases, weeks, rationale:x.rationale?String(x.rationale).slice(0,3000):'', note:x.note?String(x.note).slice(0,400):'', updatedAt:new Date().toISOString()};
 }
+/* ---------- Detailseite: Analyse einer Einheit ---------- */
+let detailScroll = 0;
+let detailId = null, detailBusy = false, detailErr = null;
+const STREAMS = {};   // id -> {t,w,hr,c,v} (verkleinert)
+const PZ_COL = ['#C9D9FF','#9DBBFF','#6E9BFF','#3D7BFF','#0053FA','#003FC2','#002A80'];
+const HZ_COL = ['#F7D4CF','#F0A499','#E5675A','#C83A2C','#8F2219'];
+function streamsKey(id){ return 'ld:streams/'+id; }
+function getStreams(id){
+  if(STREAMS[id]) return STREAMS[id];
+  try{ const v = JSON.parse(localStorage.getItem(streamsKey(id))); if(v){ STREAMS[id]=v; return v; } }catch(_){}
+  return null;
+}
+function shrink(arr, n){ if(!arr || arr.length<=n) return arr; const out=[], f=arr.length/n; for(let i=0;i<n;i++) out.push(arr[Math.floor(i*f)]); return out; }
+async function loadStreams(id){
+  if(detailBusy || !mcp) return; detailBusy = true; detailErr = null; render();
+  try{
+    const s = (await mcp.callTool(SERVER,'get_activity_streams',{activity_id:id, streams:['time','watts','heart_rate','cadence','velocity_smooth','altitude'], resolution:400},{cache:false})).payload || {};
+    const n = 400, v = {t:shrink(s.time,n), w:shrink(s.watts,n), hr:shrink(s.heart_rate,n), c:shrink(s.cadence,n), v:shrink(s.velocity_smooth,n), alt:shrink(s.altitude,n)};
+    if(!v.t || !v.t.length) throw {message:'Keine Verlaufsdaten'};
+    STREAMS[id] = v;
+    try{
+      localStorage.setItem(streamsKey(id), JSON.stringify(v));
+      const keys = Object.keys(localStorage).filter(k=>k.startsWith('ld:streams/'));
+      if(keys.length>12) keys.slice(0, keys.length-12).forEach(k=>localStorage.removeItem(k));
+    }catch(_){}
+  }catch(e){ detailErr = (e && e.message) || 'Verlauf konnte nicht geladen werden.'; }
+  finally{ detailBusy = false; render(); }
+}
+const mmss = s => Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
+function lapRanges(a){
+  let t0 = 0;
+  return (a.perf.laps||[]).map(l => { const e = l.e || l.s; const r = {from:t0, to:t0+e}; t0 += e; return r; });
+}
+/* Mittel eines Streams in [from,to), optional ohne Nullwerte */
+function streamAvg(st, key, from, to, noZero){
+  if(!st || !st[key]) return null; let sum=0, n=0;
+  st.t.forEach((t,i) => { const x = st[key][i]; if(t>=from && t<to && x!=null && (!noZero || x>0)){ sum+=x; n++; } });
+  return n ? sum/n : null;
+}
+function zoneTimes(st, key, zf, nz){
+  const out = new Array(nz).fill(0);
+  if(!st || !st[key]) return null;
+  for(let i=1;i<st.t.length;i++){ const dt = Math.min(st.t[i]-st.t[i-1], 20), z = zf(st[key][i]); if(z) out[z-1]+=dt; }
+  const tot = out.reduce((a,b)=>a+b,0); return tot ? out.map(x=>x/tot) : null;
+}
+function npApprox(st){
+  if(!st || !st.w || st.w.length<6) return null;
+  const dt = (st.t[st.t.length-1]-st.t[0])/st.t.length || 5, win = Math.max(1, Math.round(30/dt)), r=[];
+  for(let i=win-1;i<st.w.length;i++){ let s=0; for(let k=i-win+1;k<=i;k++) s+=st.w[k]||0; r.push(Math.pow(s/win,4)); }
+  return Math.round(Math.pow(r.reduce((a,b)=>a+b,0)/r.length, 0.25));
+}
+function lapBars(a, rows, byPower){
+  const W = 340, H = 130, top = 18, base = H-18;
+  const tot = rows.reduce((x,l)=>x+l.dur,0) || 1;
+  const vals = rows.map(l => byPower ? l.w : l.speed||0), max = Math.max(1, ...vals) * 1.08;
+  const avg = byPower ? (a.perf.watts||0) : (a.distKm*1000/(a.movingS||1));
+  let x = 0;
+  const bars = rows.map((l,i) => {
+    const w = Math.max(2, l.dur/tot*W - 2), h = Math.max(2, vals[i]/max*(base-top)), y = base-h;
+    const col = byPower ? PZ_COL[(l.z||1)-1] : HZ_COL[(l.hz||1)-1];
+    const lab = byPower ? Math.round(l.w) : fmtPace(1, 1000/(l.speed||1)).replace(/^0/,'');
+    const g = `<rect x="${x+1}" y="${y}" width="${w}" height="${h}" rx="3" fill="${col}"/>
+      ${w>=20?`<text x="${x+1+w/2}" y="${y-4}" text-anchor="middle" class="bl">${lab}</text>`:''}
+      <text x="${x+1+w/2}" y="${H-4}" text-anchor="middle" class="bn">${i+1}</text>`;
+    x += l.dur/tot*W; return g; }).join('');
+  const ya = base - avg/max*(base-top);
+  return `<svg viewBox="0 0 ${W} ${H}" class="dchart" role="img" aria-label="${byPower?'Leistung':'Tempo'} je Runde">${bars}
+    <line x1="0" x2="${W}" y1="${ya}" y2="${ya}" class="avgl"/><line x1="0" x2="${W}" y1="${base}" y2="${base}" class="axis"/></svg>`;
+}
+function lineChart(st, key, color, label, fmt, ranges, area){
+  if(!st || !st[key] || !st[key].some(v=>v)) return '';
+  const W = 340, H = 92, top = 8, base = H-14, t0 = st.t[0], t1 = st.t[st.t.length-1] || 1;
+  const vals = st[key].map(v => v||0), pos = vals.filter(v=>v>0);
+  const lo = area ? 0 : Math.min(...pos)*0.95, hi = Math.max(...vals)*1.05 || 1;
+  const X = t => (t-t0)/(t1-t0)*W, Y = v => base - (Math.max(v,lo)-lo)/(hi-lo)*(base-top);
+  const pts = st.t.map((t,i) => `${X(t).toFixed(1)},${Y(vals[i]).toFixed(1)}`).join(' ');
+  const sep = (ranges||[]).slice(1).map(r => `<line x1="${X(r.from)}" x2="${X(r.from)}" y1="${top}" y2="${base}" class="lapl"/>`).join('');
+  return `<div class="dl-h"><b>${label}</b><span class="note">max. ${fmt(Math.max(...vals))}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" class="dchart" role="img" aria-label="${label} im Verlauf">${sep}
+    ${area?`<polygon points="0,${base} ${pts} ${W},${base}" fill="${color}" opacity=".22"/>`:''}
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/>
+    <line x1="0" x2="${W}" y1="${base}" y2="${base}" class="axis"/>
+    <text x="0" y="${H-2}" class="bn">0:00</text><text x="${W}" y="${H-2}" text-anchor="end" class="bn">${mmss(t1-t0)}</text></svg>`;
+}
+function zoneBars(share, cols, labels){
+  if(!share) return '';
+  return `<div class="zbars">${share.map((v,i)=>({v,i})).reverse().map(({v,i}) => `<div class="zb"><b>Z${i+1}</b>
+    <span class="zt"><span style="width:${Math.max(v*100, v?2:0)}%;background:${cols[i]}"></span></span><span class="zp">${v>0&&v<0.005?'&lt;1':Math.round(v*100)} %</span><span class="zr">${labels[i]}</span></div>`).join('')}</div>`;
+}
+function renderDetail(){
+  const a = acts().find(x => x.id===detailId);
+  if(!a) return `<div class="card"><p>Aktivität nicht gefunden.</p><div><button class="btn" data-action="detail-close">Zurück</button></div></div>`;
+  const p = a.perf || {}, ftp = ftpNow(), st = getStreams(a.id);
+  const byPower = a.sport==='ride' && p.deviceWatts && !!ftp && (p.laps||[]).some(l=>l.w);
+  const ranges = lapRanges(a);
+  const rows = (p.laps||[]).map((l,i) => {
+    const r = ranges[i], dur = l.e || l.s;
+    const w = l.w || null, wNZ = byPower ? streamAvg(st,'w',r.from,r.to,true) : null;
+    return {n:i+1, dur, d:l.d, w, wNZ, pct: w&&ftp ? Math.round(w/ftp*100) : null, z: byPower ? powerZone(w, ftp) : null,
+      hr:l.hr, hz:hrZone(l.hr), c:l.c || (st ? streamAvg(st,'c',r.from,r.to,true) : null), speed: l.s ? l.d/l.s : null, g:l.g};
+  });
+  const hz = (S.log && S.log.zones && S.log.zones.hrMins) || null;
+  const np = byPower ? npApprox(st) : null;
+  const m = [
+    ['Dauer', mmss(a.movingS)], ['Distanz', fmtNum(a.distKm,1)+' km'],
+    byPower ? ['Ø Leistung', (p.watts||'–')+' W'] : ['Ø Pace', a.sport==='run'?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h'],
+    byPower ? ['NP / IF', np ? `ca. ${np} W · ${fmtNum(np/ftp,2)}` : '–'] : ['Höhenmeter', Math.round(a.elev||0)+' m'],
+    ['Ø / max. HF', p.hr ? Math.round(p.hr)+' / '+(p.hrMax||'–') : '–'], ['Relative Effort', a.re!=null?a.re:'–']];
+  const pzLab = ftp ? [0,...PZ_UP].map((u,i,arr)=> i<6 ? `${Math.round(u*ftp)+(i?1:0)}–${Math.round(arr[i+1]*ftp)} W` : `ab ${Math.round(PZ_UP[5]*ftp)+1} W`) : [];
+  const hzLab = hz ? hz.map((v,i)=> i<hz.length-1 ? `${v}–${hz[i+1]-1}` : `ab ${v}`) : [];
+  const pShare = byPower ? (zoneTimes(st,'w',w=>powerZone(w||0.0001, ftp),7) || (()=>{ const r=analyze(a); return r&&r.ptiz?r.ptiz.map(x=>x/100):null; })()) : null;
+  const hShare = zoneTimes(st,'hr',hrZone,5) || (()=>{ const r=analyze(a); return r&&r.tiz?r.tiz.map(x=>x/100):null; })();
+  const as = assess(a.id);
+  const stops = rows.filter(r => r.wNZ && r.w && r.wNZ - r.w >= 5);
+  return `<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
+      <div><h2>${esc(a.name)}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
+    <div class="card"><div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
+    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':'Runden'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:''}</div>
+      ${lapBars(a, rows, byPower)}
+      <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':'<th>km</th><th>Pace</th>'}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
+      ${rows.map(r => `<tr class="${byPower&&r.z>=3?'work':''}"><td>${r.n}</td><td>${mmss(r.dur)}</td>
+        ${byPower?`<td><b>${r.w||'–'}</b>${r.wNZ && r.w && r.wNZ-r.w>=5?`<small>ohne Stopp ${Math.round(r.wNZ)}</small>`:''}</td><td>${r.pct!=null?r.pct+' %':'–'}</td><td><span class="zc" style="background:${PZ_COL[(r.z||1)-1]};color:${r.z>=4?'#fff':'#0b1530'}">Z${r.z||'–'}</span></td>`
+          :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?fmtPace(r.d/1000,r.d/r.speed):'–'}</b></td>`}
+        <td>${r.hr?Math.round(r.hr):'–'}${r.hz?`<small>Z${r.hz}</small>`:''}</td><td>${byPower?(r.c?Math.round(r.c):'–'):(r.g!=null?fmtNum(r.g,1)+' %':'–')}</td></tr>`).join('')}
+      </tbody></table>
+      ${stops.length?`<p class="note">Runde ${stops.map(r=>r.n).join(', ')}: kurze Unterbrechung, ohne Stopp ${stops.map(r=>Math.round(r.wNZ)+' W').join(', ')}.</p>`:''}</div>`:''}
+    <div class="card"><div class="row"><h2>Verlauf</h2>${!st?`<button class="btn" data-action="detail-streams" data-id="${esc(a.id)}" ${detailBusy?'disabled':''}>${detailBusy?'Wird geladen …':'Verlauf laden'}</button>`:''}</div>
+      ${detailErr?`<div class="status err">${esc(detailErr)}</div>`:''}
+      ${st ? (byPower ? lineChart(st,'w','var(--accent)','Leistung',v=>Math.round(v)+' W',ranges,true) : lineChart(st,'v','var(--accent)','Tempo',v=>fmtPace(1,1000/(v||1))+' /km',ranges,true))
+        + lineChart(st,'hr','#D2463A','Herzfrequenz',v=>Math.round(v)+' bpm',ranges,false)
+        + (byPower ? '' : lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,true))
+        : (!detailBusy?'<p class="note">Sekundengenaue Daten von Strava, werden beim ersten Öffnen geladen.</p>':'')}</div>
+    ${pShare||hShare?`<div class="card"><h2>Zeit in Zonen</h2>
+      ${pShare?`<div class="dl-h"><b>Leistung</b><span class="note">FTP ${ftp} W</span></div>${zoneBars(pShare, PZ_COL, pzLab)}`:''}
+      ${hShare?`<div class="dl-h"><b>Herzfrequenz</b>${byPower?'<span class="note">reagiert in Intervallen verzögert</span>':''}</div>${zoneBars(hShare, HZ_COL, hzLab)}`:''}</div>`:''}
+    <div class="card"><h2>Bewertung</h2>${as?`<div class="md">${md(as.text)}</div>`:'<p class="note">Noch keine Einschätzung.</p>'}
+      <div><button class="btn" data-action="detail-assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>${as?'Intervalle neu bewerten':'Von Claude bewerten lassen'}</button></div></div>`;
+}
+
 function renderPlan(){
   const pr = profile(), g = pr.goal;
   const goal = g && g.text ? `<div class="card goal"><div class="ghead"><p class="eyebrow">Ziel</p><button class="gedit" data-action="goal-open" aria-label="Ziel bearbeiten">${IC.edit}</button></div><p class="gtext">${esc(g.text)}</p>
@@ -1172,7 +1337,8 @@ function renderHistory(){
         <div class="body"><span class="facts">${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
         ${pl?`<span class="pl">${esc(pl)}</span>`:''}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
+        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}
+        ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ›</button>` : ''}</div></div>`);
     });
     planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="body"><span class="facts">Ausgelassen: ${esc(s.title)}</span></div></div>`));
@@ -1245,6 +1411,7 @@ window.onBackupLoaded = text => {
 };
 window.appBack = () => {
   if(moveDlg||cancelDlg||swapDlg||insightDlg||goalDlg||bgDlg||histDlg||guideDlg||icuDlg){ moveDlg=null; cancelDlg=null; swapDlg=null; insightDlg=null; goalDlg=null; bgDlg=null; histDlg=null; guideDlg=null; icuDlg=null; renderMoveDialog(); return true; }
+  if(detailId){ detailId=null; detailErr=null; render(); window.scrollTo({top:detailScroll||0}); return true; }
   if(tab!=='heute'){ tab='heute'; dialogSince=Date.now(); render(); window.scrollTo({top:0}); return true; }
   return false;
 };
@@ -1362,7 +1529,7 @@ async function syncStrava(){
       const z = (await mcp.callTool(SERVER,'get_athlete_zones',{},{cache:false})).payload || {};
       if(Array.isArray(z.heart_rate_zones)) log.zones = {hrMins: z.heart_rate_zones.map(x=>x.min||0), ftp: z.ftp||null};
     }catch(_){}
-    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && (!a.perf || (a.perf.rpe==null && daysUntil(a.date)>=-3)) && daysUntil(a.date)>=-60).slice(0,15);
+    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && (!a.perf || (a.perf.rpe==null && daysUntil(a.date)>=-3) || ((a.perf.laps||[]).length && a.perf.laps[0].e===undefined && daysUntil(a.date)>=-14)) && daysUntil(a.date)>=-60).slice(0,15);
     for(let i=0;i<need.length;i++){
       syncMsg = {text:`Leistungsdaten ${i+1} von ${need.length} …`}; render();
       try{
@@ -1370,7 +1537,7 @@ async function syncStrava(){
         need[i].perf = {hr:p.has_heartrate&&p.average_heartrate?Math.round(p.average_heartrate*10)/10:null, hrMax:p.max_heartrate||null,
           watts:p.average_watts?Math.round(p.average_watts):null, deviceWatts:!!p.has_device_watts,
           rpe:(p.perceived_exertion ?? p.perceivedExertion ?? null)!=null ? Math.round(Number(p.perceived_exertion ?? p.perceivedExertion)) : null,
-          laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null}))};
+          laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null, e:l.elapsed_time||null}))};
       }catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
     }
     // in den aktuellen Stand übernehmen (Rückmeldungen/Fazits können sich währenddessen geändert haben)
@@ -1761,6 +1928,12 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden){ rend
 /* ---------- Ereignisse ---------- */
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.tab) detailId = null;
+  const da = b.dataset.action;
+  if(da==='detail-open'){ detailScroll = window.scrollY; detailId = b.dataset.id; detailErr = null; render(); window.scrollTo({top:0}); return; }
+  if(da==='detail-close'){ detailId = null; detailErr = null; render(); window.scrollTo({top:detailScroll||0}); return; }
+  if(da==='detail-streams'){ loadStreams(b.dataset.id); return; }
+  if(da==='detail-assess'){ const a = acts().find(x=>x.id===b.dataset.id); if(a) askClaude(`Bitte bewerte die Einheit „${a.name}“ vom ${fmtDay(a.date)} (ID ${a.id}) neu: Intensität ${a.sport==='ride'?'nach Leistung (%FTP, Leistungszonen)':'nach Pace und HF'}, jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit, Pausen und Ein-/Ausfahren nur kurz. Liefere "assessments" mit text und short und aktualisiere das Wochenfazit.`, {auto:true, display:`Intervalle bewerten: ${a.name}, ${fmtDay(a.date)}`}); return; }
   if(b.dataset.tab){
     const leavingSettings = tab==='einstellungen' && b.dataset.tab!=='einstellungen';
     if(b.dataset.tab!==tab && !busy){ dialogSince=Date.now(); draft=''; showAll=false; }
