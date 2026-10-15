@@ -1096,9 +1096,10 @@ async function loadStreams(id){
   finally{ detailBusy = false; render(); }
 }
 const mmss = s => Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
+function lapSrc(a){ const p = a.perf||{}; return (p.rounds && p.rounds.length>1) ? p.rounds : (p.laps||[]); }
 function lapRanges(a){
   let t0 = 0;
-  return (a.perf.laps||[]).map(l => { const e = l.e || l.s; const r = {from:t0, to:t0+e}; t0 += e; return r; });
+  return lapSrc(a).map(l => { const e = l.e || l.s; const r = {from:t0, to:t0+e}; t0 += e; return r; });
 }
 /* Mittel eines Streams in [from,to), optional ohne Nullwerte */
 function streamAvg(st, key, from, to, noZero){
@@ -1118,7 +1119,7 @@ function npApprox(st){
   for(let i=win-1;i<st.w.length;i++){ let s=0; for(let k=i-win+1;k<=i;k++) s+=st.w[k]||0; r.push(Math.pow(s/win,4)); }
   return Math.round(Math.pow(r.reduce((a,b)=>a+b,0)/r.length, 0.25));
 }
-function lapBars(a, rows, byPower){
+function lapBars(a, rows, byPower, isRide){
   const W = 340, H = 130, top = 18, base = H-18;
   const tot = rows.reduce((x,l)=>x+l.dur,0) || 1;
   const vals = rows.map(l => byPower ? l.w : l.speed||0), max = Math.max(1, ...vals) * 1.08;
@@ -1127,7 +1128,7 @@ function lapBars(a, rows, byPower){
   const bars = rows.map((l,i) => {
     const w = Math.max(2, l.dur/tot*W - 2), h = Math.max(2, vals[i]/max*(base-top)), y = base-h;
     const col = byPower ? PZ_COL[(l.z||1)-1] : HZ_COL[(l.hz||1)-1];
-    const lab = byPower ? Math.round(l.w) : fmtPace(1, 1000/(l.speed||1)).replace(/^0/,'');
+    const lab = byPower ? Math.round(l.w) : isRide ? fmtNum((l.speed||0)*3.6,1) : fmtPace(1, 1000/(l.speed||1));
     const g = `<rect x="${x+1}" y="${y}" width="${w}" height="${h}" rx="3" fill="${col}"/>
       ${w>=20?`<text x="${x+1+w/2}" y="${y-4}" text-anchor="middle" class="bl">${lab}</text>`:''}
       <text x="${x+1+w/2}" y="${H-4}" text-anchor="middle" class="bn">${i+1}</text>`;
@@ -1138,8 +1139,10 @@ function lapBars(a, rows, byPower){
 }
 function lineChart(st, key, color, label, fmt, ranges, area){
   if(!st || !st[key] || !st[key].some(v=>v)) return '';
+  if(key==='alt'){ const a = st.alt.filter(v=>v!=null); if(!a.length || Math.max(...a)-Math.min(...a) < 3) return ''; }
   const W = 340, H = 92, top = 8, base = H-14, t0 = st.t[0], t1 = st.t[st.t.length-1] || 1;
   const vals = st[key].map(v => v||0), pos = vals.filter(v=>v>0);
+  if(key==='alt') area = false;
   const lo = area ? 0 : Math.min(...pos)*0.95, hi = Math.max(...vals)*1.05 || 1;
   const X = t => (t-t0)/(t1-t0)*W, Y = v => base - (Math.max(v,lo)-lo)/(hi-lo)*(base-top);
   const pts = st.t.map((t,i) => `${X(t).toFixed(1)},${Y(vals[i]).toFixed(1)}`).join(' ');
@@ -1160,9 +1163,10 @@ function renderDetail(){
   const a = acts().find(x => x.id===detailId);
   if(!a) return `<div class="card"><p>Aktivität nicht gefunden.</p><div><button class="btn" data-action="detail-close">Zurück</button></div></div>`;
   const p = a.perf || {}, ftp = ftpNow(), st = getStreams(a.id);
-  const byPower = a.sport==='ride' && p.deviceWatts && !!ftp && (p.laps||[]).some(l=>l.w);
-  const ranges = lapRanges(a);
-  const rows = (p.laps||[]).map((l,i) => {
+  const isRide = a.sport==='ride';
+  const byPower = isRide && p.deviceWatts && !!ftp && lapSrc(a).some(l=>l.w);
+  const ranges = lapRanges(a), useRounds = !!(p.rounds && p.rounds.length>1);
+  const rows = lapSrc(a).map((l,i) => {
     const r = ranges[i], dur = l.e || l.s;
     const w = l.w || null, wNZ = byPower ? streamAvg(st,'w',r.from,r.to,true) : null;
     return {n:i+1, dur, d:l.d, w, wNZ, pct: w&&ftp ? Math.round(w/ftp*100) : null, z: byPower ? powerZone(w, ftp) : null,
@@ -1172,7 +1176,7 @@ function renderDetail(){
   const np = byPower ? npApprox(st) : null;
   const m = [
     ['Dauer', mmss(a.movingS)], ['Distanz', fmtNum(a.distKm,1)+' km'],
-    byPower ? ['Ø Leistung', (p.watts||'–')+' W'] : ['Ø Pace', a.sport==='run'?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h'],
+    byPower ? ['Ø Leistung', (p.watts||'–')+' W'] : isRide ? ['Ø Tempo', fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h'] : ['Ø Pace', fmtPace(a.distKm,a.movingS)+' /km'],
     byPower ? ['NP / IF', np ? `ca. ${np} W · ${fmtNum(np/ftp,2)}` : '–'] : ['Höhenmeter', Math.round(a.elev||0)+' m'],
     ['Ø / max. HF', p.hr ? Math.round(p.hr)+' / '+(p.hrMax||'–') : '–'], ['Relative Effort', a.re!=null?a.re:'–']];
   const pzLab = ftp ? [0,...PZ_UP].map((u,i,arr)=> i<6 ? `${Math.round(u*ftp)+(i?1:0)}–${Math.round(arr[i+1]*ftp)} W` : `ab ${Math.round(PZ_UP[5]*ftp)+1} W`) : [];
@@ -1184,20 +1188,22 @@ function renderDetail(){
   return `<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
       <div><h2>${esc(a.name)}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
     <div class="card"><div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
-    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':'Runden'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:''}</div>
-      ${lapBars(a, rows, byPower)}
-      <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':'<th>km</th><th>Pace</th>'}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
+    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
+      ${lapBars(a, rows, byPower, isRide)}
+      <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':`<th>km</th><th>${isRide?'km/h':'Pace'}</th>`}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
       ${rows.map(r => `<tr class="${byPower&&r.z>=3?'work':''}"><td>${r.n}</td><td>${mmss(r.dur)}</td>
         ${byPower?`<td><b>${r.w||'–'}</b>${r.wNZ && r.w && r.wNZ-r.w>=5?`<small>ohne Stopp ${Math.round(r.wNZ)}</small>`:''}</td><td>${r.pct!=null?r.pct+' %':'–'}</td><td><span class="zc" style="background:${PZ_COL[(r.z||1)-1]};color:${r.z>=4?'#fff':'#0b1530'}">Z${r.z||'–'}</span></td>`
-          :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?fmtPace(r.d/1000,r.d/r.speed):'–'}</b></td>`}
+          :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?(isRide?fmtNum(r.speed*3.6,1):fmtPace(r.d/1000,r.d/r.speed)):'–'}</b></td>`}
         <td>${r.hr?Math.round(r.hr):'–'}${r.hz?`<small>Z${r.hz}</small>`:''}</td><td>${byPower?(r.c?Math.round(r.c):'–'):(r.g!=null?fmtNum(r.g,1)+' %':'–')}</td></tr>`).join('')}
       </tbody></table>
       ${stops.length?`<p class="note">Runde ${stops.map(r=>r.n).join(', ')}: kurze Unterbrechung, ohne Stopp ${stops.map(r=>Math.round(r.wNZ)+' W').join(', ')}.</p>`:''}</div>`:''}
     <div class="card"><div class="row"><h2>Verlauf</h2>${!st?`<button class="btn" data-action="detail-streams" data-id="${esc(a.id)}" ${detailBusy?'disabled':''}>${detailBusy?'Wird geladen …':'Verlauf laden'}</button>`:''}</div>
       ${detailErr?`<div class="status err">${esc(detailErr)}</div>`:''}
-      ${st ? (byPower ? lineChart(st,'w','var(--accent)','Leistung',v=>Math.round(v)+' W',ranges,true) : lineChart(st,'v','var(--accent)','Tempo',v=>fmtPace(1,1000/(v||1))+' /km',ranges,true))
+      ${st ? (byPower ? lineChart(st,'w','var(--accent)','Leistung',v=>Math.round(v)+' W',ranges,true)
+            : isRide ? lineChart(Object.assign({}, st, {kmh:(st.v||[]).map(v=>v*3.6)}),'kmh','var(--accent)','Tempo',v=>fmtNum(v,1)+' km/h',ranges,true)
+            : lineChart(st,'v','var(--accent)','Tempo',v=>fmtPace(1,1000/(v||1))+' /km',ranges,true))
         + lineChart(st,'hr','#D2463A','Herzfrequenz',v=>Math.round(v)+' bpm',ranges,false)
-        + (byPower ? '' : lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,true))
+        + lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,false)
         : (!detailBusy?'<p class="note">Sekundengenaue Daten von Strava, werden beim ersten Öffnen geladen.</p>':'')}</div>
     ${pShare||hShare?`<div class="card"><h2>Zeit in Zonen</h2>
       ${pShare?`<div class="dl-h"><b>Leistung</b><span class="note">FTP ${ftp} W</span></div>${zoneBars(pShare, PZ_COL, pzLab)}`:''}
@@ -1529,7 +1535,7 @@ async function syncStrava(){
       const z = (await mcp.callTool(SERVER,'get_athlete_zones',{},{cache:false})).payload || {};
       if(Array.isArray(z.heart_rate_zones)) log.zones = {hrMins: z.heart_rate_zones.map(x=>x.min||0), ftp: z.ftp||null};
     }catch(_){}
-    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && (!a.perf || (a.perf.rpe==null && daysUntil(a.date)>=-3) || ((a.perf.laps||[]).length && a.perf.laps[0].e===undefined && daysUntil(a.date)>=-14)) && daysUntil(a.date)>=-60).slice(0,15);
+    const need = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && (!a.perf || (a.perf.rpe==null && daysUntil(a.date)>=-3) || (a.perf.rounds===undefined && daysUntil(a.date)>=-14)) && daysUntil(a.date)>=-60).slice(0,15);
     for(let i=0;i<need.length;i++){
       syncMsg = {text:`Leistungsdaten ${i+1} von ${need.length} …`}; render();
       try{
@@ -1537,7 +1543,8 @@ async function syncStrava(){
         need[i].perf = {hr:p.has_heartrate&&p.average_heartrate?Math.round(p.average_heartrate*10)/10:null, hrMax:p.max_heartrate||null,
           watts:p.average_watts?Math.round(p.average_watts):null, deviceWatts:!!p.has_device_watts,
           rpe:(p.perceived_exertion ?? p.perceivedExertion ?? null)!=null ? Math.round(Number(p.perceived_exertion ?? p.perceivedExertion)) : null,
-          laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null, e:l.elapsed_time||null}))};
+          laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null, e:l.elapsed_time||null})),
+          rounds: Array.isArray(p.rounds) ? p.rounds.slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, e:l.elapsed_time||null, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null})) : undefined};
       }catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
     }
     // in den aktuellen Stand übernehmen (Rückmeldungen/Fazits können sich währenddessen geändert haben)
@@ -1577,6 +1584,7 @@ function buildContext(){
       splits: r.laps ? undefined : (a.perf.laps||[]).map(l=>`${fmtPace(l.d/1000,l.s)}/km ${l.hr||'–'}bpm ${l.g??0}%`).join(' | '),
       leistungW: r.byPower ? r.watts : undefined, leistungZone: r.byPower ? r.pzone : undefined, hauptreizNachLeistung: r.byPower ? r.effect : undefined,
       leistungszonenAnteilProzent: r.ptiz,
+      rundenUhr: !r.laps && (a.perf.rounds||[]).length>1 ? a.perf.rounds.map((l,i)=>`R${i+1} ${Math.floor((l.e||l.s)/60)}:${String((l.e||l.s)%60).padStart(2,'0')} ${fmtNum(l.d/1000,2)}km ${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'} HF${l.hr?Math.round(l.hr):'–'} ${l.g??0}%`).join(' | ') : undefined,
       runden: r.laps ? r.laps.map(l=>`R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`).join(' | ') : undefined,
       geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
     return {id:a.id, datum:a.date, sport:a.sport, name:a.name, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
@@ -1612,7 +1620,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
   · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
   · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
   · Rad: IF und TSS bezogen auf die FTP. Mit Leistungsmesser bewertest du die Intensität nach Leistung (%FTP, Leistungszonen Z1–Z7: Z1 bis 55 %, Z2 56–75 %, Z3 76–90 %, Z4 91–105 %, Z5 106–120 %, Z6 121–150 %, Z7 darüber), nicht nach HF: Die HF steigt in Intervallen bis etwa 5 Minuten verzögert und bleibt niedriger. HF nur ergänzend (Anstieg bei gleicher Leistung).
-  · Intervalle: Liegen "runden" vor, bewerte jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit ("geplant") und nenne Abweichungen konkret (z. B. „Intervall 3: 149 W, Ziel ab 154 W“). Ein- und Ausfahren sowie Pausen nur kurz.
+  · Intervalle: Liegen "runden" (Rad) oder "rundenUhr" (Runden der Uhr) vor, bewerte jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit ("geplant") und nenne Abweichungen konkret (z. B. „Intervall 3: 149 W, Ziel ab 154 W“). Ein- und Ausfahren sowie Pausen nur kurz.
   · Formentwicklung über die Wochen (Effizienz, Trainingslast) nur mit Vorsicht, solange wenige Daten vorliegen.
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.

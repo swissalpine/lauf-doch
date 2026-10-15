@@ -118,7 +118,11 @@
       return {
         has_heartrate: !!a.has_heartrate, average_heartrate: a.average_heartrate || null, max_heartrate: a.max_heartrate || null,
         average_watts: a.average_watts || null, has_device_watts: !!a.device_watts, laps: laps,
-        perceived_exertion: a.perceived_exertion != null ? a.perceived_exertion : null
+        perceived_exertion: a.perceived_exertion != null ? a.perceived_exertion : null,
+        // Runden der Uhr (Intervalle), unabhängig von den Kilometer-Splits
+        rounds: Array.isArray(a.laps) ? a.laps.map(function(l){ return {
+          distance: l.distance, moving_time: l.moving_time, elapsed_time: l.elapsed_time || null, avg_hr: l.average_heartrate || null,
+          avg_cadence: l.average_cadence || null, avg_grade: l.distance ? (l.total_elevation_gain || 0) / l.distance * 100 : null, avg_watts: l.average_watts || null }; }) : []
       };
     }
   };
