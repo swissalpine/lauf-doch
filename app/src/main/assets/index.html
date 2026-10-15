@@ -535,7 +535,9 @@ function powerZone(w, ftp){ if(!w || !ftp) return null; const x = w/ftp; let z =
 function powerLaps(a){
   const p = a && a.perf, ftp = ftpNow();
   if(!p || a.sport!=='ride' || !p.deviceWatts || !ftp) return null;
-  const laps = (p.laps||[]).filter(l => l.s && l.w);
+  // Runden der Uhr bevorzugen: Kilometer-Splits von Strava enthalten keine Watt
+  const src = (p.rounds||[]).some(l => l.w) ? p.rounds : (p.laps||[]);
+  const laps = src.filter(l => l.s && l.w);
   if(!laps.length) return null;
   return laps.map((l,i) => ({n:i+1, s:l.s, w:l.w, pct:Math.round(l.w/ftp*100), z:powerZone(l.w, ftp), hr:l.hr||null, hz:hrZone(l.hr)}));
 }
@@ -1585,7 +1587,9 @@ function buildContext(){
       leistungW: r.byPower ? r.watts : undefined, leistungZone: r.byPower ? r.pzone : undefined, hauptreizNachLeistung: r.byPower ? r.effect : undefined,
       leistungszonenAnteilProzent: r.ptiz,
       rundenUhr: !r.laps && (a.perf.rounds||[]).length>1 ? a.perf.rounds.map((l,i)=>`R${i+1} ${Math.floor((l.e||l.s)/60)}:${String((l.e||l.s)%60).padStart(2,'0')} ${fmtNum(l.d/1000,2)}km ${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'} HF${l.hr?Math.round(l.hr):'–'} ${l.g??0}%`).join(' | ') : undefined,
-      runden: r.laps ? r.laps.map(l=>`R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`).join(' | ') : undefined,
+      runden: r.laps ? (()=>{ const st = getStreams(a.id), rg = lapRanges(a);
+        return r.laps.map((l,i)=>{ const nz = st && rg[i] ? streamAvg(st,'w',rg[i].from,rg[i].to,true) : null;
+          return `R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W${nz && nz-l.w>=5?` (ohne Stopp ${Math.round(nz)}W)`:''} ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`; }).join(' | '); })() : undefined,
       geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
     return {id:a.id, datum:a.date, sport:a.sport, name:a.name, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
       belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};

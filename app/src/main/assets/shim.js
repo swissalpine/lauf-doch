@@ -106,7 +106,8 @@
       const a = await call('strava', {path:'/activities/' + encodeURIComponent(input.activity_id)});
       // Kilometer-Splits bevorzugen (Läufe), sonst Runden
       let laps = [];
-      if (Array.isArray(a.splits_metric) && a.splits_metric.length) {
+      const isRun = /Run|Walk|Hike/.test(a.sport_type || a.type || '');
+      if (isRun && Array.isArray(a.splits_metric) && a.splits_metric.length) {
         laps = a.splits_metric.map(function(s){ return {
           distance: s.distance, moving_time: s.moving_time, elapsed_time: s.elapsed_time || null, avg_hr: s.average_heartrate || null, avg_cadence: null,
           avg_grade: s.distance ? (s.elevation_difference || 0) / s.distance * 100 : null, avg_watts: null }; });
