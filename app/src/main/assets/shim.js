@@ -107,7 +107,9 @@
       // Kilometer-Splits bevorzugen (Läufe), sonst Runden
       let laps = [];
       const isRun = /Run|Walk|Hike/.test(a.sport_type || a.type || '');
-      if (isRun && Array.isArray(a.splits_metric) && a.splits_metric.length) {
+      // Rad: Runden der Uhr (mit Watt); nur wenn es keine gibt, die Kilometer-Splits
+      const devLaps = Array.isArray(a.laps) && a.laps.length > 1;
+      if ((isRun || !devLaps) && Array.isArray(a.splits_metric) && a.splits_metric.length) {
         laps = a.splits_metric.map(function(s){ return {
           distance: s.distance, moving_time: s.moving_time, elapsed_time: s.elapsed_time || null, avg_hr: s.average_heartrate || null, avg_cadence: null,
           avg_grade: s.distance ? (s.elevation_difference || 0) / s.distance * 100 : null, avg_watts: null }; });

@@ -321,7 +321,7 @@ table.laps tr.work td{background:var(--accent-soft)}
 table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400}
 .zc{display:inline-block;min-width:30px;text-align:center;border-radius:6px;padding:0 5px;font-size:12px;font-weight:700}
 .zbars{display:flex;flex-direction:column;gap:6px}
-.zb{display:grid;grid-template-columns:26px minmax(0,1fr) 40px 92px;gap:8px;align-items:center;font-size:13px;font-variant-numeric:tabular-nums}
+.zb{display:grid;grid-template-columns:26px minmax(0,1fr) 48px 92px;gap:8px;align-items:center;font-size:13px;font-variant-numeric:tabular-nums}
 .zb .zt{height:12px;background:var(--sunk);border-radius:6px;overflow:hidden}
 .zb .zt span{display:block;height:100%;border-radius:6px}
 .zb .zp{text-align:right;font-weight:600}
@@ -1098,7 +1098,18 @@ async function loadStreams(id){
   finally{ detailBusy = false; render(); }
 }
 const mmss = s => Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
-function lapSrc(a){ const p = a.perf||{}; return (p.rounds && p.rounds.length>1) ? p.rounds : (p.laps||[]); }
+/* Lange Fahrten ohne Runden: Kilometer-Splits zu 5-km-Abschnitten zusammenfassen */
+function rideSplits(laps){
+  if(laps.length <= 15) return laps;
+  const out = [];
+  for(let i=0;i<laps.length;i+=5){
+    const g = laps.slice(i,i+5), s = g.reduce((x,l)=>x+(l.s||0),0), e = g.reduce((x,l)=>x+(l.e||l.s||0),0), d = g.reduce((x,l)=>x+(l.d||0),0);
+    const hrT = g.filter(l=>l.hr).reduce((x,l)=>x+l.s,0);
+    out.push({d, s, e, hr: hrT ? g.filter(l=>l.hr).reduce((x,l)=>x+l.hr*l.s,0)/hrT : null, g: d ? g.reduce((x,l)=>x+(l.g||0)*(l.d||0),0)/d : null, w:null});
+  }
+  return out;
+}
+function lapSrc(a){ const p = a.perf||{}; if(p.rounds && p.rounds.length>1) return p.rounds; return a.sport==='ride' ? rideSplits(p.laps||[]) : (p.laps||[]); }
 function lapRanges(a){
   let t0 = 0;
   return lapSrc(a).map(l => { const e = l.e || l.s; const r = {from:t0, to:t0+e}; t0 += e; return r; });
@@ -1190,7 +1201,7 @@ function renderDetail(){
   return `<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
       <div><h2>${esc(a.name)}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
     <div class="card"><div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
-    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
+    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':isRide&&(p.laps||[]).length>15?'Je 5 km':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
       ${lapBars(a, rows, byPower, isRide)}
       <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':`<th>km</th><th>${isRide?'km/h':'Pace'}</th>`}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
       ${rows.map(r => `<tr class="${byPower&&r.z>=3?'work':''}"><td>${r.n}</td><td>${mmss(r.dur)}</td>
@@ -1583,7 +1594,7 @@ function buildContext(){
     const r = analyze(a), L = loadAt(a.date);
     const leistung = r ? {hfAvg:r.hr, hfMax:a.perf.hrMax, hfZone:r.zone, effekt:r.effect, zonenAnteilProzent:r.tiz, effizienz:r.ef?Math.round(r.ef*1000)/1000:undefined,
       entkopplungProzent:r.decoupling!=null?Math.round(r.decoupling*10)/10:undefined, IF:r.if?Math.round(r.if*100)/100:undefined, TSS:r.tss,
-      splits: r.laps ? undefined : (a.perf.laps||[]).map(l=>`${fmtPace(l.d/1000,l.s)}/km ${l.hr||'–'}bpm ${l.g??0}%`).join(' | '),
+      splits: r.laps ? undefined : (a.sport==='ride' ? rideSplits(a.perf.laps||[]) : (a.perf.laps||[])).map(l=>`${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'} ${l.hr?Math.round(l.hr):'–'}bpm ${l.g??0}%`).join(' | '),
       leistungW: r.byPower ? r.watts : undefined, leistungZone: r.byPower ? r.pzone : undefined, hauptreizNachLeistung: r.byPower ? r.effect : undefined,
       leistungszonenAnteilProzent: r.ptiz,
       rundenUhr: !r.laps && (a.perf.rounds||[]).length>1 ? a.perf.rounds.map((l,i)=>`R${i+1} ${Math.floor((l.e||l.s)/60)}:${String((l.e||l.s)%60).padStart(2,'0')} ${fmtNum(l.d/1000,2)}km ${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'} HF${l.hr?Math.round(l.hr):'–'} ${l.g??0}%`).join(' | ') : undefined,
