@@ -503,6 +503,18 @@ function isoWeek(s){ const d=parseYmd(s); const t=new Date(d.getFullYear(),d.get
 /* ---------- Leistungsanalyse (rein rechnerisch, später 1:1 nach Kotlin) ---------- */
 const EFFECT = ['', 'Regeneration', 'Grundlagenausdauer', 'Aerob intensiv (Tempo)', 'Schwelle', 'VO2max / anaerob'];
 function hrZone(hr){ const z=S.log&&S.log.zones&&S.log.zones.hrMins; if(!z||!hr) return null; let i=0; for(let k=0;k<z.length;k++) if(hr>=z[k]) i=k; return i+1; }
+const PEFFECT = ['', 'Regeneration', 'Grundlagenausdauer', 'Tempo / aerob intensiv', 'Schwelle', 'VO2max', 'Anaerob', 'Neuromuskulär'];
+const PZ_UP = [0.55, 0.75, 0.90, 1.05, 1.20, 1.50];   // Coggan-Grenzen in % FTP (wie Strava)
+function ftpNow(){ return (S.log && S.log.zones && S.log.zones.ftp) || null; }
+function powerZone(w, ftp){ if(!w || !ftp) return null; const x = w/ftp; let z = 1; PZ_UP.forEach(u => { if(x > u + 1e-9) z++; }); return z; }
+/* Runden mit Leistung: Dauer, Watt, %FTP, Zone, HF */
+function powerLaps(a){
+  const p = a && a.perf, ftp = ftpNow();
+  if(!p || a.sport!=='ride' || !p.deviceWatts || !ftp) return null;
+  const laps = (p.laps||[]).filter(l => l.s && l.w);
+  if(!laps.length) return null;
+  return laps.map((l,i) => ({n:i+1, s:l.s, w:l.w, pct:Math.round(l.w/ftp*100), z:powerZone(l.w, ftp), hr:l.hr||null, hz:hrZone(l.hr)}));
+}
 function analyze(a){
   const p = a && a.perf; if(!p) return null;
   const r = {};
@@ -526,6 +538,17 @@ function analyze(a){
   }
   const ftp = S.log && S.log.zones && S.log.zones.ftp;
   if(a.sport==='ride' && p.watts && p.deviceWatts && ftp){ r.if = p.watts/ftp; r.tss = Math.round(a.movingS/3600*r.if*r.if*100); }
+  // Rad mit Leistungsmesser: Intensität nach Leistung, nicht nach HF (HF reagiert in Intervallen verzögert)
+  const pl = powerLaps(a);
+  if(pl){
+    const tz = [0,0,0,0,0,0,0], tot = pl.reduce((x,l)=>x+l.s,0);
+    pl.forEach(l => { tz[l.z-1] += l.s; });
+    r.ptiz = tz.map(x => Math.round(x/tot*100));
+    r.watts = p.watts; r.pzone = powerZone(p.watts, ftp);
+    // Hauptreiz: höchste Zone ab Z3 mit mindestens 10 % der Zeit, sonst Zone des Mittelwerts
+    let main = r.pzone; for(let z=7; z>=3; z--){ if(tz[z-1]/tot >= 0.10){ main = Math.max(z, r.pzone); break; } }
+    r.effect = PEFFECT[main] || r.effect; r.byPower = true; r.laps = pl;
+  }
   return r;
 }
 function loadAt(d){
@@ -822,6 +845,7 @@ function stepLi(st, sess){
   if(st.rpe) t.push(`<span class="tg">RPE ${esc(st.rpe)}</span>`);
   if(st.hr) t.push(`<span class="tg">HF ${esc(st.hr)}</span>`);
   if(st.pace) t.push(`<span class="tg">${esc(st.pace)} /km</span>`);
+  if(st.watt) t.push(`<span class="tg">${esc(st.watt)}</span>`);
   return `<li><span class="l">${esc(st.label||'')}${q}</span><span class="d">${esc(st.detail||'')}${t.length?`<span class="tgs">${t.join('')}</span>`:''}</span></li>`;
 }
 function plannedCard(s, label){
@@ -875,9 +899,11 @@ function perfBlock(a){
   const r = analyze(a);
   if(!r) return `<div class="perf"><b>Leistung</b><span class="note">Noch keine Leistungsdaten. Sie kommen beim nächsten Strava-Abgleich.</span></div>`;
   const c = [];
+  if(r.byPower) c.push(`<span class="chip">Ø ${r.watts} W · ${Math.round(r.watts/ftpNow()*100)} % FTP</span>`);
   if(r.hr) c.push(`<span class="chip">Ø HF ${Math.round(r.hr)}${r.zone?' · Z'+r.zone:''}</span>`);
-  if(r.effect) c.push(`<span class="chip">Effekt: ${esc(r.effect)}</span>`);
-  if(r.tiz) c.push(`<span class="chip">${r.tiz.map((v,i)=>v?`Z${i+1} ${v} %`:'').filter(Boolean).join(' · ')}</span>`);
+  if(r.effect) c.push(`<span class="chip">Effekt: ${esc(r.effect)}${r.byPower?' (nach Leistung)':''}</span>`);
+  if(r.ptiz) c.push(`<span class="chip">Leistung ${r.ptiz.map((v,i)=>v?`Z${i+1} ${v} %`:'').filter(Boolean).join(' · ')}</span>`);
+  if(r.tiz) c.push(`<span class="chip">${r.byPower?'HF ':''}${r.tiz.map((v,i)=>v?`Z${i+1} ${v} %`:'').filter(Boolean).join(' · ')}</span>`);
   if(r.ef) c.push(`<span class="chip">Effizienz ${fmtNum(r.ef,2)}</span>`);
   if(r.decoupling!=null) c.push(`<span class="chip ${decClass(r.decoupling)}">Entkopplung ${fmtNum(r.decoupling,1)} %</span>`);
   if(r.if) c.push(`<span class="chip">IF ${fmtNum(r.if,2)} · TSS ${r.tss}</span>`);
@@ -1133,6 +1159,7 @@ function renderHistory(){
       const r = analyze(a); let pl = '';
       if(r){
         const parts = [];
+        if(r.byPower) parts.push(r.watts+' W ('+Math.round(r.watts/ftpNow()*100)+' % FTP)');
         if(r.hr) parts.push('HF '+Math.round(r.hr)+(r.zone?' (Z'+r.zone+')':''));
         if(r.effect) parts.push(r.effect);
         if(r.ef) parts.push('Effizienz '+fmtNum(r.ef,2));
@@ -1380,7 +1407,11 @@ function buildContext(){
     const r = analyze(a), L = loadAt(a.date);
     const leistung = r ? {hfAvg:r.hr, hfMax:a.perf.hrMax, hfZone:r.zone, effekt:r.effect, zonenAnteilProzent:r.tiz, effizienz:r.ef?Math.round(r.ef*1000)/1000:undefined,
       entkopplungProzent:r.decoupling!=null?Math.round(r.decoupling*10)/10:undefined, IF:r.if?Math.round(r.if*100)/100:undefined, TSS:r.tss,
-      splits:(a.perf.laps||[]).map(l=>`${fmtPace(l.d/1000,l.s)}/km ${l.hr||'–'}bpm ${l.g??0}%`).join(' | ')} : undefined;
+      splits: r.laps ? undefined : (a.perf.laps||[]).map(l=>`${fmtPace(l.d/1000,l.s)}/km ${l.hr||'–'}bpm ${l.g??0}%`).join(' | '),
+      leistungW: r.byPower ? r.watts : undefined, leistungZone: r.byPower ? r.pzone : undefined, hauptreizNachLeistung: r.byPower ? r.effect : undefined,
+      leistungszonenAnteilProzent: r.ptiz,
+      runden: r.laps ? r.laps.map(l=>`R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`).join(' | ') : undefined,
+      geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
     return {id:a.id, datum:a.date, sport:a.sport, name:a.name, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
       belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
   });
@@ -1406,14 +1437,15 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
-- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke. Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
+- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" (z. B. "154–184 W (Z3)"). Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Trainingslast und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
   · Trainingslast (nicht mit der RPE verwechseln): Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
   · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
   · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
-  · Rad: IF und TSS bezogen auf die FTP.
+  · Rad: IF und TSS bezogen auf die FTP. Mit Leistungsmesser bewertest du die Intensität nach Leistung (%FTP, Leistungszonen Z1–Z7: Z1 bis 55 %, Z2 56–75 %, Z3 76–90 %, Z4 91–105 %, Z5 106–120 %, Z6 121–150 %, Z7 darüber), nicht nach HF: Die HF steigt in Intervallen bis etwa 5 Minuten verzögert und bleibt niedriger. HF nur ergänzend (Anstieg bei gleicher Leistung).
+  · Intervalle: Liegen "runden" vor, bewerte jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit ("geplant") und nenne Abweichungen konkret (z. B. „Intervall 3: 149 W, Ziel ab 154 W“). Ein- und Ausfahren sowie Pausen nur kurz.
   · Formentwicklung über die Wochen (Effizienz, Trainingslast) nur mit Vorsicht, solange wenige Daten vorliegen.
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
@@ -1465,7 +1497,7 @@ function cleanSession(s){
     distanceKm: Number(s.distanceKm)>0 ? Math.round(Number(s.distanceKm)*10)/10 : null,
     durationMin: Number(s.durationMin)>0 ? Math.round(Number(s.durationMin)) : null,
     steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,300),
-      rpe:x&&x.rpe!=null?String(x.rpe).slice(0,12):undefined, hr:x&&x.hr?String(x.hr).slice(0,20):undefined, pace:x&&x.pace?String(x.pace).slice(0,24):undefined})) : []};
+      rpe:x&&x.rpe!=null?String(x.rpe).slice(0,12):undefined, hr:x&&x.hr?String(x.hr).slice(0,20):undefined, pace:x&&x.pace?String(x.pace).slice(0,24):undefined, watt:x&&x.watt?String(x.watt).slice(0,30):undefined})) : []};
 }
 
 async function applyUpdates(u){
