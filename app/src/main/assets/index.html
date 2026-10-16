@@ -303,6 +303,13 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.stepsd{border-top:1px solid var(--line);padding-top:4px}
+.stepsd>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 0;font-weight:600;color:var(--accent)}
+.stepsd>summary::-webkit-details-marker{display:none}
+.stepsd>summary::after{content:'▾';margin-left:auto;color:var(--muted);transition:transform .15s}
+.stepsd[open]>summary::after{transform:rotate(180deg)}
+.stepsd>summary .note{font-weight:400}
+.stepsd .steps{margin-top:4px}
 .dhead{display:flex;gap:10px;align-items:center}
 .dhead h2{line-height:1.15}
 .dback{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--sunk);font-size:22px;cursor:pointer}
@@ -885,7 +892,7 @@ function plannedCard(s, label){
     <h3>${esc(s.title||'Training')}</h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
-    ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
+    ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} Schritte</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
     ${moveControl(s)}
   </article>`;
 }
