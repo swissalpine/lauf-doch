@@ -101,6 +101,9 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .day .dl span{font-size:13px;color:var(--muted)}
 .day .items{display:flex;flex-direction:column;gap:6px;min-width:0}
 .day details summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.day details summary:has(.sic){display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center}
+.day details summary .sic{grid-row:1 / span 2;align-self:start;margin:0;vertical-align:0}
+.day details summary:has(.sic) .t,.day details summary:has(.sic) .x{grid-column:2}
 .day details summary::-webkit-details-marker{display:none}
 .day details summary .t{font-weight:600}
 .day details summary .x{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
