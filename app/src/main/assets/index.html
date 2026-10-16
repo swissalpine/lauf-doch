@@ -303,6 +303,12 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.topics{display:flex;gap:6px;flex-wrap:wrap}
+.topics .topic{font-size:13px;font-weight:600;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:5px 12px;cursor:pointer}
+.topics .topic:active{background:var(--accent-soft)}
+.topics .topic.on{background:var(--accent);color:var(--accent-ink)}
+.remind{align-self:flex-start;font-size:13px;border:0;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:5px 10px;cursor:pointer;font-weight:600}
+.remind::before{content:'! ';font-weight:800}
 .syncbtn{flex-direction:column;gap:0;line-height:1.25}
 .sync .syncbtn small{font-size:12px;font-weight:400;color:inherit;opacity:.85;margin:0}
 .stepsd{border-top:1px solid var(--line);padding-top:4px}
@@ -1471,42 +1477,38 @@ function renderSettings(){
 }
 
 /* Vorschläge im Dialogfeld: aus der aktuellen Lage abgeleitet (Regeln, kein Claude-Aufruf) */
-function suggestions(){
-  const t = today(), out = [];
-  const add = (label, text) => out.push({label, text: text ?? label});
+/* Themen je Seite (feste Begriffe) und höchstens eine Erinnerung aus den Daten */
+const TOPICS = {
+  heute: [['Aktivität nachtragen','Aktivität nachtragen: ','z. B. 30 min Kraft zu Hause, RPE 5'],
+          ['Rückmeldung','Rückmeldung: ','z. B. Knie beim Lauf 1/10, danach 0, RPE 4, Beine schwer'],
+          ['Heute anders','Heute anders: ','z. B. nur 30 min Zeit, erkältet, Lust auf mehr']],
+  plan: [['Training planen','Training planen: ','z. B. Samstag lieber Trail statt Straße, nächste Woche mehr Rad'],
+         ['Termine','Termine: ','z. B. 24.–31.10. Urlaub ohne Laufschuhe, Wettkampf am …'],
+         ['Ziel','Ziel: ','z. B. Halbmarathon im Frühjahr unter 2 h']],
+  rueckblick: [['Auswertung','Auswertung: ','z. B. Wie war mein Lauf am Dienstag? Wie entwickelt sich meine Form?'],
+               ['Vergleich','Vergleich: ','z. B. diese Woche mit der Vorwoche, gleiche Strecke wie vor einem Monat']],
+  einstellungen: [['Fitness und Leistungsstand','Fitness und Leistungsstand: ','z. B. 10 km in 55 min, FTP 200 W'],
+                  ['Beschwerden','Beschwerden: ','z. B. Knie seit gestern besser, Achillessehne zieht'],
+                  ['Trainingstage und Sportarten','Trainingstage und Sportarten: ','z. B. Di, Do, Sa; Rad und Kraft dazu'],
+                  ['Hintergrund','Hintergrund: ','z. B. Vorgeschichte, Arbeitszeiten, Gelände vor der Haustür']]
+};
+function reminder(){
+  const t = today();
   const noFb = a => { const f=fb(a.id); return careMode() ? (!f || (f.painDuring==null && f.painAfter==null)) : !rpeOf(a); };
   if(tab==='heute'){
-    const planned = active().filter(s=>s.date===t);
-    const doneToday = acts().filter(a=>a.date===t);
-    const open = planned.filter(p=>!doneToday.some(a=>a.sport===normSport(p.sport)));
-    if(open.length) add('Wie sieht das heutige Training genau aus?');
-    else if(!planned.length && !doneToday.length) add('Ich möchte heute doch etwas machen.', 'Ich möchte heute doch etwas machen: ');
-    const pending = acts().filter(a=>a.sport==='run' && a.date>=addDays(t,-3) && noFb(a))[0];
-    if(pending) add(`Rückmeldung zum ${a2s(pending)} vom ${fmtDay(pending.date)} geben`, fbTemplate(pending.date, !!rpeOf(pending)));
-    if(careMode()) add(`${complaints()[0]} heute …`, `${complaints()[0]}: Heute fühlt es sich `);
-    else add('Wie ich mich heute fühle …', 'Heute fühle ich mich ');
+    const pending = acts().filter(a=>(a.sport==='run'||a.sport==='ride') && a.date>=addDays(t,-3) && noFb(a))[0];
+    if(pending) return {label:`Rückmeldung zu ${fmtDay(pending.date)} fehlt`, text: fbTemplate(pending.date, !!rpeOf(pending))};
   } else if(tab==='plan'){
-    const pr = profile();
-    if(!pr.goal || !pr.goal.text) add('Ziel festlegen', 'Mein Ziel ist ');
-    const since = S.plan && S.plan.updatedAt ? S.plan.updatedAt.slice(0,10) : '';
-    if(acts().some(a=>(a.sport==='run'||a.sport==='ride') && a.date>=since)) add('Passe den Plan an meine letzten Einheiten an.');
-    const L = loadAt(t); if(L.acwr!=null && L.acwr>1.3) add('Ist meine Trainingslast gerade zu hoch?');
+    const L = loadAt(t); if(L.acwr!=null && L.acwr>1.3) return {label:'Trainingslast hoch – Plan prüfen?', text:'Meine Trainingslast ist gerade erhöht. Passt der Plan so?'};
     const lastPlanned = active().map(s=>s.date).sort().pop();
-    if(!lastPlanned || lastPlanned < addDays(t,7)) add('Plan verlängern', 'Bitte verlängere den Plan auf die nächsten 14 Tage.');
-    if(out.length<2) add('Warum diese Steigerung?');
-    if(out.length<2) add('Passt meine Trainingslast gerade?');
+    if(!lastPlanned || lastPlanned < addDays(t,7)) return {label:'Plan reicht keine Woche mehr', text:'Bitte verlängere den Plan auf die nächsten 14 Tage.'};
   } else if(tab==='rueckblick'){
     const mon = addDays(mondayOf(t), -7*weekOffset);
-    const hasActs = acts().some(a=>a.date>=mon && a.date<=addDays(mon,6));
-    if(hasActs && !weekSummary(mon)) out.push({label:'Fazit für diese Woche erstellen', action:'week-summary', mon});
-    add('Wie entwickelt sich meine Form?');
-    if(weekOffset>0 || hasActs) add('Vergleiche diese Woche mit der Vorwoche.', `Vergleiche die Woche ab ${fmtDay(mon)} mit der Vorwoche.`);
-  } else {
-    add('Trainingstage ändern', 'Ich möchte an folgenden Tagen trainieren: ');
-    add('Sportart ergänzen', 'Nimm bitte zusätzlich ');
+    if(acts().some(a=>a.date>=mon && a.date<=addDays(mon,6)) && !weekSummary(mon)) return {label:'Wochenfazit fehlt', action:'week-summary', mon};
   }
-  return out.slice(0,3);
+  return null;
 }
+let topicHint = '', topicSel = '';
 const a2s = a => a.sport==='run' ? 'Lauf' : a.sport==='ride' ? 'Radtraining' : 'Training';
 
 function renderDialog(){
@@ -1521,9 +1523,11 @@ function renderDialog(){
   let compose;
   if(sampleState==='none') compose = `<p class="note">Der Dialog mit Claude ist in dieser Ansicht nicht verfügbar.</p>`;
   else if(sampleState==='denied') compose = `<p class="note">Du hast der App den Zugriff auf Claude nicht erlaubt. Lade die Seite neu, um erneut gefragt zu werden.</p>`;
-  else compose = `<div class="suggest">${suggestions().map(s=> s.action ? `<button data-action="${esc(s.action)}" data-mon="${esc(s.mon)}" ${sample&&!busy?'':'disabled'}>${esc(s.label)}</button>` : `<button data-action="prefill" data-text="${esc(s.text)}">${esc(s.label)}</button>`).join('')}</div>
-      <textarea id="msgInput" placeholder="Nachricht an Claude …" aria-label="Nachricht an Claude">${esc(draft)}</textarea>
-      <div class="row"><span class="note">${IN_APP?'Abrechnung über deinen API-Schlüssel.':'Antworten nutzen dein Claude-Kontingent.'}</span><button class="btn primary" data-action="send" ${busy||!sample?'disabled':''}>Senden</button></div>`;
+  else { const rem = reminder();
+    compose = `<div class="topics">${(TOPICS[tab]||[]).map(([l,txt,h])=>`<button class="topic${topicSel===l?' on':''}" data-action="topic" data-label="${esc(l)}" data-hint="${esc(h)}" aria-pressed="${topicSel===l}">${esc(l)}</button>`).join('')}</div>
+      ${rem ? (rem.action ? `<button class="remind" data-action="${esc(rem.action)}" data-mon="${esc(rem.mon)}" ${sample&&!busy?'':'disabled'}>${esc(rem.label)}</button>` : `<button class="remind" data-action="prefill" data-text="${esc(rem.text)}">${esc(rem.label)}</button>`) : ''}
+      <textarea id="msgInput" placeholder="${esc(topicHint||'Nachricht an Claude …')}" aria-label="Nachricht an Claude">${esc(draft)}</textarea>
+      <div class="row"><span class="note">${IN_APP?'Abrechnung über deinen API-Schlüssel.':'Antworten nutzen dein Claude-Kontingent.'}</span><button class="btn primary" data-action="send" ${busy||!sample?'disabled':''}>Senden</button></div>`; }
   const hadFocus = document.activeElement && document.activeElement.id==='msgInput';
   el.innerHTML = `<div class="dialog-head"><h2>Mit Claude besprechen</h2><span class="note">${TABS[tab]}</span></div>
     <div class="msgs" id="msgs">${body}</div><div class="compose">${compose}</div>`;
@@ -1798,7 +1802,7 @@ async function askClaude(text, opt={}){
     busy=false; ctl=null; await save('chat'); render();
   }
 }
-function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; draft=''; askClaude(v); }
+function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; const msg = topicSel && !v.startsWith(topicSel) ? topicSel+': '+v : v; draft=''; topicHint=''; topicSel=''; askClaude(msg); }
 
 /* ---------- Garmin über intervals.icu ---------- */
 const icuMode = () => (profile().icu && profile().icu.mode) || 'hr';
@@ -1969,7 +1973,7 @@ document.addEventListener('click', async e => {
   if(da==='detail-assess'){ const a = acts().find(x=>x.id===b.dataset.id); if(a) askClaude(`Bitte bewerte die Einheit „${a.name}“ vom ${fmtDay(a.date)} (ID ${a.id}) neu: Intensität ${a.sport==='ride'?'nach Leistung (%FTP, Leistungszonen)':'nach Pace und HF'}, jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit, Pausen und Ein-/Ausfahren nur kurz. Liefere "assessments" mit text und short und aktualisiere das Wochenfazit.`, {auto:true, display:`Intervalle bewerten: ${a.name}, ${fmtDay(a.date)}`}); return; }
   if(b.dataset.tab){
     const leavingSettings = tab==='einstellungen' && b.dataset.tab!=='einstellungen';
-    if(b.dataset.tab!==tab && !busy){ dialogSince=Date.now(); draft=''; showAll=false; }
+    if(b.dataset.tab!==tab && !busy){ dialogSince=Date.now(); draft=''; topicHint=''; topicSel=''; showAll=false; }
     tab=b.dataset.tab;
     if(leavingSettings && pendingList().length && sample && !busy){ try{localStorage.setItem('tb-tab',tab)}catch(_){} render(); window.scrollTo({top:0}); replanFromChanges(); return; } try{localStorage.setItem('tb-tab',tab)}catch(_){} render(); window.scrollTo({top:0}); return; }
   const a = b.dataset.action; if(!a) return;
@@ -1977,6 +1981,7 @@ document.addEventListener('click', async e => {
   else if(a==='send') send();
   else if(a==='stop'){ if(ctl) ctl.abort(); }
   else if(a==='more'){ showAll=true; renderDialog(); }
+  else if(a==='topic'){ const ta0=document.getElementById('msgInput'); if(ta0) draft=ta0.value; const l=b.dataset.label; if(topicSel===l){ topicSel=''; topicHint=''; } else { topicSel=l; topicHint=b.dataset.hint||''; } renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='prefill'){ draft=b.dataset.text||''; renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='assess'){ const x=acts().find(y=>y.id===b.dataset.id); if(x) askClaude(`Bitte schätze die Einheit „${x.name}“ vom ${fmtDay(x.date)} (ID ${x.id}) ein.`); }
   else if(a==='week-prev'){ weekOffset++; render(); }
