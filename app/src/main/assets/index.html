@@ -303,6 +303,9 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.hic{display:flex;align-items:center;gap:0}
+.hic .sic{width:30px;height:30px;border-radius:8px;margin-right:10px}
+.hic .sic svg{width:24px;height:24px}
 .syncrow{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:var(--r)}
 .syncrow .sr-t{flex:1;min-width:0;font-size:14px;color:var(--accent);font-weight:500}
 .sr-btn{width:28px;height:28px;flex:none;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
@@ -1002,7 +1005,7 @@ function plannedCard(s, label){
   if(rest) label = String(label||'').replace('Geplant · heute','Ruhetag · heute').replace('Nächstes Training','Ruhetag');
   return `<article class="card${rest?' restday':''}">
     <div class="card-head"><span class="tag ${rest?'':'plan'}">${esc(label||'Geplant')}</span><span class="sport">${esc(SPORT[normSport(s.sport)])}</span></div>
-    <h3>${esc(s.title||'Training')}</h3>
+    <h3 class="hic">${rest?'':sic(normSport(s.sport), s.title)}<span>${esc(s.title||'Training')}</span></h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
     ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} Schritte</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
@@ -1031,7 +1034,7 @@ function doneCard(a, planned, extra){
   }
   return `<article class="card">
     <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type)} · ${esc(a.time||'')} Uhr</span></div>
-    <h3>${esc(a.name)}</h3>
+    <h3 class="hic">${sic(a.sport, (a.type||'')+' '+(a.name||''))}<span>${esc(a.name)}</span></h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
     ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
