@@ -303,6 +303,61 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.syncrow{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
+.syncrow .sr-t{flex:1;min-width:0;font-size:14px;color:var(--muted)}
+.sr-btn{width:40px;height:40px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.sr-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sr-btn.spin svg{animation:srspin 1s linear infinite}
+@keyframes srspin{to{transform:rotate(360deg)}}
+.restday-line{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:0 2px}
+.inrow{display:flex;gap:8px;align-items:flex-end}
+.compose .inrow textarea{flex:1;min-height:44px;height:44px;resize:none;line-height:1.35}
+.sendbtn{width:44px;height:44px;flex:none;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.sendbtn[disabled]{opacity:.45}
+.sendbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.compose{border-top:0}
+.msgs + .compose{border-top:1px solid var(--line)}
+.sic{display:inline-flex;width:22px;height:22px;border-radius:6px;align-items:center;justify-content:center;margin-right:7px;vertical-align:-5px;flex:none}
+.sic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.s-run{background:rgba(0,83,250,.13);color:#0053FA}
+.s-ride{background:rgba(124,58,237,.13);color:#7C3AED}
+.s-strength{background:rgba(217,119,6,.15);color:#B45309}
+.s-walk{background:rgba(14,159,110,.14);color:#0E8A62}
+.s-swim{background:rgba(8,145,178,.14);color:#0891B2}
+.s-mountain{background:rgba(120,84,48,.15);color:#7A5530}
+.s-other{background:var(--sunk);color:var(--muted)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .s-run{color:#7AA4FF}:root:not([data-theme="light"]) .s-ride{color:#B794F6}:root:not([data-theme="light"]) .s-strength{color:#F6B656}:root:not([data-theme="light"]) .s-walk{color:#5DD3A6}:root:not([data-theme="light"]) .s-swim{color:#5CC8E0}:root:not([data-theme="light"]) .s-mountain{color:#C9A27A}}
+.day details summary .sent svg{width:15px;height:15px;fill:none;stroke:var(--ok);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-left:6px}
+.wkhead{display:flex;gap:10px;align-items:baseline;padding:7px 12px;background:var(--sunk);font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+.wkhead b{color:var(--ink);font-weight:700;letter-spacing:.03em;white-space:nowrap;flex:none}
+.days .wkhead:first-child{border-top:0}
+.days .day.restd{padding-top:5px;padding-bottom:5px}
+.days .day.restd{align-items:center}
+.days .day.restd .dl{line-height:1.05}
+.days .day.restd .dl b{font-size:15px}
+.days .day.restd .dl span{font-size:12px}
+.days .day.restd .restline{font-size:13px}
+.wsum3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wsum3 .k small{display:block;font-size:11px}
+.entry.tappable{cursor:pointer;position:relative;padding-right:28px}
+.entry.tappable::after{content:'›';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--muted)}
+.entry.tappable:active{background:var(--sunk)}
+.lrows{display:flex;flex-direction:column}
+.lrow{display:flex;align-items:center;gap:10px;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:11px 0;cursor:pointer;color:inherit}
+.lrow:first-child{border-top:0;padding-top:2px}
+.lrow > span:first-child{flex:1;min-width:0;display:flex;flex-direction:column}
+.lrow small{font-size:13px;color:var(--muted)}
+.lrow .cnt{color:var(--muted);font-size:15px;white-space:nowrap}
+.svc{border-top:1px solid var(--line)}
+.svc > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:11px 0;cursor:pointer}
+.svc > summary::-webkit-details-marker{display:none}
+.svc > summary .st{margin-left:auto;font-size:14px;color:var(--muted);text-align:right}
+.svc > summary .st.ok{color:var(--ok)}
+.svc > summary::after{content:'▾';color:var(--muted);font-size:13px;transition:transform .15s}
+.svc[open] > summary::after{transform:rotate(180deg)}
+.svcb{padding:0 0 12px;display:flex;flex-direction:column;gap:10px}
+.more > summary{list-style:none;cursor:pointer;color:var(--accent);font-size:14px}
+.more > summary::-webkit-details-marker{display:none}
 .topics{display:flex;gap:6px;flex-wrap:wrap}
 .topics .topic{font-size:13px;font-weight:600;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;padding:5px 12px;cursor:pointer}
 .topics .topic:active{background:var(--accent-soft)}
@@ -486,7 +541,17 @@ ol.steps .d,.day details summary .x,.day .restline,.gloss dd,.entry .short,.plan
 const IN_APP = !!window.IN_APP;
 const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 const WD_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-const SPORT = {run:'Laufen', ride:'Rad', strength:'Kraft', walk:'Gehen', other:'Sonstiges', rest:'Ruhe'};
+const SPORT = {run:'Laufen', ride:'Rad', strength:'Kraft', walk:'Gehen/Wandern', swim:'Schwimmen', mountain:'Bergsteigen', other:'Sonstiges', rest:'Ruhe'};
+const SIC = {
+  run:'<svg viewBox="0 0 24 24"><circle cx="15" cy="4.5" r="1.9"/><path d="M13 8l-2 6 3 3-1 4.5M11 14l-3 3H5M8.5 10.5L13 8l3 3.5 3 .5"/></svg>',
+  ride:'<svg viewBox="0 0 24 24"><circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5L9 9h6l3.5 7.5M9 9l3.5 7.5L15 9M8 6.5h3M14 6l1 3"/></svg>',
+  strength:'<svg viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg>',
+  walk:'<svg viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.9"/><path d="M12 8l-1 6-2 7M11 14l3 3v4M9 11l3-3 3 3.5M18 9v12"/></svg>',
+  swim:'<svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="1.9"/><path d="M4 12.5l5-4 4 2.5 2.5-1.5M2 17c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/></svg>',
+  mountain:'<svg viewBox="0 0 24 24"><path d="M2.5 20L9.5 7l4 7 2.5-3.5 5.5 9.5z"/><path d="M7.5 11l2 1.5 2-1.5"/></svg>',
+  other:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 8.5v4l2.5 1.5"/></svg>'
+};
+const sic = sp => { sp = SIC[sp] ? sp : 'other'; return `<span class="sic s-${sp}" aria-hidden="true">${SIC[sp]}</span>`; };
 const SERVER = 'Strava';
 
 const S = {profile:null, plan:null, log:null, chat:null, loaded:false};
@@ -534,8 +599,8 @@ const fmtNum = (n,dig=1) => Number(n).toLocaleString('de-DE',{minimumFractionDig
 const fmtDur = sec => { sec=Math.round(sec||0); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; return h? h+':'+pad(m)+':'+pad(s) : m+':'+pad(s); };
 const fmtPace = (km,sec) => { if(!km) return '–'; let t=Math.round(sec/km); return Math.floor(t/60)+':'+pad(t%60); };
 const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
-function sportOf(t){ t=String(t||''); if(/Run/i.test(t)) return 'run'; if(/Ride|Cycl|Bike/i.test(t)) return 'ride'; if(/Weight|Strength|Workout|Crossfit|Yoga|Pilates/i.test(t)) return 'strength'; if(/Walk|Hike/i.test(t)) return 'walk'; return 'other'; }
-function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':/ruhe|rest|pause/.test(s)?'rest':'other'); }
+function sportOf(t){ t=String(t||''); if(/Run/i.test(t)) return 'run'; if(/Ride|Cycl|Bike/i.test(t)) return 'ride'; if(/Weight|Strength|Workout|Crossfit|Yoga|Pilates/i.test(t)) return 'strength'; if(/Swim/i.test(t)) return 'swim'; if(/Climb|Mountaineer|Alpin/i.test(t)) return 'mountain'; if(/Walk|Hike/i.test(t)) return 'walk'; return 'other'; }
+function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':/schwimm|swim/.test(s)?'swim':/berg|kletter|climb|mountain/.test(s)?'mountain':/geh|wander|walk|hike/.test(s)?'walk':/ruhe|rest|pause/.test(s)?'rest':'other'); }
 const daysUntil = s => Math.round((parseYmd(s)-parseYmd(today()))/86400000);
 const mondayOf = s => { const d=parseYmd(s); return addDays(s, -((d.getDay()+6)%7)); };
 function isoWeek(s){ const d=parseYmd(s); const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()+3-((d.getDay()+6)%7)); const w1=new Date(t.getFullYear(),0,4); return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7); }
@@ -963,16 +1028,23 @@ function loadChart(mon){
     `<div class="lcol ${i===7?'cur':''}"><span class="lv">${vals[i]||''}</span><span class="lb" style="height:${Math.round(vals[i]/max*36)}px"></span><span class="lk">${isoWeek(w)}</span></div>`).join('')}</div>`;
 }
 
+let autoSyncTried = 0;
+function autoSync(){
+  if(!window.IN_APP || !mcp || syncBusy || !S.loaded) return;
+  const last = S.log && S.log.lastSync ? new Date(S.log.lastSync).getTime() : 0;
+  if(Date.now() - last < 15*60000 || Date.now() - autoSyncTried < 60000) return;
+  autoSyncTried = Date.now(); syncStrava();
+}
 function syncBlock(){
   const last = S.log && S.log.lastSync ? new Date(S.log.lastSync) : null;
   let stamp = 'noch kein Abgleich';
   if(last){ const d = ymd(last), t = last.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     stamp = 'zuletzt ' + (d===today() ? 'heute' : d===addDays(today(),-1) ? 'gestern' : last.toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})) + ', ' + t + ' Uhr'; }
-  return `<div class="sync">
-    <button class="btn primary big syncbtn" id="syncBtn" data-action="sync" ${mcp&&!syncBusy?'':'disabled'}><span>${syncBusy?'Strava wird abgeglichen …':'Mit Strava abgleichen'}</span>${syncBusy?'':`<small>${esc(stamp)}</small>`}</button>
-    ${mcpState==='none'?`<small>Strava-Abgleich ist in dieser Ansicht nicht verfügbar. Öffne die App in claude.ai.</small>`:''}
-    ${syncMsg?`<div class="status ${syncMsg.err?'err':'ok'}">${esc(syncMsg.text)}</div>`:''}
-  </div>`;
+  const txt = syncBusy ? ((syncMsg && !syncMsg.err && syncMsg.text) || 'Strava wird abgeglichen …') : 'Strava · ' + stamp;
+  return `<div class="syncrow"><span class="sr-t">${esc(txt)}</span>
+    <button class="sr-btn${syncBusy?' spin':''}" data-action="sync" aria-label="Mit Strava abgleichen" ${mcp&&!syncBusy?'':'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9"/><path d="M18.5 3v4.2h-4.2M5.5 21v-4.2h4.2"/></svg></button></div>
+    ${mcpState==='none'?`<p class="note">Strava-Abgleich ist in dieser Ansicht nicht verfügbar. Öffne die App in claude.ai.</p>`:''}
+    ${syncMsg&&syncMsg.err?`<div class="status err">${esc(syncMsg.text)}</div>`:''}`;
 }
 
 function renderToday(){
@@ -990,7 +1062,7 @@ function renderToday(){
   cancelledToday.forEach(s => out.push(cancelledCard(s)));
   if(!planned.length && !done.length){
     const next = active().filter(s => s.date>t).sort((a,b)=>a.date<b.date?-1:1)[0];
-    if(!cancelledToday.length) out.push(`<div class="card rest"><p class="eyebrow">Heute</p><h3>Kein Training geplant</h3><p class="muted">Ruhetag. Wenn du trotzdem etwas machst, gleiche danach mit Strava ab.</p></div>`);
+    if(!cancelledToday.length) out.push(`<div class="restday-line"><span class="tag">Heute</span><span>Ruhetag – kein Training geplant</span></div>`);
     if(next) out.push(plannedCard(next, 'Nächstes Training · '+fmtDay(next.date)));
     else out.push(`<div class="empty">Es gibt noch keinen Plan. Bitte Claude unten im Dialog, einen Plan für die nächsten zwei Wochen zu erstellen.</div>`);
   }
@@ -1239,6 +1311,21 @@ function renderDetail(){
       <div><button class="btn" data-action="detail-assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>${as?'Intervalle neu bewerten':'Von Claude bewerten lassen'}</button></div></div>`;
 }
 
+/* Kopfzeile je Kalenderwoche im 14-Tage-Plan: geplante bzw. absolvierte Umfänge */
+function weekHead(d){
+  const mon = mondayOf(d), sun = addDays(mon,6), t = today();
+  const tally = {};
+  const add = (sp, km) => { const k = tally[sp] || (tally[sp] = {n:0, km:0}); k.n++; k.km += km||0; };
+  for(let k=0;k<7;k++){
+    const day = addDays(mon,k);
+    if(day < t) acts().filter(a=>a.date===day).forEach(a=>add(a.sport, a.distKm));
+    else { const done = acts().filter(a=>a.date===day);
+      active().filter(s=>s.date===day && normSport(s.sport)!=='rest').forEach(s=>{ const sp=normSport(s.sport); const a=done.find(x=>x.sport===sp); add(sp, a ? a.distKm : s.distanceKm); }); }
+  }
+  const order = ['run','ride','strength','walk','swim','mountain','other'];
+  const parts = order.filter(sp=>tally[sp]).map(sp => sp==='run' ? `${tally.run.n} ${tally.run.n===1?'Lauf':'Läufe'} · ${fmtNum(tally.run.km,1)} km` : `${SPORT[sp]} ${tally[sp].n}×`);
+  return `<div class="wkhead"><b>KW ${isoWeek(mon)}</b><span>${parts.join(' · ') || 'keine Einheiten'}</span></div>`;
+}
 function renderPlan(){
   const pr = profile(), g = pr.goal;
   const goal = g && g.text ? `<div class="card goal"><div class="ghead"><p class="eyebrow">Ziel</p><button class="gedit" data-action="goal-open" aria-label="Ziel bearbeiten">${IC.edit}</button></div><p class="gtext">${esc(g.text)}</p>
@@ -1253,14 +1340,17 @@ function renderPlan(){
       if(s.cancelled) return `<div class="cx"><span class="t">${esc(s.title||'Training')}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
-      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}</span></summary>
+      const sent = typeof icuState==='function' && icuState(s)==='ok';
+      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport))}<span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}${sent?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
         ${moveControl(s)}
       </details>`;
     }).join('');
     const doneLine = dn.map(a=>`<span class="donemark">✓ ${esc(SPORT[a.sport])} ${fmtNum(a.distKm,1)} km absolviert</span>`).join('');
-    rows.push(`<div class="day ${i===0?'today':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+    if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
+    const isRest = !items && !doneLine;
+    rows.push(`<div class="day ${i===0?'today':''} ${isRest?'restd':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="items">${items || (doneLine?'':'<span class="restline">Ruhe</span>')}${doneLine}</div></div>`);
   }
   const plan = S.plan;
@@ -1271,7 +1361,7 @@ function renderPlan(){
   const replanBtn = `<button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button>`;
   return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Die nächsten 14 Tage</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div>${icuOn?'':replanBtn}</div>
     ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuOpen?IC.watch:IC.watchOk}${icuBusy?'Wird gesendet …':icuOpen?`Senden (${icuOpen})`:'Alles gesendet'}</button>${replanBtn}</div>`:''}
-    ${icuOn&&icuMsg?`<div class="status ${icuMsg.err?'err':'ok'}">${esc(icuMsg.text)}</div>`:''}
+    ${icuOn&&icuMsg&&icuMsg.err?`<div class="status err">${esc(icuMsg.text)}</div>`:''}
     </div><div class="days">${rows.join('')}</div>${rat}</div>`;
 }
 
@@ -1317,6 +1407,15 @@ function lastWeekOffset(){
   return last ? Math.round((parseYmd(mondayOf(today()))-parseYmd(mondayOf(last)))/(7*86400000)) : 0;
 }
 let weekInit = false;
+let fazitOpen = false;
+/* Kurzfassung des Wochenfazits: nur Umfang und Ausblick */
+function wsShort(txt){
+  const L = String(txt||'').split('\n').filter(l=>l.trim());
+  const st = L.filter(l => /^\s*[-*•]\s+\*\*/.test(l));
+  if(st.length < 3) return null;
+  const k = st.filter(l => /\*\*(Umfang|Ausblick)/.test(l));
+  return (k.length ? k : st.slice(0,2)).join('\n');
+}
 function renderHistory(){
   if(S.loaded && !weekInit){ weekInit = true; weekOffset = lastWeekOffset(); }
   if(!S.loaded) return `<div class="empty">Trainingsdaten werden geladen …</div>`;
@@ -1366,12 +1465,12 @@ function renderHistory(){
         if(a.re) parts.push('RE '+a.re);
         pl = parts.join(' · ');
       } else if(a.re) pl = 'RE '+a.re;
-      rows.push(`<div class="entry"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-        <div class="body"><span class="facts">${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
+      const canDetail = (a.sport==='run'||a.sport==='ride') && a.perf;
+      rows.push(`<div class="entry${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+        <div class="body"><span class="facts">${sic(a.sport)}${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
         ${pl?`<span class="pl">${esc(pl)}</span>`:''}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}
-        ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ›</button>` : ''}</div></div>`);
+        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
     });
     planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="body"><span class="facts">Ausgelassen: ${esc(s.title)}</span></div></div>`));
@@ -1389,14 +1488,14 @@ function renderHistory(){
       const efd = st.ef && pv.ef ? (st.ef-pv.ef)/pv.ef*100 : null;
       return `<div class="card"><div class="row"><div class="ht"><h2>Trainingslast und Form</h2><button class="info" data-action="info" aria-expanded="${infoOpen}" aria-label="Erklärung der Kennzahlen">i</button></div><span class="badge ${cls}">Trainingslast ${lbl}</span></div>
         ${loadChart(mon)}
-        <div class="wsum">
-          <div class="metric"><span class="v">${st.re}</span><span class="k">Relative Effort (Woche)</span></div>
-          <div class="metric"><span class="v">${st.acwr==null?'–':fmtNum(st.acwr,2)}</span><span class="k">Verhältnis 7 / 28 Tage</span></div>
-          <div class="metric"><span class="v">${st.ef?fmtNum(st.ef,2):'–'}</span><span class="k">Lauf-Effizienz${efd!=null?` (${Math.abs(efd)<0.05?'±0':(efd>0?'+':'')+fmtNum(efd,1)} % zur Vorwoche)`:''}</span></div>
+        <div class="wsum3">
+          <div class="metric"><span class="v">${st.re}</span><span class="k">Relative Effort</span></div>
+          <div class="metric"><span class="v">${st.acwr==null?'–':fmtNum(st.acwr,2)}</span><span class="k">7 / 28 Tage</span></div>
+          <div class="metric"><span class="v">${st.ef?fmtNum(st.ef,2):'–'}</span><span class="k">Lauf-Effizienz${efd!=null?`<small>${Math.abs(efd)<0.05?'±0':(efd>0?'+':'')+fmtNum(efd,1)} % zur Vorwoche</small>`:''}</span></div>
         </div>
         ${infoOpen?GLOSSAR:''}</div>`; })()}
     <div class="card"><div class="row"><h2>Wochenfazit</h2>${msgs?`<span class="note">${msgs} Dialognachrichten in dieser Woche</span>`:''}</div>
-      ${ws?`<div class="summary md">${md(ws.text)}</div>`:`<p class="muted">Noch kein Fazit für diese Woche.</p>`}
+      ${ws?(()=>{ const sh = wsShort(ws.text); return `<div class="summary md">${md(sh && !fazitOpen ? sh : ws.text)}</div>${sh?`<button class="dlink" data-action="ws-more">${fazitOpen?'Weniger anzeigen':'Mehr anzeigen'}</button>`:''}`; })():`<p class="muted">Noch kein Fazit für diese Woche.</p>`}
       ${wa.length?`<div><button class="btn" data-action="week-summary" data-mon="${mon}" ${sample&&!busy?'':'disabled'}>${ws?'Fazit aktualisieren':'Fazit von Claude erstellen'}</button></div>`:''}</div>
     ${rows.length?`<div class="log">${rows.join('')}</div>`:`<div class="empty">In dieser Woche wurde noch kein Training aufgezeichnet.${acts().length?' <button class="btn ghost" data-action="week-last">Zur letzten Trainingswoche</button>':''}</div>`}`;
 }
@@ -1406,20 +1505,26 @@ const MODELS = [['claude-sonnet-5-5','Claude Sonnet 5.5 (empfohlen)'],['claude-o
 function appStatus(){ try{ return JSON.parse(window.Android.getStatus()); }catch(e){ return {}; } }
 function connCard(){
   const st = appStatus();
-  return `<div class="card"><h2>Verbindungen</h2>
-    <div class="fld"><span>Claude</span>
+  const mLab = (MODELS.find(m=>m[0]===st.model)||MODELS[0])[1].replace(/ \(.*\)$/,'').replace('Claude ','');
+  const svc = (k, name, ok, status, body) => `<details class="svc" data-k="svc-${k}"><summary><b>${name}</b><span class="st ${ok?'ok':''}">${ok?'✓ ':''}${esc(status)}</span></summary><div class="svcb">${body}</div></details>`;
+  return `<div class="card"><h2>Verbindungen</h2>` +
+    svc('claude','Claude', !!st.claudeKey, st.claudeKey ? mLab : 'nicht eingerichtet', `
+    <div class="fld">
       <p class="note">${st.claudeKey?'API-Schlüssel hinterlegt.':'Noch kein API-Schlüssel. Anlegen unter console.anthropic.com → API Keys.'} Abgerechnet wird nach Verbrauch über dein Anthropic-Konto.</p>
       <input id="cfKey" type="password" autocomplete="off" placeholder="${st.claudeKey?'Neuen Schlüssel eintragen (optional)':'sk-ant-…'}">
       <select id="cfModel" class="sel">${MODELS.map(([v,l])=>`<option value="${v}" ${st.model===v?'selected':''}>${l}</option>`).join('')}</select>
-      <div><button class="btn" data-action="cf-claude">Speichern</button></div></div>
-    <div class="fld"><span>Strava</span>
+      <div><button class="btn" data-action="cf-claude">Speichern</button></div></div>`) +
+    svc('strava','Strava', !!st.stravaConnected, st.stravaConnected ? (st.stravaAthlete||'verbunden') : 'nicht verbunden', `
+    <div class="fld">
       ${st.stravaConnected?`<div class="row"><p>Verbunden${st.stravaAthlete?' als '+esc(st.stravaAthlete):''}.</p><button class="btn" data-action="cf-strava-off">Trennen</button></div>`
       :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>laufdoch.app</b> eintragen. Dann Client-ID und Client-Secret hier eintragen.</p>
       <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
-      <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>
-    <div class="fld"><span>Garmin (über intervals.icu)</span>
-      <p class="note">Schickt die Lauf- und Radeinheiten der nächsten 14 Tage (ohne Kraft und Gymnastik) als strukturierte Trainings an intervals.icu. intervals.icu überträgt davon täglich die nächsten 7 Tage an Garmin Connect und auf die Uhr. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p>
+      <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>`) +
+    svc('garmin','Garmin', !!st.icuKey, st.icuKey ? `über intervals.icu · ${ICU_LABEL[icuMode()]||''} / ${ICU_LABEL[icuRideMode()]||''}`.replace('Herzfrequenz','HF').replace('Herzfrequenz','HF') : 'nicht eingerichtet', `
+    <div class="fld">
+      <p class="note">Sendet Lauf- und Radeinheiten der nächsten 14 Tage über intervals.icu an Garmin.</p>
+      <details class="more"><summary>ⓘ Einrichtung</summary><p class="note">intervals.icu überträgt täglich die nächsten 7 Tage an Garmin Connect und auf die Uhr. Kraft und Gymnastik bleiben in der App. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p></details>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
@@ -1428,7 +1533,7 @@ function connCard(){
       <p class="note">Beim Senden einer einzelnen Einheit kannst du die Vorgabe jeweils neu wählen.</p>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
-      ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>
+      ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>`) + `
   </div>
   <div class="card"><h2>Datensicherung</h2>
     <div class="fld">
@@ -1459,20 +1564,20 @@ function renderSettings(){
       <label class="fld" for="pfName"><span>Name</span><input id="pfName" type="text" value="${esc(pr.name||'')}" placeholder="Vorname" autocomplete="given-name"></label>
       <div class="fld"><span>Sportarten</span><div class="sports">${['run','ride','strength','walk'].map(s=>`<button class="toggle" data-action="sport" data-sport="${s}" aria-pressed="${sp.has(s)}">${SPORT[s]}</button>`).join('')}</div>
         <p class="note">Laufen ist der Schwerpunkt, weitere Sportarten plant Claude ergänzend ein.</p></div>
-      <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label></div>
-    <div class="card"><h2>Trainingstage</h2><p class="muted">An diesen Tagen kann Claude Einheiten planen. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p>
-      <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div></div>
+      <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label>
+      <div class="fld"><span>Trainingstage</span>
+      <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div>
+      <p class="note">An diesen Tagen kann Claude Einheiten planen. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p></div></div>
     <div class="card"><h2>Fitness und Beschwerden</h2>
       <p class="muted">${cs.length?'Claude plant vorsichtig, fragt nach Schmerz an diesen Stellen und steigert nur bei stabilen Signalen.':'Keine Beschwerden eingetragen. Claude plant leistungsorientiert auf dein Ziel hin.'}</p>
       ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
       ${confirmRm!=null?`<div class="row"><span>„${esc(cs[confirmRm]||'')}“ entfernen? Danach plant Claude ohne Rücksicht darauf.</span><div class="row"><button class="btn primary" data-action="rm-yes">Entfernen</button><button class="btn" data-action="rm-no">Abbrechen</button></div></div>`:''}
       <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div>
-    <div class="card"><div class="row"><h2>Erkenntnisse</h2><button class="btn" data-action="ins-open">Ansehen${insights().length?' ('+insights().length+')':''}</button></div>
-      <p class="muted">Was Claude sich dauerhaft über dein Training merkt.</p></div>
-    <div class="card"><div class="row"><h2>Hintergrund</h2><button class="btn" data-action="bg-open">Ansehen</button></div>
-      <p class="muted">Vorgeschichte und Rahmen, die Claude bei jeder Planung bekommt.</p></div>
-    <div class="card"><div class="row"><h2>Dialogverlauf</h2><button class="btn" data-action="hist-open">Ansehen${(S.chat&&S.chat.messages||[]).length?' ('+(S.chat.messages.length)+')':''}</button></div>
-      <p class="muted">Gespeicherte Nachrichten zwischen dir und Claude.</p></div>
+    <div class="card"><h2>Was Claude weiß</h2><div class="lrows">
+      <button class="lrow" data-action="ins-open"><span><b>Erkenntnisse</b><small>Was Claude sich dauerhaft über dein Training merkt</small></span><span class="cnt">${insights().length||''} ›</span></button>
+      <button class="lrow" data-action="bg-open"><span><b>Hintergrund</b><small>Vorgeschichte und Rahmen für jede Planung</small></span><span class="cnt">›</span></button>
+      <button class="lrow" data-action="hist-open"><span><b>Dialogverlauf</b><small>Gespeicherte Nachrichten zwischen dir und Claude</small></span><span class="cnt">${(S.chat&&S.chat.messages||[]).length||''} ›</span></button>
+    </div></div>
     ${IN_APP?connCard():''}`;
 }
 
@@ -1516,7 +1621,7 @@ function renderDialog(){
   const msgs = ((S.chat && S.chat.messages) || []).filter(m => (m.ts||0) >= dialogSince);
   const shown = showAll ? msgs : msgs.slice(-8);
   let body;
-  if(!msgs.length && !busy) body = `<p class="note">Claude fragt bei Bedarf nach und passt den Plan an.</p>`;
+  if(!msgs.length && !busy) body = '';
   else body = (msgs.length>shown.length?`<button class="btn ghost" data-action="more">Ältere Nachrichten anzeigen (${msgs.length-shown.length})</button>`:'') +
     shown.map(m => `<div class="msg ${m.auto?'auto':m.error?'assistant error':m.role}">${m.role==='assistant'&&!m.error&&!m.auto?`<div class="md">${md(m.text)}</div>`:esc(m.text)}</div>`).join('');
   if(busy) body += `<div class="thinking"><span class="dot"></span><span id="thinkTxt">Claude denkt nach …</span><button class="btn ghost" data-action="stop">Stopp</button></div>`;
@@ -1526,12 +1631,13 @@ function renderDialog(){
   else { const rem = reminder();
     compose = `<div class="topics">${(TOPICS[tab]||[]).map(([l,txt,h])=>`<button class="topic${topicSel===l?' on':''}" data-action="topic" data-label="${esc(l)}" data-hint="${esc(h)}" aria-pressed="${topicSel===l}">${esc(l)}</button>`).join('')}</div>
       ${rem ? (rem.action ? `<button class="remind" data-action="${esc(rem.action)}" data-mon="${esc(rem.mon)}" ${sample&&!busy?'':'disabled'}>${esc(rem.label)}</button>` : `<button class="remind" data-action="prefill" data-text="${esc(rem.text)}">${esc(rem.label)}</button>`) : ''}
-      <textarea id="msgInput" placeholder="${esc(topicHint||'Nachricht an Claude …')}" aria-label="Nachricht an Claude">${esc(draft)}</textarea>
-      <div class="row"><span class="note">${IN_APP?'Abrechnung über deinen API-Schlüssel.':'Antworten nutzen dein Claude-Kontingent.'}</span><button class="btn primary" data-action="send" ${busy||!sample?'disabled':''}>Senden</button></div>`; }
+      <div class="inrow"><textarea id="msgInput" rows="1" placeholder="${esc(topicHint||'Nachricht an Claude …')}" aria-label="Nachricht an Claude">${esc(draft)}</textarea>
+      <button class="sendbtn" data-action="send" aria-label="Senden" ${busy||!sample?'disabled':''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></svg></button></div>`; }
   const hadFocus = document.activeElement && document.activeElement.id==='msgInput';
   el.innerHTML = `<div class="dialog-head"><h2>Mit Claude besprechen</h2><span class="note">${TABS[tab]}</span></div>
-    <div class="msgs" id="msgs">${body}</div><div class="compose">${compose}</div>`;
-  const box = document.getElementById('msgs'); box.scrollTop = box.scrollHeight;
+    ${body?`<div class="msgs" id="msgs">${body}</div>`:''}<div class="compose">${compose}</div>`;
+  const box = document.getElementById('msgs'); if(box) box.scrollTop = box.scrollHeight;
+  const tai = document.getElementById('msgInput'); if(tai){ const fit = () => { tai.style.height = 'auto'; tai.style.height = Math.min(Math.max(tai.scrollHeight, 44), 160) + 'px'; }; tai.addEventListener('input', fit); if(tai.value) fit(); }
   const ta = document.getElementById('msgInput');
   if(ta){ ta.addEventListener('input', () => { draft = ta.value; }); ta.addEventListener('keydown', e => { if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); send(); } }); if(hadFocus){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }
 }
@@ -1939,7 +2045,7 @@ async function checkMissed(){
     await q;
   } finally { missedBusy = false; }
 }
-window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); icuAutoSync(); });
+window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); icuAutoSync(); setTimeout(autoSync, 500); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
 
 /* ---------- Langes Drücken auf Symbolknöpfe zeigt den Namen ---------- */
@@ -1963,11 +2069,17 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden){ rend
 })();
 
 /* ---------- Ereignisse ---------- */
+document.addEventListener('click', e => {
+  if(e.target.closest('button,a,input,textarea,select,summary,label')) return;
+  const el = e.target.closest('[data-detail]'); if(!el) return;
+  detailScroll = window.scrollY; detailId = el.dataset.detail; detailErr = null; render(); window.scrollTo({top:0});
+});
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.tab) detailId = null;
   const da = b.dataset.action;
   if(da==='detail-open'){ detailScroll = window.scrollY; detailId = b.dataset.id; detailErr = null; render(); window.scrollTo({top:0}); return; }
+  if(b.dataset.action==='week-prev' || b.dataset.action==='week-next') fazitOpen = false;
   if(da==='detail-close'){ detailId = null; detailErr = null; render(); window.scrollTo({top:detailScroll||0}); return; }
   if(da==='detail-streams'){ loadStreams(b.dataset.id); return; }
   if(da==='detail-assess'){ const a = acts().find(x=>x.id===b.dataset.id); if(a) askClaude(`Bitte bewerte die Einheit „${a.name}“ vom ${fmtDay(a.date)} (ID ${a.id}) neu: Intensität ${a.sport==='ride'?'nach Leistung (%FTP, Leistungszonen)':'nach Pace und HF'}, jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit, Pausen und Ein-/Ausfahren nur kurz. Liefere "assessments" mit text und short und aktualisiere das Wochenfazit.`, {auto:true, display:`Intervalle bewerten: ${a.name}, ${fmtDay(a.date)}`}); return; }
@@ -1982,6 +2094,7 @@ document.addEventListener('click', async e => {
   else if(a==='stop'){ if(ctl) ctl.abort(); }
   else if(a==='more'){ showAll=true; renderDialog(); }
   else if(a==='topic'){ const ta0=document.getElementById('msgInput'); if(ta0) draft=ta0.value; const l=b.dataset.label; if(topicSel===l){ topicSel=''; topicHint=''; } else { topicSel=l; topicHint=b.dataset.hint||''; } renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
+  else if(a==='ws-more'){ fazitOpen = !fazitOpen; render(); }
   else if(a==='prefill'){ draft=b.dataset.text||''; renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='assess'){ const x=acts().find(y=>y.id===b.dataset.id); if(x) askClaude(`Bitte schätze die Einheit „${x.name}“ vom ${fmtDay(x.date)} (ID ${x.id}) ein.`); }
   else if(a==='week-prev'){ weekOffset++; render(); }
@@ -2126,7 +2239,7 @@ render();
 (async () => {
   const cl = window.claude;
   if(!cl || !cl.use){ mcpState='none'; sampleState='none'; S.loaded=true; render(); return; }
-  cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); });
+  cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); setTimeout(autoSync, 800); });
   cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); });
   const [user, dbx] = await Promise.all([cl.use('user'), cl.use('db')]);
   db = dbx; uid = user ? await user.id() : null;
@@ -2135,7 +2248,7 @@ render();
   ['profile','plan','log','chat'].forEach(name => {
     db.doc('data/users/'+uid+'/'+name).onSnapshot(snap => {
       S[name] = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
-      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); icuAutoSync(); } }
+      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); icuAutoSync(); setTimeout(autoSync, 800); } }
       if(!(busy && name==='chat')) render();
     }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
   });
