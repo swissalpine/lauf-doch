@@ -1421,7 +1421,9 @@ function connCard(){
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
       ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>
-    <div class="fld"><span>Datensicherung</span>
+  </div>
+  <div class="card"><h2>Datensicherung</h2>
+    <div class="fld">
       <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei in „Downloads“. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
       ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p><div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
       :`<div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
