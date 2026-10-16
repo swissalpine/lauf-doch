@@ -101,9 +101,9 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .day .dl span{font-size:13px;color:var(--muted)}
 .day .items{display:flex;flex-direction:column;gap:6px;min-width:0}
 .day details summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-.day details summary:has(.sic){display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center}
-.day details summary .sic{grid-row:1 / span 2;align-self:start;margin:0;vertical-align:0}
-.day details summary:has(.sic) .t,.day details summary:has(.sic) .x{grid-column:2}
+.day details summary:has(.sic){align-items:center;row-gap:2px;column-gap:0}
+.day details summary .sic{margin-right:8px;vertical-align:0}
+.day details summary:has(.sic) .x{flex-basis:100%}
 .day details summary::-webkit-details-marker{display:none}
 .day details summary .t{font-weight:600}
 .day details summary .x{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
@@ -153,6 +153,9 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .entry .dl span{font-size:13px;color:var(--muted)}
 .entry .body{display:flex;flex-direction:column;gap:6px;min-width:0}
 .entry .facts{font-variant-numeric:tabular-nums;font-weight:600}
+.entry .facts:has(.sic){display:flex;align-items:flex-start;line-height:24px}
+.entry .facts .sic{margin-right:8px;vertical-align:0}
+.entry .dl b{line-height:24px}
 .entry .facts .s{font-weight:400;color:var(--muted)}
 .entry .short{font-size:14px}
 .entry.missed .facts{color:var(--muted);font-weight:400}
@@ -1513,7 +1516,7 @@ function renderHistory(){
       } else if(a.re) pl = 'RE '+a.re;
       const canDetail = (a.sport==='run'||a.sport==='ride') && a.perf;
       rows.push(`<div class="entry${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-        <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||""))}${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
+        <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||""))}<span>${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span></span>
         ${pl?`<span class="pl">${esc(pl)}</span>`:''}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
         ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
