@@ -303,13 +303,13 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
-.syncrow{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
+.syncrow{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .syncrow .sr-t{flex:1;min-width:0;font-size:14px;color:var(--muted)}
 .sr-btn{width:40px;height:40px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .sr-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sr-btn.spin svg{animation:srspin 1s linear infinite}
 @keyframes srspin{to{transform:rotate(360deg)}}
-.restday-line{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:0 2px}
+.restday-line{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .inrow{display:flex;gap:8px;align-items:flex-end}
 .compose .inrow textarea{flex:1;min-height:44px;height:44px;resize:none;line-height:1.35}
 .sendbtn{width:44px;height:44px;flex:none;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
@@ -601,6 +601,9 @@ const fmtPace = (km,sec) => { if(!km) return '–'; let t=Math.round(sec/km); re
 const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
 function sportOf(t){ t=String(t||''); if(/Run/i.test(t)) return 'run'; if(/Ride|Cycl|Bike/i.test(t)) return 'ride'; if(/Weight|Strength|Workout|Crossfit|Yoga|Pilates/i.test(t)) return 'strength'; if(/Swim/i.test(t)) return 'swim'; if(/Climb|Mountaineer|Alpin/i.test(t)) return 'mountain'; if(/Walk|Hike/i.test(t)) return 'walk'; return 'other'; }
 function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':/schwimm|swim/.test(s)?'swim':/berg|kletter|climb|mountain/.test(s)?'mountain':/geh|wander|walk|hike/.test(s)?'walk':/ruhe|rest|pause/.test(s)?'rest':'other'); }
+/* Planungszeitraum: heute bis einschließlich Sonntag der nächsten Woche */
+const planEnd = () => addDays(mondayOf(today()), 13);
+const planDays = () => daysUntil(planEnd()) + 1;
 const daysUntil = s => Math.round((parseYmd(s)-parseYmd(today()))/86400000);
 const mondayOf = s => { const d=parseYmd(s); return addDays(s, -((d.getDay()+6)%7)); };
 function isoWeek(s){ const d=parseYmd(s); const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()+3-((d.getDay()+6)%7)); const w1=new Date(t.getFullYear(),0,4); return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7); }
@@ -825,7 +828,7 @@ function renderGoalDialog(el){
       <h2 id="goalTitle">Ziel bearbeiten</h2>
       <label class="fld" for="goalText"><span>Ziel</span><textarea id="goalText" rows="3" placeholder="z. B. Schmerzfrei 23 km auf dem Trail">${esc(goalDlg.text||'')}</textarea></label>
       <label class="fld" for="goalDate"><span>Zieldatum (optional)</span><input id="goalDate" type="date" value="${esc(goalDlg.date||'')}"></label>
-      <p class="muted">Ohne Datum berechnet Claude ein realistisches Enddatum. Nach dem Speichern passt Claude Gesamtplan und 14-Tage-Plan an.</p>
+      <p class="muted">Ohne Datum berechnet Claude ein realistisches Enddatum. Nach dem Speichern passt Claude Gesamtplan und Plan an.</p>
       <div class="row end"><button class="btn" data-action="goal-close">Abbrechen</button><button class="btn primary" data-action="goal-save">Speichern</button></div>
     </div>`;
   const ta = document.getElementById('goalText'); if(ta){ ta.focus(); ta.addEventListener('input', () => { goalDlg.text = ta.value; }); }
@@ -927,7 +930,7 @@ function renderMoveDialog(){
   if(icuDlg){ renderIcuDialog(el); return; }
   if(!moveDlg){ el.innerHTML=''; return; }
   const t = today(), td = new Set(profile().trainingDays||[]);
-  const days = Array.from({length:14},(_,i)=>addDays(t,i)).map(d => {
+  const days = Array.from({length:planDays()},(_,i)=>addDays(t,i)).map(d => {
     const wd = parseYmd(d).getDay(), busyDay = active().some(x=>x.date===d && !(x.date===moveDlg.from && (x.title||'')===moveDlg.title));
     const cur = d===moveDlg.from;
     return `<button class="mday ${td.has(wd)?'td':''} ${moveDlg.to===d?'sel':''}" data-action="move-pick" data-to="${d}" ${cur?'disabled':''} aria-pressed="${moveDlg.to===d}">
@@ -1311,7 +1314,7 @@ function renderDetail(){
       <div><button class="btn" data-action="detail-assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>${as?'Intervalle neu bewerten':'Von Claude bewerten lassen'}</button></div></div>`;
 }
 
-/* Kopfzeile je Kalenderwoche im 14-Tage-Plan: geplante bzw. absolvierte Umfänge */
+/* Kopfzeile je Kalenderwoche im Plan: geplante bzw. absolvierte Umfänge */
 function weekHead(d){
   const mon = mondayOf(d), sun = addDays(mon,6), t = today();
   const tally = {};
@@ -1332,7 +1335,7 @@ function renderPlan(){
       ${g.date?`<div class="gdate"><span>Zieldatum: <b>${esc(parseYmd(g.date).toLocaleDateString('de-DE'))}</b></span><span>noch ${daysUntil(g.date)} Tage</span></div>`:(macro()&&macro().end?`<div class="gdate"><span>Zieldatum (geschätzt): <b>${esc(dmyy(macro().end))}</b></span><span>noch ${daysUntil(macro().end)} Tage</span></div>`:'')}</div>`
     : `<div class="empty">Noch kein Ziel festgelegt. <button class="btn goal-add" data-action="goal-open">${IC.edit} Ziel festlegen</button></div>`;
   const t = today(); const rows = [];
-  for(let i=0;i<14;i++){
+  for(let i=0;i<planDays();i++){
     const d = addDays(t,i);
     const ss = sessions().filter(s=>s.date===d);
     const dn = acts().filter(a=>a.date===d && a.sport!=='walk');
@@ -1354,12 +1357,12 @@ function renderPlan(){
       <div class="items">${items || (doneLine?'':'<span class="restline">Ruhe</span>')}${doneLine}</div></div>`);
   }
   const plan = S.plan;
-  const rat = plan && plan.rationale ? `<details class="why" data-k="why14"><summary>Warum diese 14 Tage?${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · V'+plan.revision:''}</span>`:''}</summary><div class="rationale md">${md(plan.rationale)}</div></details>` : '';
+  const rat = plan && plan.rationale ? `<details class="why" data-k="why14"><summary>Warum dieser Plan?${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · V'+plan.revision:''}</span>`:''}</summary><div class="rationale md">${md(plan.rationale)}</div></details>` : '';
   const icuOn = IN_APP && appStatus().icuKey;
   const icuOpen = icuOn ? icuSessions().filter(x => icuState(x.s0)!=='ok').length : 0;
   const mi = macroInfo();
   const replanBtn = `<button class="btn" data-action="replan" ${sample&&!busy?'':'disabled'}>Neu planen</button>`;
-  return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Die nächsten 14 Tage</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div>${icuOn?'':replanBtn}</div>
+  return goal + renderMacro() + `<div class="card p14"><div class="p14head"><div class="row"><div class="p14t"><h2>Plan bis ${esc(fmtDay(planEnd()))}</h2>${mi&&mi.i>=0?`<p class="phhint">${esc(mi.p.name)} · Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</p>`:''}</div>${icuOn?'':replanBtn}</div>
     ${icuOn?`<div class="icubar"><button class="btn ${icuOpen?'primary':''}" data-action="icu-sync" ${icuBusy||!icuOpen?'disabled':''}>${icuOpen?IC.watch:IC.watchOk}${icuBusy?'Wird gesendet …':icuOpen?`Senden (${icuOpen})`:'Alles gesendet'}</button>${replanBtn}</div>`:''}
     ${icuOn&&icuMsg&&icuMsg.err?`<div class="status err">${esc(icuMsg.text)}</div>`:''}
     </div><div class="days">${rows.join('')}</div>${rat}</div>`;
@@ -1379,7 +1382,7 @@ function markChange(key, text){
 const pendingList = () => Object.values(profile().pendingChanges||{}).filter(Boolean);
 function replanFromChanges(){
   const ch = pendingList(); if(!ch.length || !sample || busy) return;
-  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan der nächsten 14 Tage daran an.', {auto:true});
+  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan bis Ende nächster Woche daran an.', {auto:true});
 }
 function changeBanner(){
   const ch = pendingList(); if(!ch.length) return '';
@@ -1523,7 +1526,7 @@ function connCard(){
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>`) +
     svc('garmin','Garmin', !!st.icuKey, st.icuKey ? `über intervals.icu · ${ICU_LABEL[icuMode()]||''} / ${ICU_LABEL[icuRideMode()]||''}`.replace('Herzfrequenz','HF').replace('Herzfrequenz','HF') : 'nicht eingerichtet', `
     <div class="fld">
-      <p class="note">Sendet Lauf- und Radeinheiten der nächsten 14 Tage über intervals.icu an Garmin.</p>
+      <p class="note">Sendet die Lauf- und Radeinheiten des Plans (bis Ende nächster Woche) über intervals.icu an Garmin.</p>
       <details class="more"><summary>ⓘ Einrichtung</summary><p class="note">intervals.icu überträgt täglich die nächsten 7 Tage an Garmin Connect und auf die Uhr. Kraft und Gymnastik bleiben in der App. Voraussetzung: intervals.icu-Konto mit Garmin verbunden und dort „Geplante Trainings hochladen“ aktiviert. Den API-Schlüssel findest du in intervals.icu unter Einstellungen → Entwickler.</p></details>
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
@@ -1606,7 +1609,7 @@ function reminder(){
   } else if(tab==='plan'){
     const L = loadAt(t); if(L.acwr!=null && L.acwr>1.3) return {label:'Trainingslast hoch – Plan prüfen?', text:'Meine Trainingslast ist gerade erhöht. Passt der Plan so?'};
     const lastPlanned = active().map(s=>s.date).sort().pop();
-    if(!lastPlanned || lastPlanned < addDays(t,7)) return {label:'Plan reicht keine Woche mehr', text:'Bitte verlängere den Plan auf die nächsten 14 Tage.'};
+    if(!lastPlanned || lastPlanned < addDays(t,7)) return {label:'Plan reicht keine Woche mehr', text:'Bitte verlängere den Plan bis Ende nächster Woche.'};
   } else if(tab==='rueckblick'){
     const mon = addDays(mondayOf(t), -7*weekOffset);
     if(acts().some(a=>a.date>=mon && a.date<=addDays(mon,6)) && !weekSummary(mon)) return {label:'Wochenfazit fehlt', action:'week-summary', mon};
@@ -1744,7 +1747,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava"), frag nicht erneut.
 - Wenn zu einer neuen Aktivität weder RPE noch Befinden bekannt sind, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
 - Stelle höchstens eine Rückfrage pro Antwort.
-- Einen Plan erstellst oder änderst du für die 14 Tage ab heute (${t}). Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
+- Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
 - Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" (z. B. "154–184 W (Z3)"). Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
@@ -1760,7 +1763,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
-- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder ein klarer Anlass besteht: mindestens eine Woche mit deutlich weniger als 70 % des Wochen-Solls (Ausfall, Krankheit, Verhinderung), Beschwerdesignale über mehrere Einheiten, ein Übergangskriterium deutlich früher als geplant erfüllt oder ausdrücklicher Wunsch von ${nm}. Dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum. Einzelne verschobene Einheiten oder kleine Schwankungen sind kein Anlass. Sonst lass ihn weg. Der 14-Tage-Plan leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diese 14 Tage betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
+- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder ein klarer Anlass besteht: mindestens eine Woche mit deutlich weniger als 70 % des Wochen-Solls (Ausfall, Krankheit, Verhinderung), Beschwerdesignale über mehrere Einheiten, ein Übergangskriterium deutlich früher als geplant erfüllt oder ausdrücklicher Wunsch von ${nm}. Dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum. Einzelne verschobene Einheiten oder kleine Schwankungen sind kein Anlass. Sonst lass ihn weg. Der Plan bis Ende nächster Woche leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diesen Planungszeitraum betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg. Halte die Antwort kompakt und gültiges JSON: Anführungszeichen innerhalb von Texten als „…“ schreiben.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -1774,7 +1777,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "trainingDays":[2,4,6],
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
-   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Warum diese 14 Tage: 2–4 Stichpunkte"},
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
    "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
@@ -1782,7 +1785,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
  }}
 Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" ist immer die vollständige Liste. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
 `HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}. Aktiver Tab in der App: ${tab}.`,
-`KALENDER (14 Tage ab heute): ${Array.from({length:14},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
+`KALENDER (heute bis ${planEnd()}): ${Array.from({length:planDays()},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
   return `${d} ${WD_LONG[wd]}${bl.includes(d)?' (gesperrt, Nutzer kann nicht)':al.includes(d)?' (Trainingstag, Einheit dorthin verschoben)':(pr.trainingDays||[]).includes(wd)?' (Trainingstag)':''}`; }).join('; ')}`,
 `ZIEL: ${pr.goal&&pr.goal.text ? pr.goal.text+(pr.goal.date?' (Zieldatum '+pr.goal.date+')':'') : 'noch nicht festgelegt'}`,
 `BESCHWERDEN: ${cl||'keine'}`,
@@ -1792,7 +1795,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `SPORTARTEN: ${(pr.sports||[]).map(s=>SPORT[s]).join(', ')}`,
 `HINTERGRUND: ${pr.background||'–'}`,
 `AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
-`BEGRÜNDUNG DER 14 TAGE: ${S.plan&&S.plan.rationale||'–'}`,
+`BEGRÜNDUNG DES PLANS: ${S.plan&&S.plan.rationale||'–'}`,
 `GESAMTPLAN: ${macroCtx()}`,
 `AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen): ${JSON.stringify(al)}`,
 `HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
@@ -1829,11 +1832,12 @@ async function applyUpdates(u){
     const allow = new Set(((S.plan&&S.plan.allowDates)||[]).filter(d=>d>=t));
     const blocked = new Set(((S.plan&&S.plan.blockedDates)||[]).filter(d=>d>=t));
     const ok = s => { if(blocked.has(s.date) && !s.extra) return false; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
-    const fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && ok(s));
+    const fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && s.date<=planEnd() && ok(s));
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
     S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
       allowDates:[...allow].sort(), blockedDates:[...blocked].sort(), missedHandled:(S.plan&&S.plan.missedHandled)||[], icuSent:(S.plan&&S.plan.icuSent)||{}, icuModes:(S.plan&&S.plan.icuModes)||{}, icuLast:(S.plan&&S.plan.icuLast)||null, macro:(S.plan&&S.plan.macro)||null};
+    S.plan.coveredTo = planEnd();
     plc=true;
   }
   if(u.macro){ const mc = cleanMacro(u.macro); if(mc){ if(!S.plan) S.plan = {sessions:[]}; S.plan.macro = mc; plc=true; } }
@@ -1931,7 +1935,7 @@ function icuAll(withDone){
       const n = out.filter(o=>o.s.date===s.date).length; out.push({s, s0, ext:'laufdoch-'+s.date+'-'+n}); });
   return out;
 }
-function icuSessions(){ const end = addDays(today(),13); return icuAll().filter(x => x.s.date<=end); }
+function icuSessions(){ const end = planEnd(); return icuAll().filter(x => x.s.date<=end); }
 function icuEntry(s0){ return icuAll().find(x => x.s0===s0 || (x.s0.date===s0.date && x.s0.title===s0.title)); }
 /* Status einer Einheit: null = nicht übertragbar, 'new' = noch nicht gesendet, 'changed' = geändert, 'ok' = aktuell auf der Uhr */
 function icuState(s0){
@@ -2027,6 +2031,17 @@ function missedSessions(){
     && !acts().some(a => a.date===s.date && a.sport===normSport(s.sport)));
 }
 let missedBusy = false;
+/* Neue Woche: Plan einmal automatisch bis Ende nächster Woche verlängern */
+let extendTries = 0;
+function autoExtend(){
+  if(!S.loaded || !S.plan || !sample || sampleState==='denied') return;
+  const pe = planEnd();
+  const cov = S.plan.coveredTo || sessions().map(s=>s.date).sort().pop() || '';
+  if(cov >= pe || S.plan.extendTried === pe) return;
+  if(busy || missedBusy){ if(++extendTries < 20) setTimeout(autoExtend, 6000); return; }
+  S.plan.extendTried = pe; save('plan');
+  askClaude(`Neue Woche: Bitte verlängere den Plan bis einschließlich ${fmtDay(pe)} (${pe}). Passe bestehende Einheiten nur an, wenn nötig.`, {auto:true, display:`Plan bis ${fmtDay(pe)} verlängern`});
+}
 async function checkMissed(){
   if(missedBusy || busy || !S.loaded || !S.plan || !sample || sampleState==='denied') return;
   const miss = missedSessions(); if(!miss.length) return;
@@ -2040,12 +2055,12 @@ async function checkMissed(){
     }).join('; ');
     // synchron markieren und fragen, damit kein anderer Aufruf dazwischenkommt
     S.plan.missedHandled = [...new Set([...(S.plan.missedHandled||[]), ...keys])].slice(-60);
-    const q = askClaude(`Ausgelassen laut Strava: ${desc}. Bitte plane die nächsten 14 Tage neu: Entscheide, ob die Inhalte nachgeholt, gekürzt oder gestrichen werden, und rechne Ersatztraining an. Frag kurz nach dem Grund, falls er für die Planung wichtig ist.`, {auto:true});
+    const q = askClaude(`Ausgelassen laut Strava: ${desc}. Bitte plane bis Ende nächster Woche neu: Entscheide, ob die Inhalte nachgeholt, gekürzt oder gestrichen werden, und rechne Ersatztraining an. Frag kurz nach dem Grund, falls er für die Planung wichtig ist.`, {auto:true});
     await save('plan');
     await q;
   } finally { missedBusy = false; }
 }
-window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); icuAutoSync(); setTimeout(autoSync, 500); });
+window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 500); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
 
 /* ---------- Langes Drücken auf Symbolknöpfe zeigt den Namen ---------- */
@@ -2127,7 +2142,7 @@ document.addEventListener('click', async e => {
     if(txt===(old.text||'') && dt===(old.date||null)) return;
     pr.goal = txt ? {text:txt, date:dt} : null; await save('profile'); render();
     const desc = txt ? `„${txt}“${dt?' bis '+dmyy(dt):' ohne festes Datum'}` : 'entfernt';
-    if(sample && !busy) askClaude(`Ich habe mein Ziel geändert: ${desc}. Bitte passe den Gesamtplan (vollständig unter "macro"${dt?'':', Enddatum realistisch schätzen'}) und den 14-Tage-Plan daran an.`, {display:`Ziel geändert: ${desc}`});
+    if(sample && !busy) askClaude(`Ich habe mein Ziel geändert: ${desc}. Bitte passe den Gesamtplan (vollständig unter "macro"${dt?'':', Enddatum realistisch schätzen'}) und den Plan bis Ende nächster Woche daran an.`, {display:`Ziel geändert: ${desc}`});
     else { markChange('goal', 'Ziel: '+desc); render(); }
   }
   else if(a==='bg-open'){ bgDlg={edit:false}; renderMoveDialog(); }
@@ -2169,7 +2184,7 @@ document.addEventListener('click', async e => {
     s.cancelled = {reason, ts:new Date().toISOString()};
     S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
     render(); await save('plan'); icuAutoSync();
-    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung der nächsten 14 Tage: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
+    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung bis Ende nächster Woche: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
   }
   else if(a==='move-open'){ moveDlg={from:b.dataset.date, title:b.dataset.title, to:null}; renderMoveDialog(); }
   else if(a==='move-close'){ moveDlg=null; renderMoveDialog(); }
@@ -2199,8 +2214,8 @@ document.addEventListener('click', async e => {
       .map(m=>(m.role==='user'?userName()+': ':'Claude: ')+m.text.slice(0,400)).join('\n').slice(-6000);
     askClaude(`Bitte erstelle das Wochenfazit für die Woche ab ${fmtDay(mon)} (Schlüssel ${mon}): als Markdown-Liste mit fettem Stichwort je Zeile (Umfang, ${careMode()?'Beschwerden':'Befinden'}, Trainingslast, Auswertung, Besprochen, Ausblick), kein Fließtext. Liefere unter "assessments" für jede Einheit dieser Woche (IDs ${acts().filter(x=>x.date>=mon&&x.date<=sun&&x.sport!=='walk').map(x=>x.id).join(', ')}) eine Einschätzung mit "text" und "short" nach den aktuellen Regeln, auch wenn schon eine existiert${(()=>{const st=acts().filter(x=>x.date>=mon&&x.date<=sun&&staleAssess(x)).map(x=>x.id);return st.length?' und erneuere die durch neuere Rückmeldungen überholten Einschätzungen (IDs '+st.join(', ')+')':'';})()}. Stütze dich nur auf den aktuellen Stand der Rückmeldungen.${dlg?'\n\nDialog dieser Woche:\n'+dlg:''}`, {auto:true, display:`Wochenfazit für die Woche ab ${fmtDay(mon)} aktualisieren`});
   }
-  else if(a==='macro-create') askClaude(macro()?'Bitte überarbeite den Gesamtplan auf Basis meiner bisherigen Entwicklung und liefere ihn vollständig unter "macro". Passe den 14-Tage-Plan nur an, wenn nötig.':'Bitte erstelle den Gesamtplan bis zum Ziel und liefere ihn vollständig unter "macro". Passe den 14-Tage-Plan nur an, wenn er nicht dazu passt.', {display: macro()?'Gesamtplan überarbeiten':'Gesamtplan erstellen'});
-  else if(a==='replan') askClaude('Bitte plane die nächsten 14 Tage auf Basis meiner letzten Einheiten und Rückmeldungen neu.');
+  else if(a==='macro-create') askClaude(macro()?'Bitte überarbeite den Gesamtplan auf Basis meiner bisherigen Entwicklung und liefere ihn vollständig unter "macro". Passe den Plan bis Ende nächster Woche nur an, wenn nötig.':'Bitte erstelle den Gesamtplan bis zum Ziel und liefere ihn vollständig unter "macro". Passe den Plan bis Ende nächster Woche nur an, wenn er nicht dazu passt.', {display: macro()?'Gesamtplan überarbeiten':'Gesamtplan erstellen'});
+  else if(a==='replan') askClaude('Bitte plane bis Ende nächster Woche auf Basis meiner letzten Einheiten und Rückmeldungen neu.');
   else if(a==='day' || a==='sport'){
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
     if(a==='day'){ const d=Number(b.dataset.day); const s=new Set(pr.trainingDays||[]); s.has(d)?s.delete(d):s.add(d); pr.trainingDays=[...s].sort();
@@ -2240,7 +2255,7 @@ render();
   const cl = window.claude;
   if(!cl || !cl.use){ mcpState='none'; sampleState='none'; S.loaded=true; render(); return; }
   cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); setTimeout(autoSync, 800); });
-  cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); });
+  cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); });
   const [user, dbx] = await Promise.all([cl.use('user'), cl.use('db')]);
   db = dbx; uid = user ? await user.id() : null;
   if(!db || !uid){ S.loaded=true; syncMsg={err:true, text:'Speichern ist in dieser Ansicht nicht möglich. Öffne die App angemeldet in claude.ai.'}; render(); return; }
@@ -2248,7 +2263,7 @@ render();
   ['profile','plan','log','chat'].forEach(name => {
     db.doc('data/users/'+uid+'/'+name).onSnapshot(snap => {
       S[name] = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
-      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); icuAutoSync(); setTimeout(autoSync, 800); } }
+      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 800); } }
       if(!(busy && name==='chat')) render();
     }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
   });
