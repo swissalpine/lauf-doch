@@ -317,16 +317,8 @@ nav.tabs button{padding:4px 2px}
 .sendbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .compose{border-top:0}
 .msgs + .compose{border-top:1px solid var(--line)}
-.sic{display:inline-flex;width:22px;height:22px;border-radius:6px;align-items:center;justify-content:center;margin-right:7px;vertical-align:-5px;flex:none}
-.sic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.s-run{background:rgba(0,83,250,.13);color:#0053FA}
-.s-ride{background:rgba(124,58,237,.13);color:#7C3AED}
-.s-strength{background:rgba(217,119,6,.15);color:#B45309}
-.s-walk{background:rgba(14,159,110,.14);color:#0E8A62}
-.s-swim{background:rgba(8,145,178,.14);color:#0891B2}
-.s-mountain{background:rgba(120,84,48,.15);color:#7A5530}
-.s-other{background:var(--sunk);color:var(--muted)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .s-run{color:#7AA4FF}:root:not([data-theme="light"]) .s-ride{color:#B794F6}:root:not([data-theme="light"]) .s-strength{color:#F6B656}:root:not([data-theme="light"]) .s-walk{color:#5DD3A6}:root:not([data-theme="light"]) .s-swim{color:#5CC8E0}:root:not([data-theme="light"]) .s-mountain{color:#C9A27A}}
+.sic{display:inline-flex;width:24px;height:24px;border-radius:6px;align-items:center;justify-content:center;margin-right:8px;vertical-align:-6px;flex:none;background:var(--accent);color:#fff}
+.sic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
 .day details summary .sent svg{width:15px;height:15px;fill:none;stroke:var(--ok);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-left:6px}
 .wkhead{display:flex;gap:10px;align-items:baseline;padding:7px 12px;background:var(--sunk);font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
 .wkhead b{color:var(--ink);font-weight:700;letter-spacing:.03em;white-space:nowrap;flex:none}
@@ -542,16 +534,61 @@ const IN_APP = !!window.IN_APP;
 const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 const WD_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 const SPORT = {run:'Laufen', ride:'Rad', strength:'Kraft', walk:'Gehen/Wandern', swim:'Schwimmen', mountain:'Bergsteigen', other:'Sonstiges', rest:'Ruhe'};
-const SIC = {
-  run:'<svg viewBox="0 0 24 24"><circle cx="15" cy="4.5" r="1.9"/><path d="M13 8l-2 6 3 3-1 4.5M11 14l-3 3H5M8.5 10.5L13 8l3 3.5 3 .5"/></svg>',
-  ride:'<svg viewBox="0 0 24 24"><circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5L9 9h6l3.5 7.5M9 9l3.5 7.5L15 9M8 6.5h3M14 6l1 3"/></svg>',
-  strength:'<svg viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg>',
-  walk:'<svg viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.9"/><path d="M12 8l-1 6-2 7M11 14l3 3v4M9 11l3-3 3 3.5M18 9v12"/></svg>',
-  swim:'<svg viewBox="0 0 24 24"><circle cx="17" cy="7" r="1.9"/><path d="M4 12.5l5-4 4 2.5 2.5-1.5M2 17c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/></svg>',
-  mountain:'<svg viewBox="0 0 24 24"><path d="M2.5 20L9.5 7l4 7 2.5-3.5 5.5 9.5z"/><path d="M7.5 11l2 1.5 2-1.5"/></svg>',
-  other:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 8.5v4l2.5 1.5"/></svg>'
+// Piktogramme 24x24, weiß (currentColor). Kopf = gefüllter Kreis, Glieder = runde Linien.
+const IH = (x,y,r=2.15) => `<circle cx="${x}" cy="${y}" r="${r}" fill="currentColor" stroke="none"/>`;
+const IL = (d,w=2.6) => `<path d="${d}" stroke-width="${w}"/>`;
+const IF = d => `<path d="${d}" fill="currentColor" stroke="none"/>`;
+const BIKE = (dy=0) => { const Y = v => (v+dy).toFixed(1);
+  return `<circle cx="5.8" cy="${Y(17)}" r="3.5" stroke-width="1.8"/><circle cx="18.2" cy="${Y(17)}" r="3.5" stroke-width="1.8"/>`
+  + IL(`M5.8 ${Y(17)}L9.2 ${Y(11.4)}L12 ${Y(17)}L16.2 ${Y(11.4)}L18.2 ${Y(17)}M9.2 ${Y(11.4)}H16.2M15.6 ${Y(9.6)}L16.2 ${Y(11.4)}`,1.6)
+  + IH(14.4,Y(3.8)) + IL(`M13.6 ${Y(6.6)}L9.6 ${Y(9.4)}M13.4 ${Y(7)}L15.9 ${Y(9.4)}M9.6 ${Y(9.4)}L12.6 ${Y(12.2)}L11.6 ${Y(15.6)}`,2.3); };
+const RUNNER = (x=0,y=0) => IH(15.6+x,4+y) + IL(`M13.8 ${7.4+y}L11.3 ${12.6+y}M13.5 ${8.3+y}L16.2 ${10.3+y}L18.6 ${9.4+y}M13.5 ${8.3+y}L10.4 ${9.6+y}L8.6 ${11.8+y}M11.3 ${12.6+y}L14.5 ${14.8+y}L13.8 ${19.4+y}M11.3 ${12.6+y}L9.7 ${16.4+y}L5.6 ${17.6+y}`);
+const SICONS = {
+  run: RUNNER(),
+  trail: RUNNER(0,-1.6) + IF('M1.5 21.5L6 17.6l2.6 1.9 3.4-3.5 3 2.6 2.4-1.8 5.1 4.7z'),
+  walk: IH(13.2,3.7) + IF('M8.2 7.4a1 1 0 0 1 1-1h2.6a1 1 0 0 1 1 1v4.3a1 1 0 0 1-1 1H9.2a1 1 0 0 1-1-1z')
+     + IL('M12.6 6.9L11.4 13M12.5 8L14.8 11L16.7 10.4M11.4 13L9.7 17.2L8.6 20.6M11.4 13L13.6 16.6L14.2 20.6') + IL('M17 6.2V21',1.6),
+  mountain: IF('M1.8 20L9 7l3.6 6 2.3-3.3L22.2 20z'),
+  climb: IF('M16.8 2.5H21.5V21.5H13.8L15.6 16.2L14.2 13.4L16.3 9.6L15.4 6.4z') + IH(9.6,4.6)
+     + IL('M10 7.8L10.6 12.8M10.1 8.4L13.2 6.6L14.4 4.8M10.1 8.8L7.6 11.6M10.6 12.8L13.4 14.2L13.9 17.4M10.6 12.8L9.4 16.4L10.5 20.4'),
+  ride: BIKE(),
+  mtb: BIKE(-1) + IL('M1.5 21.6c2-1.6 3.6 1 5.6-.2s3.4-1.6 5.4-.2 3.4 1.2 5.4 0 2.6-.6 4.6.2',1.6),
+  gravel: BIKE(-1) + IL('M2 21.7h2.6M7.4 21.7h1.6M11.4 21.7h2.8M16.6 21.7h1.6M20.4 21.7h1.6',1.6),
+  road: BIKE() + IL('M1 8.6h3.2M1.6 11.4h2.6M1 14.2h2',1.5),
+  indoor: BIKE(-1.6) + IL('M18 15l-2.3 6.4M18 15l2.3 6.4M14.6 21.6h6.8M6 15v6.6M3.6 21.6h4.8',1.7),
+  swim: IH(18,7.6) + IL('M4.6 13.4L10.2 9.8L14.6 12.4M10.2 9.8L13.2 7.2')
+     + IL('M1.8 16.6c1.7 0 1.7-1.3 3.4-1.3s1.7 1.3 3.4 1.3 1.7-1.3 3.4-1.3 1.7 1.3 3.4 1.3 1.7-1.3 3.4-1.3 1.7 1.3 3.4 1.3M1.8 20.4c1.7 0 1.7-1.3 3.4-1.3s1.7 1.3 3.4 1.3 1.7-1.3 3.4-1.3 1.7 1.3 3.4 1.3 1.7-1.3 3.4-1.3 1.7 1.3 3.4 1.3',1.7),
+  strength: IH(8.6,4.4) + IL('M8.8 7.6L9.2 13M9 8.6H18.8M9.2 13L14.2 13.6L14.6 19.6M9.2 13L6.4 19.4H3') ,
+  yoga: IH(12,6.5,1.7) + IL('M12 10.4L7.3 7.8L10.7 2.6M12 10.4L16.7 7.8L13.3 2.6',2.1) + IL('M12 10.2V15M12 15V21.2M12 15L15.4 16.8L12.4 18.6',2.4),
+  ski: IH(15.4,4.2) + IL('M14.4 7.2L11.2 11.6M13.8 8L16.8 10L18 12.4M11.2 11.6L14.4 13.6L13 17.2M11.2 11.6L9.4 15.4L10.4 17.8') + IL('M2.8 16.4L21 21',2) + IL('M18 11.6L21 16.4',1.5),
+  xc: IH(12.6,3.6) + IL('M12 6.8L10.8 12.4M12 7.6L15.4 10.4M12 7.6L8.6 9.6M10.8 12.4L13.4 15.6L14.6 19.6M10.8 12.4L8.6 16L6.6 19.6') + IL('M15.4 10.4L18.6 19.4M8.6 9.6L5.4 19.4',1.5) + IL('M2 20.6h9.6M12.4 20.6h9.6',1.9),
+  skitour: IH(11.6,3.8) + IL('M11.2 7L10.4 12.6M11.2 7.8L14.4 10.2M11.2 7.8L8.4 10M10.4 12.6L13.6 14.2L14.6 17.2M10.4 12.6L8.4 15.6L7.4 19') + IL('M14.4 10.2L17.2 18M8.4 10L6 18.8',1.5) + IL('M2.4 21.4L21.6 15.2',2),
+  snowshoe: IH(13.2,3.7) + IL('M12.6 6.9L11.4 13M12.5 8L14.8 11L16.7 10.4M11.4 13L9.7 17.2L8.6 19.8M11.4 13L13.6 16.6L14.2 19.8') + IL('M17 6.2V21',1.6) + IL('M5.8 21h5M11.8 21h5',2.2),
+  rowing: IH(12,6.6) + IL('M12.3 9.4L14.4 13.6M12.3 10L9 12.2M9 12.2L4 14.6M14.4 13.6L18 13.6') + IF('M2.4 16.4H21.6L19.2 19.6H4.8z'),
+  kayak: IH(11,6) + IL('M11.2 8.8L12 13.2M11.4 9.6L14.2 10.6') + IL('M4 18.6L19.4 5.6',1.7) + IF('M2 14.6c4 1.6 16 1.6 20 0-1 3-4.6 4.8-10 4.8S3 17.6 2 14.6z'),
+  sup: IH(11.4,3.6) + IL('M11 6.8L10.6 12.6M11 7.8L13.8 9.6M10.6 12.6L9.2 18.2M10.6 12.6L12.2 18.2') + IL('M15 4.2L13.6 19.6',1.6) + IF('M2.6 19.2H21.4c-1 1.6-2.4 2-4 2H6.6c-1.6 0-3-.4-4-2z'),
+  other: `<circle cx="12" cy="13" r="7.2" stroke-width="2.2"/>` + IL('M12 9.4V13.4L14.6 15M10 3.2h4M12 3.2V5.8',2.2),
 };
-const sic = sp => { sp = SIC[sp] ? sp : 'other'; return `<span class="sic s-${sp}" aria-hidden="true">${SIC[sp]}</span>`; };
+/* Symbol je Einheit: Sportart plus Strava-Typ oder Titel */
+function iconKey(sp, h){
+  h = String(h||'');
+  if(sp==='run') return /trail/i.test(h) ? 'trail' : 'run';
+  if(sp==='ride') return /virtual|rolle|indoor|trainer|zwift/i.test(h) ? 'indoor' : /mountain|mtb/i.test(h) ? 'mtb' : /gravel/i.test(h) ? 'gravel' : /rennrad|road/i.test(h) ? 'road' : 'ride';
+  if(sp==='strength') return /yoga/i.test(h) ? 'yoga' : 'strength';
+  if(sp==='walk') return /snowshoe|schneeschuh/i.test(h) ? 'snowshoe' : 'walk';
+  if(sp==='mountain') return /climb|kletter/i.test(h) ? 'climb' : 'mountain';
+  if(sp==='swim') return 'swim';
+  if(/alpineski|ski alpin|abfahrt/i.test(h)) return 'ski';
+  if(/nordicski|langlauf/i.test(h)) return 'xc';
+  if(/backcountry|skitour/i.test(h)) return 'skitour';
+  if(/snowshoe|schneeschuh/i.test(h)) return 'snowshoe';
+  if(/row|ruder/i.test(h)) return 'rowing';
+  if(/kayak|canoe|kajak|kanu/i.test(h)) return 'kayak';
+  if(/standup|stand-up|\bsup\b/i.test(h)) return 'sup';
+  if(/yoga/i.test(h)) return 'yoga';
+  return 'other';
+}
+const sic = (sp, h) => `<span class="sic" aria-hidden="true"><svg viewBox="0 0 24 24">${SICONS[iconKey(sp, h)]}</svg></span>`;
 const SERVER = 'Strava';
 
 const S = {profile:null, plan:null, log:null, chat:null, loaded:false};
@@ -1344,7 +1381,7 @@ function renderPlan(){
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
-      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport))}<span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}${sent?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
+      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport), s.title)}<span class="t">${esc(s.title||'Training')}</span><span class="x">${esc(x)}${sent?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
         ${moveControl(s)}
@@ -1470,7 +1507,7 @@ function renderHistory(){
       } else if(a.re) pl = 'RE '+a.re;
       const canDetail = (a.sport==='run'||a.sport==='ride') && a.perf;
       rows.push(`<div class="entry${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-        <div class="body"><span class="facts">${sic(a.sport)}${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
+        <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||""))}${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts)}</span>
         ${pl?`<span class="pl">${esc(pl)}</span>`:''}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
         ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
