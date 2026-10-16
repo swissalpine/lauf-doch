@@ -303,6 +303,8 @@ nav.tabs button{padding:4px 2px}
 .md code{font-family:ui-monospace,monospace;font-size:.92em;background:var(--sunk);padding:0 .3em;border-radius:4px}
 .msg:has(.md){white-space:normal}
 .rationale.md,.summary.md{white-space:normal}
+.syncbtn{flex-direction:column;gap:0;line-height:1.25}
+.sync .syncbtn small{font-size:12px;font-weight:400;color:inherit;opacity:.85;margin:0}
 .stepsd{border-top:1px solid var(--line);padding-top:4px}
 .stepsd>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 0;font-weight:600;color:var(--accent)}
 .stepsd>summary::-webkit-details-marker{display:none}
@@ -957,12 +959,12 @@ function loadChart(mon){
 
 function syncBlock(){
   const last = S.log && S.log.lastSync ? new Date(S.log.lastSync) : null;
-  let hint;
-  if(mcpState==='none') hint = 'Strava-Abgleich ist in dieser Ansicht nicht verfügbar. Öffne die App in claude.ai.';
-  else hint = last ? 'Letzter Abgleich: '+last.toLocaleDateString('de-DE')+', '+last.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr' : 'Noch kein Abgleich aus der App.';
+  let stamp = 'noch kein Abgleich';
+  if(last){ const d = ymd(last), t = last.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    stamp = 'zuletzt ' + (d===today() ? 'heute' : d===addDays(today(),-1) ? 'gestern' : last.toLocaleDateString('de-DE',{day:'numeric',month:'numeric'})) + ', ' + t + ' Uhr'; }
   return `<div class="sync">
-    <button class="btn primary big" id="syncBtn" data-action="sync" ${mcp&&!syncBusy?'':'disabled'}>${syncBusy?'Strava wird abgeglichen …':'Mit Strava abgleichen'}</button>
-    <small>${esc(hint)}</small>
+    <button class="btn primary big syncbtn" id="syncBtn" data-action="sync" ${mcp&&!syncBusy?'':'disabled'}><span>${syncBusy?'Strava wird abgeglichen …':'Mit Strava abgleichen'}</span>${syncBusy?'':`<small>${esc(stamp)}</small>`}</button>
+    ${mcpState==='none'?`<small>Strava-Abgleich ist in dieser Ansicht nicht verfügbar. Öffne die App in claude.ai.</small>`:''}
     ${syncMsg?`<div class="status ${syncMsg.err?'err':'ok'}">${esc(syncMsg.text)}</div>`:''}
   </div>`;
 }
