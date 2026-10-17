@@ -489,6 +489,15 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF));
         }
 
+        /** Bildschirm während des Krafttrainings eingeschaltet lassen. */
+        @JavascriptInterface
+        public void keepAwake(boolean on) {
+            runOnUiThread(() -> {
+                if (on) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            });
+        }
+
         /** Tab, den eine angetippte Benachrichtigung öffnen soll (einmalig). */
         @JavascriptInterface
         public String takeOpenTab() {

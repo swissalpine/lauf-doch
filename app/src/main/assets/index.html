@@ -371,6 +371,58 @@ nav.tabs button{padding:4px 2px}
 .usage .svcrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px}
 .usage .svcrow b{font-weight:500}
 .usage .svcrow .st{color:var(--muted);font-variant-numeric:tabular-nums}
+.wk{display:flex;flex-direction:column;gap:14px}
+.wk .wkhead{display:flex;align-items:center;gap:10px}
+.wk .wkhead h2{margin:0;flex:1;min-width:0;font-size:20px}
+.wk .wkhead .el{font-variant-numeric:tabular-nums;color:var(--muted);font-size:15px}
+.wk .wkx{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:40px;height:40px;font-size:20px;color:var(--muted);cursor:pointer;flex:none;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.wk .wkx svg{width:18px;height:18px}
+.wk .dots{display:flex;gap:6px}
+.wk .dots span{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.wk .dots span.d{background:var(--ok)}
+.wk .dots span.c{background:var(--accent)}
+.wk .cur{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.wk .cur .exn{font-family:var(--f-display);font-size:24px;font-weight:600;display:flex;align-items:center;gap:8px;justify-content:center}
+.wk .cur .exd{color:var(--muted);font-size:15px;margin-top:-4px}
+.wk .cur .setl{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.wk .cur.rest .setl{color:var(--ok)}
+.wk .big{font-family:var(--f-display);font-size:64px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.wk .big small{font-size:22px;font-weight:500;color:var(--muted);margin-left:4px}
+.wk .adj{display:flex;align-items:center;gap:18px}
+.wk .adj button{width:52px;height:52px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:26px;color:var(--ink);cursor:pointer}
+.wk .ring{position:relative;width:200px;height:200px}
+.wk .ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.wk .ring circle{fill:none;stroke-width:10}
+.wk .ring .bg{stroke:var(--line)}
+.wk .ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.wk .cur.rest .ring .fg{stroke:var(--ok)}
+.wk .ring .big{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.wk .go{width:100%;height:56px;border-radius:999px;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:18px;font-weight:700;cursor:pointer}
+.wk .go.ok{background:var(--ok);color:#fff}
+.wk .sub{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.wk .pains{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;width:100%}
+.wk .pains button{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font:inherit;font-size:17px;cursor:pointer}
+.wk .rpes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%}
+.wk .rpes button{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font:inherit;font-size:17px;cursor:pointer}
+.wk .rpes button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.wk .exlist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 14px}
+.wk .exlist .er{display:flex;gap:10px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+.wk .exlist .er:first-child{border-top:0}
+.wk .exlist .er b{font-weight:600;flex:1;min-width:0}
+.wk .exlist .er span{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.wk .exlist .er.now b{color:var(--accent)}
+.wk .exlist .er.ok b::before{content:'✓ ';color:var(--ok)}
+.wk .wknav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.wk .wkb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 4px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:600;line-height:1.2;text-align:center;cursor:pointer}
+.wk .wkb svg{width:22px;height:22px;flex:none;color:var(--accent)}
+.wk .wkb.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.wk .wkb.on svg{color:var(--accent-ink)}
+.wkstart{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.wkstart .mbtn{margin-top:0;background:var(--accent);color:var(--accent-ink)}
+.wkstart .dlink{align-self:center}
+.wklog{display:flex;flex-direction:column;gap:2px;font-size:15px;margin:2px 0 4px}
+.wklog div{display:flex;gap:10px}.wklog b{font-weight:600;flex:1;min-width:0}.wklog span{color:var(--muted);text-align:right}
+body.wkon nav.tabs, body.wkon #dialog{display:none}
 .restday-line{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .inrow{display:flex;gap:8px;align-items:flex-end}
 .compose .inrow textarea{flex:1;min-height:44px;height:44px;resize:none;line-height:1.35}
@@ -837,6 +889,14 @@ const painClass = p => p==null?'':(p<=2?'ok':p<=4?'warn':'crit');
 
 const complaints = () => (profile().complaints||[]).filter(Boolean);
 const careMode = () => complaints().length>0;
+/* Notiz zur Rückmeldung nur zeigen, wenn sie mehr sagt als die Schmerz- und RPE-Werte */
+function noteText(f){
+  if(!f || !f.note) return '';
+  let r = String(f.note).toLowerCase();
+  complaints().forEach(c => String(c).toLowerCase().split(/[^a-zäöüß]+/).filter(w=>w.length>2).forEach(w => { r = r.split(w).join(' '); }));
+  r = r.replace(/\b(knie|patella|schmerz(en|frei)?|während|danach|nachher|beim|lauf|rpe|und|bei|im|am|der|die|das|kein(e)?|0|1|2|3|4|5|6|7|8|9|10)\b/g,' ').replace(/[\d\/.,:;()–\-]+/g,' ').trim();
+  return r.length ? f.note : '';
+}
 /* Abwesenheiten: {from,to,type:'off'|'limited',note} */
 const absences = () => (profile().absences||[]).filter(a=>a && isDate(a.from) && isDate(a.to));
 const absenceAt = d => absences().find(a => d>=a.from && d<=a.to) || null;
@@ -925,6 +985,9 @@ function render(){
   const p = document.getElementById('panel');
   const openK = new Set([...document.querySelectorAll('details[open][data-k]')].map(d=>d.dataset.k));
   const sy = window.scrollY;
+  document.body.classList.toggle('wkon', !!workout);
+  if(IN_APP && render.awake !== !!workout){ render.awake = !!workout; try{ window.Android.keepAwake && window.Android.keepAwake(!!workout); }catch(_){} }
+  if(workout){ p.innerHTML = renderWorkout(); renderMoveDialog(); return; }
   if(detailId){ p.innerHTML = renderDetail(); const da=acts().find(x=>x.id===detailId); if(da && !getStreams(detailId) && !detailBusy && !detailErr && mcp) setTimeout(()=>loadStreams(detailId),0); renderDialog(); renderMoveDialog(); return; }
   p.innerHTML = changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
   p.querySelectorAll('details[data-k]').forEach(d=>{ if(openK.has(d.dataset.k)) d.open=true; });
@@ -1165,6 +1228,8 @@ function guideKey(st){ return ((st.label||'')+'|'+(st.detail||'')).toLowerCase()
 function stepLi(st, sess){
   const t = [];
   const q = isExercise(st, sess) ? `<button class="qhelp" data-action="guide" data-label="${esc(st.label||'')}" data-detail="${esc(st.detail||'')}" aria-label="Übung erklären: ${esc(st.label||'')}">?</button>` : '';
+  if(st.sets && (st.reps || st.holdS)) t.push(`<span class="tg">${st.sets} × ${st.reps ? st.reps : fmtHold(st.holdS)}${st.perSide?' je Seite':''}</span>`);
+  if(st.restS) t.push(`<span class="tg">Pause ${fmtHold(st.restS)}</span>`);
   if(st.rpe) t.push(`<span class="tg">RPE ${esc(st.rpe)}</span>`);
   if(st.hr) t.push(`<span class="tg">HF ${esc(st.hr)}</span>`);
   if(st.pace) t.push(`<span class="tg">${esc(st.pace)} /km</span>`);
@@ -1182,7 +1247,8 @@ function plannedCard(s, label){
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
     ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} ${steps.length===1?'Schritt':'Schritte'}</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
-    ${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() && !s.cancelled ? `<button class="mbtn" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">${IC_CHECK}Erledigt</button>` : ''}
+    ${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() && !s.cancelled ? `<div class="wkstart"><button class="mbtn" data-action="wk-start" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></svg>Training starten</button>
+      <button class="dlink" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Ohne Aufzeichnung als erledigt markieren</button></div>` : ''}
     ${moveControl(s, true)}
   </article>`;
 }
@@ -1193,11 +1259,12 @@ function manualCard(a, planned){
   if(rp) chips.push(`<span class="chip">RPE ${rp.v}/10</span>`);
   if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
   if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
-  if(f && f.note) chips.push(`<span class="chip">${esc(f.note)}</span>`);
+  if(noteText(f)) chips.push(`<span class="chip">${esc(f.note)}</span>`);
   return `<article class="card">
-    <div class="card-head"><span class="tag done">Erledigt</span><span class="sport">${esc(SPORT[a.sport]||'')} · selbst eingetragen</span></div>
+    <div class="card-head"><span class="tag done">Erledigt</span><span class="sport">${esc(SPORT[a.sport]||'')} · ${a.workout?'in der App aufgezeichnet':'selbst eingetragen'}</span></div>
     <h3 class="hic">${sic(a.sport, a.name)}<span>${esc(a.name)}</span></h3>
-    ${a.movingS?`<div class="target">ca. ${Math.round(a.movingS/60)} min</div>`:''}
+    ${a.movingS?`<div class="target">${a.workout?'':'ca. '}${Math.round(a.movingS/60)} min${a.workout&&a.time?' · ab '+esc(a.time)+' Uhr':''}</div>`:''}
+    ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${(x.log||[]).length ? x.log.map(l=>wkSetText(x,l)).join(' · ')+(x.reps?' Wdh.':'') : 'ausgelassen'}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
     ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
@@ -1225,7 +1292,7 @@ function doneCard(a, planned, extra){
     if(f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
     if(f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
 
-    if(f.note) chips.push(`<span class="chip">${esc(f.note)}</span>`);
+    if(noteText(f)) chips.push(`<span class="chip">${esc(f.note)}</span>`);
   }
   return `<article class="card">
     <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type)} · ${esc(a.time||'')} Uhr</span></div>
@@ -1336,6 +1403,205 @@ function setCheck(c){
   const keep = addDays(today(),-120); Object.keys(log.checks).forEach(d=>{ if(d<keep) delete log.checks[d]; });
   mcPainOpen = false; save('log'); render();
 }
+/* ---------- Trainingsmodus für Kraft und Mobilität ---------- */
+const fmtHold = sec => sec>=60 ? (sec%60 ? Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')+' min' : (sec/60)+' min') : sec+' s';
+const GENERIC_STEP = /^(kraft|übungen|dehnen|dehnung|mobili|stabi|kräftig|zirkel|athletik|gymnastik)/i;
+function parseExercise(name, text, st){
+  const ex = {name: String(name||'Übung').trim(), detail:'', sets:1, reps:null, holdS:null, restS:60, perSide:false, log:[], pain:null};
+  if(st && (st.sets || st.reps || st.holdS)){
+    Object.assign(ex, {detail: st.detail||'', sets: st.sets||1, reps: st.reps||null, holdS: st.holdS||null, restS: st.restS!=null ? st.restS : 60, perSide: !!st.perSide});
+    return ex;
+  }
+  const tx = String(text||'');
+  let m;
+  if((m = tx.match(/(\d+)\s*[×x]\s*(\d+)\s*(?:s|sek|sekunden|sec)\b/i))){ ex.sets=+m[1]; ex.holdS=+m[2]; }
+  else if((m = tx.match(/(\d+)\s*[×x]\s*(\d+)\s*min\b/i))){ ex.sets=+m[1]; ex.holdS=+m[2]*60; }
+  else if((m = tx.match(/(\d+)\s*[×x]\s*(\d+)/))){ ex.sets=+m[1]; ex.reps=+m[2]; }
+  else if((m = tx.match(/(\d+)\s*(?:s|sek|sekunden)\b/i))){ ex.holdS=+m[1]; }
+  else if((m = tx.match(/(\d+)\s*min\b/i))){ ex.holdS=+m[1]*60; }
+  if((m = tx.match(/pause\s*(\d+)\s*(s|sek|min)/i))) ex.restS = +m[1] * (/min/i.test(m[2])?60:1);
+  ex.perSide = /(je|pro)\s+(seite|bein|arm)/i.test(tx);
+  ex.sets = Math.min(ex.sets, 10);
+  ex.detail = (st && st.detail && st.detail!==tx) ? st.detail : '';
+  return ex;
+}
+function parseExercises(s){
+  const out = [];
+  (Array.isArray(s.steps) ? s.steps : []).forEach(st => {
+    if(!st) return;
+    if(st.sets || st.reps || st.holdS){ out.push(parseExercise(st.label, '', st)); return; }
+    const det = String(st.detail||'');
+    if(GENERIC_STEP.test(st.label||'') && /[,;+]/.test(det)){
+      det.split(/\s*[,;+]\s*/).filter(Boolean).forEach(pt => {
+        const nm = pt.replace(/\d+\s*[×x]\s*\d+\s*(s|sek|sekunden|sec|min|wdh\.?|wiederholungen)?/gi,'').replace(/\b\d+\s*(s|sek|sekunden|sec|min)\b/gi,'').replace(/\b(je|pro)\s+(seite|bein|arm)\b/gi,'').replace(/\(\s*\)/g,'').replace(/\s{2,}/g,' ').trim() || pt;
+        out.push(parseExercise(nm, pt, null));
+      });
+    } else out.push(parseExercise(st.label || det, (st.label||'')+' '+det, st));
+  });
+  return out.length ? out : [parseExercise(s.title, '', null)];
+}
+let workout = null, wkTimer = null;
+try{ const w = JSON.parse(localStorage.getItem('ld-workout')||'null'); if(w && w.date===today()) workout = w; }catch(_){}
+function wkSave(){ try{ workout ? localStorage.setItem('ld-workout', JSON.stringify(workout)) : localStorage.removeItem('ld-workout'); }catch(_){} }
+function wkStart(s){
+  const ex = parseExercises(s);
+  workout = {date:s.date, title:s.title||'Kraft', sport:normSport(s.sport), goal:s.goal||'', start:Date.now(), ex, i:0, set:0, phase:'work', until:null, dur:null, val:null, rpe:null, confirmQuit:false};
+  wkPrep(); wkSave(); wkTick(); render(); window.scrollTo({top:0});
+}
+function wkCur(){ return workout && workout.ex[workout.i]; }
+/* Trainingszeit ohne Unterbrechungen */
+function wkElapsed(w){ const now = w.end || Date.now(); return Math.max(0, (now - w.start - (w.pausedMs||0) - (w.paused && !w.end ? now - w.paused : 0))/1000); }
+function wkPause(){ const w = workout; if(!w || w.paused) return; w.paused = Date.now(); if(w.until){ w.left = w.until - Date.now(); w.until = null; } wkSave(); render(); }
+function wkResume(){ const w = workout; if(!w || !w.paused) return; w.pausedMs = (w.pausedMs||0) + (Date.now() - w.paused); w.paused = null; if(w.left!=null){ w.until = Date.now() + w.left; w.left = null; } wkSave(); render(); }
+function wkPrep(){ const e = wkCur(); if(!e) return; workout.val = e.reps || e.holdS || null; workout.until = null; workout.dur = null; }
+function wkBeep(n){
+  try{ navigator.vibrate && navigator.vibrate(n>1 ? [200,120,200] : 250); }catch(_){}
+  try{ const C = window.AudioContext || window.webkitAudioContext; if(!C) return; const c = wkBeep.ctx || (wkBeep.ctx = new C());
+    for(let k=0;k<(n||1);k++){ const o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; o.connect(g); g.connect(c.destination);
+      const t0 = c.currentTime + k*0.25; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.4, t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0+0.18); o.start(t0); o.stop(t0+0.2); } }catch(_){}
+}
+function wkLogSet(entry){
+  const e = wkCur(); e.log.push(entry);
+  if(workout.set + 1 < e.sets){ workout.set++; workout.phase = 'rest'; workout.dur = e.restS; workout.until = e.restS ? Date.now() + e.restS*1000 : null; if(!e.restS){ workout.phase='work'; wkPrep(); } }
+  else wkExerciseDone();
+  wkSave(); render();
+}
+function wkExerciseDone(){
+  if(painMode()){ workout.phase = 'pain'; workout.until = null; return; }
+  wkNextExercise();
+}
+function wkNextExercise(){
+  workout.i++; workout.set = 0;
+  if(workout.i >= workout.ex.length){ workout.phase = 'done'; workout.until = null; workout.end = Date.now(); return; }
+  workout.phase = 'work'; wkPrep();
+}
+function wkTick(){
+  clearInterval(wkTimer);
+  if(!workout) return;
+  wkTimer = setInterval(() => {
+    if(!workout){ clearInterval(wkTimer); return; }
+    if(workout.paused) return;
+    const el = document.getElementById('wkEl'); if(el) el.textContent = mmss(wkElapsed(workout));
+    if(!workout.until) return;
+    const left = Math.max(0, Math.ceil((workout.until - Date.now())/1000));
+    const c = document.getElementById('wkClock'); if(c) c.textContent = mmss(left);
+    const r = document.getElementById('wkRing'); if(r && workout.dur){ const L = 2*Math.PI*90; r.style.strokeDashoffset = String(L * (1 - Math.min(1, (workout.dur - (workout.until-Date.now())/1000) / workout.dur))); }
+    if(left <= 0){
+      if(workout.phase==='work'){ wkBeep(2); const e = wkCur(); wkLogSet({holdS: workout.dur}); }
+      else if(workout.phase==='rest'){ wkBeep(1); workout.phase = 'work'; wkPrep(); wkSave(); render(); }
+    }
+  }, 250);
+}
+function wkSetText(e, l){ return l.skip ? '–' : e.holdS ? fmtHold(l.holdS) : e.reps ? l.reps+'' : '✓'; }
+function wkSummary(w){
+  return w.ex.map(e => { const sets = e.log.length ? e.log.map(l=>wkSetText(e,l)).join(', ') : 'ausgelassen';
+    return `${e.name}: ${sets}${e.reps&&e.log.length?' Wdh.':''}${e.perSide?' je Seite':''}${e.pain!=null?' · Schmerz '+e.pain+'/10':''}`; }).join('\n');
+}
+function wkFinish(){
+  const w = workout; if(!w) return;
+  if(w.paused) wkResume();
+  const mins = Math.max(1, Math.round(wkElapsed(w)/60));
+  const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+  log.activities = log.activities||[]; log.feedback = log.feedback||{};
+  const id = 'm-'+w.date+'-'+w.sport+'-'+Date.now().toString(36);
+  const st = new Date(w.start);
+  const m = {id, manual:true, date:w.date, time:String(st.getHours()).padStart(2,'0')+':'+String(st.getMinutes()).padStart(2,'0'), sport:w.sport, name:w.title, type:'',
+    distKm:0, movingS:mins*60, elev:0, re:null, startTs:w.start,
+    workout:w.ex.map(e=>({name:e.name, sets:e.sets, reps:e.reps, holdS:e.holdS, perSide:e.perSide||undefined, log:e.log, pain:e.pain})), desc: wkSummary(w)};
+  log.activities = log.activities.filter(a => !(isManual(a) && a.date===w.date && a.sport===w.sport));
+  log.activities.unshift(m);
+  log.activities.sort((a,b)=> (b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  const pains = w.ex.map(e=>e.pain).filter(v=>v!=null);
+  const fbk = {}; if(w.rpe) fbk.rpe = w.rpe; if(pains.length) fbk.painDuring = Math.max(...pains);
+  if(Object.keys(fbk).length) log.feedback[id] = Object.assign(fbk, {ts:new Date().toISOString()});
+  workout = null; wkSave(); clearInterval(wkTimer);
+  save('log'); render(); window.scrollTo({top:0});
+  if(typeof stravaPushOn==='function' && stravaPushOn()) pushToStrava(m);
+}
+function wkNav(w){
+  const I = {pause:'<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>', play:'<path d="M8 5.5v13l10.5-6.5z"/>', next:'<path d="M6 6l8 6-8 6zM16 6h2v12h-2z"/>', skip:'<path d="M4 6l7 6-7 6zM12 6l7 6-7 6z"/>'};
+  const b = (act, ic, lbl, cls) => `<button class="wkb ${cls||''}" data-action="${act}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${I[ic]}</svg><span>${lbl}</span></button>`;
+  return `<div class="wknav">${w.paused ? b('wk-resume-p','play','Fortsetzen','on') : b('wk-pause','pause','Pause')}${b('wk-next','next','Weiter')}${b('wk-skip','skip','Nächste Übung')}</div>`;
+}
+function renderWorkout(){
+  const w = workout, e = wkCur();
+  const el = mmss(wkElapsed(w));
+  const dots = w.ex.map((x,k) => `<span class="${k<w.i||w.phase==='done'?'d':k===w.i?'c':''}"></span>`).join('');
+  const head = `<div class="wkhead"><h2>${esc(w.title)}</h2><span class="el" id="wkEl">${el}</span><button class="wkx" data-action="wk-quit" aria-label="Training beenden">×</button></div><div class="dots">${dots}</div>`;
+  const quit = w.confirmQuit ? `<div class="card"><p><b>Training abbrechen?</b> Bisher erledigte Sätze kannst du speichern oder verwerfen.</p>
+    <div class="row"><button class="btn primary" data-action="wk-save-now">Bisheriges speichern</button><button class="btn" data-action="wk-discard">Verwerfen</button><button class="btn ghost" data-action="wk-resume">Weiter trainieren</button></div></div>` : '';
+  const list = `<div class="exlist">${w.ex.map((x,k) => `<div class="er ${k===w.i&&w.phase!=='done'?'now':''} ${x.log.length>=x.sets||k<w.i?'ok':''}"><b>${esc(x.name)}</b><span>${x.log.length ? x.log.map(l=>wkSetText(x,l)).join(' · ') : x.sets+' × '+(x.reps||(x.holdS?fmtHold(x.holdS):'–'))}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`;
+  if(w.phase==='done'){
+    return `<div class="wk">${head}${quit}<div class="cur"><span class="setl">Geschafft</span><div class="big">${mmss(wkElapsed(w))}<small>min</small></div>
+      <p class="exd">Wie anstrengend war das Training insgesamt (RPE)?</p>
+      <div class="rpes">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="wk-rpe" data-v="${n}" aria-pressed="${w.rpe===n}">${n}</button>`).join('')}</div>
+      <button class="go ok" data-action="wk-finish">Speichern</button></div>${list}</div>`;
+  }
+  if(w.paused){
+    return `<div class="wk">${head}${quit}<div class="cur paused"><span class="setl">Pausiert</span><div class="big">${mmss(wkElapsed(w))}</div>
+      <p class="exd">Weiter mit: ${w.phase==='rest'?'Pause, dann ':''}${esc(e.name)} · Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${w.left!=null?' · noch '+mmss(Math.ceil(w.left/1000)):''}</p>
+      </div>${wkNav(w)}${list}</div>`;
+  }
+  const q = `<button class="qhelp" data-action="guide" data-label="${esc(e.name)}" data-detail="${esc(e.detail||'')}" aria-label="Übung erklären">?</button>`;
+  const setl = `Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${e.perSide?' · je Seite':''}`;
+  let body;
+  if(w.phase==='pain'){
+    body = `<div class="cur"><div class="exn">${esc(e.name)}</div><span class="setl">Übung fertig</span><p class="exd">Schmerz bei dieser Übung?${complaints().length?'<br>'+esc(complaints().join(', ')):''}</p>
+      <div class="pains">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="wk-pain" data-v="${n}">${n}</button>`).join('')}<button data-action="wk-pain" data-v="">–</button></div></div>`;
+  } else if(w.phase==='rest'){
+    const left = Math.max(0, Math.ceil((w.until - Date.now())/1000)), L = 2*Math.PI*90;
+    body = `<div class="cur rest"><span class="setl">Pause</span>
+      <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${L*(1-Math.min(1,(w.dur-left)/w.dur))}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
+      <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}</p>
+      <div class="sub"><button class="btn" data-action="wk-rest-add">+15 s</button></div></div>`;
+  } else if(e.holdS){
+    const running = !!w.until, L = 2*Math.PI*90;
+    const left = running ? Math.max(0, Math.ceil((w.until - Date.now())/1000)) : w.val;
+    body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
+      <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${running ? L*(1-Math.min(1,(w.dur-left)/w.dur)) : L}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
+      ${running ? ``
+        : `<div class="adj"><button data-action="wk-adj" data-d="-5" aria-label="5 Sekunden weniger">−</button><span class="exd">Haltezeit</span><button data-action="wk-adj" data-d="5" aria-label="5 Sekunden mehr">+</button></div>
+           <button class="go" data-action="wk-hold-start">Start</button>`}</div>`;
+  } else if(e.reps){
+    body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
+      <div class="adj"><button data-action="wk-adj" data-d="-1" aria-label="Eine Wiederholung weniger">−</button><div class="big">${w.val}<small>Wdh.</small></div><button data-action="wk-adj" data-d="1" aria-label="Eine Wiederholung mehr">+</button></div>
+      <button class="go" data-action="wk-set-done">Satz fertig</button></div>`;
+  } else {
+    body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
+      <button class="go" data-action="wk-set-done">Erledigt</button></div>`;
+  }
+  return `<div class="wk">${head}${quit}${body}${wkNav(w)}${list}</div>`;
+}
+function wkAction(a, b){
+  const w = workout; if(!w) return false;
+  const e = wkCur();
+  if(a==='wk-quit'){ w.confirmQuit = true; render(); }
+  else if(a==='wk-pause'){ wkPause(); }
+  else if(a==='wk-resume-p'){ wkResume(); }
+  else if(a==='wk-resume'){ w.confirmQuit = false; render(); }
+  else if(a==='wk-discard'){ workout = null; wkSave(); clearInterval(wkTimer); render(); }
+  else if(a==='wk-save-now'){ w.confirmQuit = false; w.end = Date.now(); w.phase = 'done'; w.until = null; wkSave(); render(); }
+  else if(a==='wk-adj'){ const d = Number(b.dataset.d); w.val = Math.max(e.holdS ? 5 : 1, (w.val||0) + d); wkSave(); render(); }
+  else if(a==='wk-set-done'){ wkLogSet(e.reps ? {reps:w.val} : {}); }
+  else if(a==='wk-hold-start'){ w.dur = w.val; w.until = Date.now() + w.val*1000; wkSave(); render(); wkBeep(1); }
+  else if(a==='wk-hold-stop'){ const done = Math.max(1, Math.round(w.dur - (w.until - Date.now())/1000)); wkLogSet({holdS: Math.min(done, w.dur)}); }
+  else if(a==='wk-rest-add'){ w.until += 15000; w.dur += 15; wkSave(); render(); }
+  else if(a==='wk-rest-skip'){ w.phase = 'work'; wkPrep(); wkSave(); render(); }
+  else if(a==='wk-pain'){ e.pain = b.dataset.v==='' ? null : Number(b.dataset.v); wkNextExercise(); wkSave(); render(); }
+  else if(a==='wk-next'){
+    if(w.phase==='rest'){ w.phase='work'; wkPrep(); wkSave(); render(); }
+    else if(w.phase==='pain'){ e.pain = null; wkNextExercise(); wkSave(); render(); }
+    else if(e.holdS && w.until){ const done = Math.max(1, Math.round(w.dur - (w.until - Date.now())/1000)); wkLogSet({holdS: Math.min(done, w.dur)}); }
+    else { w.until = null; wkLogSet({skip:true}); }
+  }
+  else if(a==='wk-skip'){ if(w.phase==='pain'){ wkNextExercise(); } else { w.until = null; wkNextExercise(); } wkSave(); render(); }
+  else if(a==='wk-rpe'){ w.rpe = Number(b.dataset.v); wkSave(); render(); }
+  else if(a==='wk-finish'){ wkFinish(); }
+  else return false;
+  return true;
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden && workout){ render(); } });
+if(workout) setTimeout(wkTick, 0);
 function renderToday(){
   if(!S.loaded) return syncBlock()+`<div class="empty">Trainingsdaten werden geladen …</div>`;
   const t = today();
@@ -1762,7 +2028,7 @@ function renderHistory(){
       if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
       else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
       { const rp=rpeOf(a); if(rp) chips.push(`<span class="chip">RPE ${rp.v}/10</span>`); }
-      const short = as ? (as.short || as.text) : (f && f.note) || '';
+      const short = as ? (as.short || as.text) : noteText(f) || '';
       const r = analyze(a); let pl = '';
       if(r){
         const parts = [];
@@ -2128,7 +2394,7 @@ function buildContext(){
         return r.laps.map((l,i)=>{ const nz = st && rg[i] ? streamAvg(st,'w',rg[i].from,rg[i].to,true) : null;
           return `R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W${nz && nz-l.w>=5?` (ohne Stopp ${Math.round(nz)}W)`:''} ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`; }).join(' | '); })() : undefined,
       geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
-    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) || undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
+    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) || undefined, kraftProtokoll: a.workout ? a.desc : undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
       belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
   });
   const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null, kraftEinheiten:acts().filter(a=>a.sport==='strength'&&a.date>=m&&a.date<=addDays(m,6)).length, radMinuten:Math.round(acts().filter(a=>a.sport==='ride'&&a.date>=m&&a.date<=addDays(m,6)).reduce((x,a)=>x+(a.movingS||0),0)/60)}); }
@@ -2150,7 +2416,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava"), frag nicht erneut.
 - Wenn zu einer neuen Aktivität weder RPE noch Befinden bekannt sind, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
 - Stelle höchstens eine Rückfrage pro Antwort.
-- Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen). Kraft-, Mobilitäts- und Dehnübungen planst du immer als eigene Einheit ("sport":"strength", auch am selben Tag wie ein Lauf), nie als Schritt einer Lauf- oder Radeinheit – so kann ${nm} sie getrennt abhaken.
+- Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen). Kraft-, Mobilitäts- und Dehnübungen planst du immer als eigene Einheit ("sport":"strength", auch am selben Tag wie ein Lauf), nie als Schritt einer Lauf- oder Radeinheit – so kann ${nm} sie getrennt abhaken. In Krafteinheiten ist jeder Schritt genau eine Übung mit "sets", "reps" (Wiederholungen) oder "holdS" (Haltezeit in Sekunden), "restS" (Pause zwischen den Sätzen in Sekunden) und bei einseitigen Übungen "perSide":true; "detail" enthält nur Ausführungshinweise (Winkel, Tempo, worauf achten). Dehnen oder Mobilisation ebenfalls je Übung mit "holdS". Die App führt ${nm} damit Satz für Satz durch das Training.
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
 - Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" (z. B. "154–184 W (Z3)"). Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
@@ -2181,13 +2447,13 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
    "absences":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","type":"off|limited","note":"Urlaub, nur Wandern"}],
-   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]},{"date":"YYYY-MM-DD","sport":"strength","title":"Kraft Knie","goal":"…","durationMin":20,"steps":[{"label":"Wandsitz","detail":"Knie 60°, Gewicht auf den Fersen","sets":3,"holdS":45,"restS":60},{"label":"Step-down","detail":"langsam, Knie über dem Fuß","sets":3,"reps":10,"restS":60,"perSide":true}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
    "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
  }}
-Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" und "absences" sind immer die vollständige Liste (nur liefern, wenn ${nm} eine Abwesenheit nennt oder ändert). An Tagen mit Abwesenheit "kein Training" planst du nichts; bei "eingeschränkt" richtest du dich nach der Notiz. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
+Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" und "absences" sind immer die vollständige Liste (nur liefern, wenn ${nm} eine Abwesenheit nennt oder ändert). An Tagen mit Abwesenheit "kein Training" planst du nichts; bei "eingeschränkt" richtest du dich nach der Notiz. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein; "note" nur für Beobachtungen, die nicht schon in painDuring, painAfter oder rpe stehen (z. B. „Beine schwer“), sonst weglassen.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
 `HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}. Aktiver Tab in der App: ${tab}.`,
 `KALENDER (heute bis ${planEnd()}): ${Array.from({length:planDays()},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
   const ab = absenceAt(d);
@@ -2238,7 +2504,10 @@ function cleanSession(s){
     distanceKm: Number(s.distanceKm)>0 ? Math.round(Number(s.distanceKm)*10)/10 : null,
     durationMin: Number(s.durationMin)>0 ? Math.round(Number(s.durationMin)) : null,
     steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,300),
-      rpe:x&&x.rpe!=null?String(x.rpe).slice(0,12):undefined, hr:x&&x.hr?String(x.hr).slice(0,20):undefined, pace:x&&x.pace?String(x.pace).slice(0,24):undefined, watt:x&&x.watt?String(x.watt).slice(0,30):undefined})) : []};
+      rpe:x&&x.rpe!=null?String(x.rpe).slice(0,12):undefined, hr:x&&x.hr?String(x.hr).slice(0,20):undefined, pace:x&&x.pace?String(x.pace).slice(0,24):undefined, watt:x&&x.watt?String(x.watt).slice(0,30):undefined,
+      sets: x&&Number(x.sets)>0 ? Math.min(10,Math.round(Number(x.sets))) : undefined, reps: x&&Number(x.reps)>0 ? Math.min(200,Math.round(Number(x.reps))) : undefined,
+      holdS: x&&Number(x.holdS)>0 ? Math.min(1800,Math.round(Number(x.holdS))) : undefined, restS: x&&Number(x.restS)>=0&&x.restS!=null ? Math.min(600,Math.round(Number(x.restS))) : undefined,
+      perSide: x&&x.perSide===true || undefined})) : []};
 }
 
 async function applyUpdates(u){
@@ -2556,6 +2825,8 @@ document.addEventListener('click', async e => {
     pr.complaints = list; markChange('complaints', 'Beschwerden: '+(list.join(', ')||'keine')); render(); save('profile');
   }
   else if(a==='replan-changes') replanFromChanges();
+  else if(a==='wk-start'){ const s0 = active().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(s0) wkStart(s0); }
+  else if(a.startsWith('wk-')){ wkAction(a, b); }
   else if(a==='rem-toggle'){ const c=remindCfg(), k=b.dataset.k; c[k+'On']=!c[k+'On']; if(c[k+'On'] && notifPerm()==='ask'){ try{ window.Android.requestNotifPermission(); }catch(_){} } setRemindCfg(c); render(); }
   else if(a==='abs-add' || a==='abs-rm'){
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
