@@ -6,12 +6,18 @@ android {
     namespace = "de.laufdoch"
     compileSdk = 34
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "de.laufdoch"
         minSdk = 29
         targetSdk = 34
-        versionCode = 73
-        versionName = "1.72"
+        versionCode = 74
+        versionName = "1.73"
+        // Erscheinungsdatum = Tag des Builds
+        buildConfigField("String", "BUILD_DATE", "\"" + java.time.LocalDate.now().toString() + "\"")
     }
 
     // Fester Schlüssel, damit Updates ohne Deinstallation installiert werden können.

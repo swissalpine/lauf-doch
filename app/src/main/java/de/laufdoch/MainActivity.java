@@ -361,6 +361,8 @@ public class MainActivity extends Activity {
                 JSONObject j = new JSONObject();
                 j.put("claudeKey", !prefs.getString("claude_key", "").isEmpty());
                 j.put("model", prefs.getString("claude_model", DEFAULT_MODEL));
+                j.put("appVersion", BuildConfig.VERSION_NAME);
+                j.put("buildDate", BuildConfig.BUILD_DATE);
                 j.put("stravaClient", !prefs.getString("strava_client_id", "").isEmpty()
                         && !prefs.getString("strava_client_secret", "").isEmpty());
                 j.put("stravaClientId", prefs.getString("strava_client_id", ""));

@@ -368,6 +368,10 @@ nav.tabs button{padding:4px 2px}
 .remrow input:disabled{opacity:.45}
 .remrow .note{margin:0}
 .usage{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.about .svcrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px}
+.about .svcrow b{font-weight:500}
+.about .svcrow .st{color:var(--muted)}
+.about .dlink{padding:0;display:inline}
 .usage .svcrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px}
 .usage .svcrow b{font-weight:500}
 .usage .svcrow .st{color:var(--muted);font-variant-numeric:tabular-nums}
@@ -2217,6 +2221,11 @@ function connCard(){
       <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei in „Downloads“. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
       ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p><div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
       :`<div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
+  </div>
+  <div class="card about"><h2>Über Lauf doch!</h2>
+    <div class="svcrow"><b>Version</b><span class="st">${esc(st.appVersion||'–')}</span></div>
+    <div class="svcrow"><b>Erschienen</b><span class="st">${st.buildDate ? esc(parseYmd(st.buildDate).toLocaleDateString('de-DE')) : '–'}</span></div>
+    <p class="note">Adaptives Lauftraining mit Claude. Neue Versionen gibt es unter <button class="dlink" data-action="open-releases">github.com/swissalpine/lauf-doch</button>.</p>
   </div>`;
 }
 let confirmImport = null; // geladene Sicherung, wartet auf Bestätigung
@@ -2996,6 +3005,7 @@ document.addEventListener('click', async e => {
   }
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
   else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
+  else if(a==='open-releases'){ try{ window.Android.openUrl('https://github.com/swissalpine/lauf-doch/releases'); }catch(_){} }
   else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
   else if(a==='cf-strava-push'){ try{ const on = localStorage.getItem('ld-strava-push')==='1'; localStorage.setItem('ld-strava-push', on?'0':'1'); }catch(_){} render(); }
   else if(a==='cf-strava-re'){ window.Android.stravaConnect(); }
