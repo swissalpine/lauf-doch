@@ -737,6 +737,49 @@ function powerLaps(a){
   if(!laps.length) return null;
   return laps.map((l,i) => ({n:i+1, s:l.s, w:l.w, pct:Math.round(l.w/ftp*100), z:powerZone(l.w, ftp), hr:l.hr||null, hz:hrZone(l.hr)}));
 }
+/* Hauptteil eines Laufs: ohne Ein- und Auslaufen.
+   Mit Runden der Uhr: erste und letzte Runde weg (ab 3 Runden; bei 2 Runden die kurze, wenn sie unter 35 % liegt).
+   Sonst: erster Kilometer und ein kurzer Rest am Ende weg. Ergebnis als Distanz- und Zeitbereich. */
+function mainPart(a){
+  const p = a.perf || {}, R = (p.rounds||[]).filter(l=>l.d>0);
+  const tot = R.reduce((x,l)=>x+l.d,0), totT = R.reduce((x,l)=>x+(l.e||l.s),0);
+  if(R.length>=3) return {d0:R[0].d, d1:tot-R[R.length-1].d, t0:R[0].e||R[0].s, t1:totT-(R[R.length-1].e||R[R.length-1].s), main:true};
+  if(R.length===2){
+    const [x,y] = R;
+    if(x.d < 0.35*tot) return {d0:x.d, d1:tot, t0:x.e||x.s, t1:totT, main:true};
+    if(y.d < 0.35*tot) return {d0:0, d1:x.d, t0:0, t1:x.e||x.s, main:true};
+  }
+  const L = (p.laps||[]).filter(l=>l.d>0), dist = L.reduce((x,l)=>x+l.d,0);
+  const last = L[L.length-1];
+  const d1 = last && last.d < 800 ? dist-last.d : dist;
+  return {d0: Math.min(1000, dist), d1, main:false};
+}
+function decouple(a){
+  const p = a.perf || {}, mp = mainPart(a);
+  const st = getStreams(a.id);
+  // genau: Streams im Hauptteil, nur Abschnitte in Bewegung
+  if(st && st.t && st.hr && st.v && mp.t1!=null){
+    const pts = []; st.t.forEach((t,i)=>{ if(t>=mp.t0 && t<mp.t1 && st.hr[i]>0 && st.v[i]>1.2) pts.push([t, st.v[i], st.hr[i]]); });
+    if(pts.length>=60){
+      const mid = (pts[0][0]+pts[pts.length-1][0])/2;
+      const ef = arr => arr.reduce((x,q)=>x+q[1],0)/arr.reduce((x,q)=>x+q[2],0);
+      const A = pts.filter(q=>q[0]<mid), B = pts.filter(q=>q[0]>=mid);
+      if(A.length>20 && B.length>20){ const e1=ef(A), e2=ef(B); return {value:(e1-e2)/e1*100, main:mp.main}; }
+    }
+  }
+  // sonst: Kilometer-Splits, anteilig auf den Hauptteil zugeschnitten
+  const L = (p.laps||[]).filter(l=>l.hr && l.s && l.d>0);
+  if(L.length<3 || mp.d1-mp.d0 < 1500) return null;
+  const pieces = []; let acc = 0;
+  L.forEach(l => { const a0=acc, a1=acc+l.d; acc=a1; const lo=Math.max(a0,mp.d0), hi=Math.min(a1,mp.d1);
+    if(hi>lo){ const f=(hi-lo)/l.d; pieces.push({from:lo, to:hi, d:l.d*f, s:l.s*f, hr:l.hr}); } });
+  const half = (mp.d0+mp.d1)/2, A=[], B=[];
+  pieces.forEach(q => { if(q.to<=half) A.push(q); else if(q.from>=half) B.push(q);
+    else { const f=(half-q.from)/(q.to-q.from); A.push({d:q.d*f, s:q.s*f, hr:q.hr}); B.push({d:q.d*(1-f), s:q.s*(1-f), hr:q.hr}); } });
+  const ef = arr => { const d=arr.reduce((x,q)=>x+q.d,0), t=arr.reduce((x,q)=>x+q.s,0), h=arr.reduce((x,q)=>x+q.hr*q.s,0)/t; return (d/(t/60))/h; };
+  if(!A.length || !B.length) return null;
+  const e1=ef(A), e2=ef(B); return {value:(e1-e2)/e1*100, main:mp.main};
+}
 function analyze(a){
   const p = a && a.perf; if(!p) return null;
   const r = {};
@@ -749,14 +792,8 @@ function analyze(a){
       laps.forEach(l=>{ const z=hrZone(l.hr); if(z){ tz[z-1]+=l.s; tot+=l.s; } });
       if(tot) r.tiz = tz.map(x=>Math.round(x/tot*100));
     }
-    // Entkopplung Pace:HF (ohne ersten Kilometer wegen HF-Anstieg)
-    if(a.sport==='run' && laps.length>=4){
-      const L = laps.slice(1).filter(l=>l.d>0);
-      const half = L.reduce((s,l)=>s+l.d,0)/2; let acc=0; const A=[],B=[];
-      L.forEach(l=>{ (acc<half?A:B).push(l); acc+=l.d; });
-      const ef = arr => { const d=arr.reduce((s,l)=>s+l.d,0), t=arr.reduce((s,l)=>s+l.s,0), h=arr.reduce((s,l)=>s+l.hr*l.s,0)/t; return (d/(t/60))/h; };
-      if(A.length && B.length){ const e1=ef(A), e2=ef(B); r.decoupling = (e1-e2)/e1*100; }
-    }
+    // Entkopplung Pace:HF nur im Hauptteil (ohne Ein- und Auslaufen)
+    if(a.sport==='run'){ const dc = decouple(a); if(dc){ r.decoupling = dc.value; r.decMain = dc.main; } }
   }
   const ftp = S.log && S.log.zones && S.log.zones.ftp;
   if(a.sport==='ride' && p.watts && p.deviceWatts && ftp){ r.if = p.watts/ftp; r.tss = Math.round(a.movingS/3600*r.if*r.if*100); }
@@ -1624,7 +1661,7 @@ const GLOSSAR = `<dl class="gloss">
   <div><dt>RE · Relative Effort</dt><dd>Stravas Trainingslast-Wert pro Einheit, berechnet aus der Zeit in den Herzfrequenz-Zonen. Höhere Zonen zählen überproportional, deshalb sind Laufen und Rad vergleichbar. Die Balken zeigen die Wochensumme.</dd></div>
   <div><dt>Verhältnis 7 / 28 Tage</dt><dd>Relative Effort der letzten 7 Tage geteilt durch den Wochenschnitt der letzten 28 Tage. Unter 0,8 niedrig (Entlastung), 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch. Nach einer Pause fällt der Wert schnell hoch aus, weil der 28-Tage-Schnitt noch niedrig ist.</dd></div>
   <div><dt>Lauf-Effizienz</dt><dd>Meter pro Minute je Herzschlag. Höher heißt gleiches Tempo bei niedrigerem Puls. Auf Trails schwankt der Wert mit den Höhenmetern.</dd></div>
-  <div><dt>Entkopplung</dt><dd>Vergleicht Tempo pro Herzschlag in der ersten und zweiten Laufhälfte (ohne ersten Kilometer). Unter 5 % trägt die Grundlage die Dauer, 5–10 % spürbare Ermüdung, über 10 % war die Einheit für die aktuelle Form zu lang oder zu intensiv.</dd></div>
+  <div><dt>Entkopplung</dt><dd>Vergleicht Tempo pro Herzschlag in der ersten und zweiten Hälfte des Hauptteils – Ein- und Auslaufen (erste und letzte Runde der Uhr, sonst erster Kilometer) zählen nicht, Gehpausen auch nicht. Unter 5 % trägt die Grundlage die Dauer, 5–10 % spürbare Ermüdung, über 10 % war die Einheit für die aktuelle Form zu lang oder zu intensiv.</dd></div>
   <div><dt>IF · Intensity Factor</dt><dd>Durchschnittliche Wattleistung geteilt durch deine FTP. Unter 0,75 locker, 0,75–0,85 zügig, 0,85–0,95 Tempo bis Schwelle, um 1,0 Schwelle.</dd></div>
   <div><dt>TSS · Training Stress Score</dt><dd>Stunden × IF² × 100. Eine Stunde genau an der FTP ergibt 100.</dd></div>
 </dl>`;
@@ -2066,7 +2103,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Trainingslast und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
   · Trainingslast (nicht mit der RPE verwechseln): Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
   · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
-  · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
+  · Effizienz (Meter/Minute je Herzschlag) und Entkopplung Pace:HF, berechnet nur im Hauptteil ohne Ein- und Auslaufen (unter 5 % stabile Grundlage, 5–10 % Ermüdung, darüber deutlich). Auf Trails mit Höhenmetern und Steigung pro Split vorsichtig interpretieren.
   · Rad: IF und TSS bezogen auf die FTP. Mit Leistungsmesser bewertest du die Intensität nach Leistung (%FTP, Leistungszonen Z1–Z7: Z1 bis 55 %, Z2 56–75 %, Z3 76–90 %, Z4 91–105 %, Z5 106–120 %, Z6 121–150 %, Z7 darüber), nicht nach HF: Die HF steigt in Intervallen bis etwa 5 Minuten verzögert und bleibt niedriger. HF nur ergänzend (Anstieg bei gleicher Leistung).
   · Intervalle: Liegen "runden" (Rad) oder "rundenUhr" (Runden der Uhr) vor, bewerte jedes Arbeitsintervall einzeln gegen das Soll der geplanten Einheit ("geplant") und nenne Abweichungen konkret (z. B. „Intervall 3: 149 W, Ziel ab 154 W“). Ein- und Ausfahren sowie Pausen nur kurz.
   · Formentwicklung über die Wochen (Effizienz, Trainingslast) nur mit Vorsicht, solange wenige Daten vorliegen.
