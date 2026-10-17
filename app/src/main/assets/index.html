@@ -322,6 +322,55 @@ nav.tabs button{padding:4px 2px}
 .sr-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sr-btn.spin svg{animation:srspin 1s linear infinite}
 @keyframes srspin{to{transform:rotate(360deg)}}
+.mc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;margin-bottom:12px}
+.mc .mq{font-size:15px;font-weight:600;margin:6px 0 10px}
+.mc .mq small{display:block;font-weight:400;color:var(--muted);font-size:14px;margin-top:2px}
+.mc .scale{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:4px}
+.mc .scale button{height:36px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:15px;font-variant-numeric:tabular-nums;padding:0;cursor:pointer}
+.mc .scale button:nth-child(-n+3){border-color:var(--ok-soft)}
+.mc .scale-k{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+.mc .states{display:flex;flex-wrap:wrap;gap:8px}
+.mc .states button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:15px;cursor:pointer}
+.mc .states button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.mc input.where{width:100%;box-sizing:border-box;margin:10px 0 8px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:15px;background:var(--surface);color:var(--ink)}
+.mc .mfoot{display:flex;justify-content:flex-end;margin-top:8px}
+.mc .tag{white-space:nowrap}
+.mc.mcdone{padding:10px 16px}
+.mc .mrow{display:flex;align-items:center;gap:10px;font-size:15px}
+.mc .mrow .dlink{margin-left:auto;white-space:nowrap}
+.mc .mhint{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted)}
+.mc .mhint .btn{margin-left:auto;white-space:nowrap}
+.pc .pk{display:flex;justify-content:center;margin-top:4px}
+.pc .pv{min-width:22px;height:20px;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted)}
+.pc .pv.ok{background:var(--ok-soft);color:var(--ok)}.pc .pv.warn{background:var(--warn-soft);color:var(--warn)}.pc .pv.crit{background:var(--crit-soft);color:var(--crit)}
+.pc .lcol .lb{background:var(--accent-soft)}.pc .lcol.cur .lb{background:var(--accent)}
+.abs-list{display:flex;flex-direction:column;gap:6px;margin:4px 0 12px}
+.abs-row{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+.abs-row .ad{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.abs-row .ab{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.abs-row .an{color:var(--muted);font-size:14px}
+.abs-row button{border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:2px 6px;cursor:pointer}
+.absform{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.absform input,.absform select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+.absform .full{grid-column:1/-1}
+.absform label span{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
+.day .restline.away{color:var(--warn)}
+.actbar .ic.okc{color:var(--ok);border-color:var(--ok-soft)}
+.mbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;border-radius:999px;border:0;background:var(--ok-soft);color:var(--ok);font:inherit;font-weight:700;font-size:15px;cursor:pointer;margin-top:12px}
+.mbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.entry .mdone{margin-top:4px}
+.entry .mdone .btn{padding-left:0;padding-right:0}
+.absform label{min-width:0}
+.absform input{min-width:0}
+.remrow{display:grid;grid-template-columns:110px 110px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.remrow .toggle{padding:9px 0}
+.remrow input[type=time]{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;min-width:0}
+.remrow input:disabled{opacity:.45}
+.remrow .note{margin:0}
+.usage{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.usage .svcrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px}
+.usage .svcrow b{font-weight:500}
+.usage .svcrow .st{color:var(--muted);font-variant-numeric:tabular-nums}
 .restday-line{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .inrow{display:flex;gap:8px;align-items:flex-end}
 .compose .inrow textarea{flex:1;min-height:44px;height:44px;resize:none;line-height:1.35}
@@ -625,6 +674,7 @@ let dialogSince = Date.now(); // Dialog beginnt bei jedem Laden und Tab-Wechsel 
 let tab = 'heute', busy=false, ctl=null, syncBusy=false, syncMsg=null, confirmClear=false, showAll=false, draft='';
 
 try{ const h=(location.hash||'').slice(1); if(TABS[h]) tab=h; else { const t=localStorage.getItem('tb-tab'); if(TABS[t]) tab=t; } }catch(e){}
+try{ const ot = window.Android && window.Android.takeOpenTab && window.Android.takeOpenTab(); if(TABS[ot]) tab=ot; }catch(e){}
 
 /* ---------- Hilfsfunktionen ---------- */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -749,6 +799,40 @@ const painClass = p => p==null?'':(p<=2?'ok':p<=4?'warn':'crit');
 
 const complaints = () => (profile().complaints||[]).filter(Boolean);
 const careMode = () => complaints().length>0;
+/* Abwesenheiten: {from,to,type:'off'|'limited',note} */
+const absences = () => (profile().absences||[]).filter(a=>a && isDate(a.from) && isDate(a.to));
+const absenceAt = d => absences().find(a => d>=a.from && d<=a.to) || null;
+const absText = a => (a.type==='off'?'kein Training':'eingeschränkt') + (a.note?' – '+a.note:'');
+const dmRange = a => { const f=parseYmd(a.from), t=parseYmd(a.to); return f.getDate()+'.'+(f.getMonth()+1)+'.' + (a.from===a.to?'':'–'+t.getDate()+'.'+(t.getMonth()+1)+'.'); };
+/* Selbst eingetragene Einheiten (Kraft, Mobilität …) */
+const MANUAL_SPORTS = ['strength','other'];
+const isManual = a => !!(a && a.manual);
+function markDone(s){
+  const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+  log.activities = log.activities||[];
+  const sp = normSport(s.sport);
+  if(log.activities.some(a=>a.date===s.date && a.sport===sp)) return;
+  log.activities.unshift({id:'m-'+s.date+'-'+sp+'-'+Date.now().toString(36), manual:true, date:s.date, time:'', sport:sp, name:s.title||SPORT[sp], type:'',
+    distKm:0, movingS:(s.durationMin||0)*60, elev:0, re:null});
+  log.activities.sort((a,b)=> (b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  save('log'); render();
+}
+function unmarkDone(id){
+  const log = S.log; if(!log) return;
+  log.activities = (log.activities||[]).filter(a=>a.id!==id);
+  if(log.feedback) delete log.feedback[id];
+  save('log'); render();
+}
+/* Morgen-Check: Zustand am Tag nach einer Einheit */
+const checks = () => (S.log && S.log.checks) || {};
+function painIn(from, to){
+  const v = [];
+  acts().filter(a=>a.date>=from && a.date<=to).forEach(a=>{ const f=fb(a.id); if(f){ if(f.painDuring!=null) v.push(f.painDuring); if(f.painAfter!=null) v.push(f.painAfter); } });
+  Object.entries(checks()).forEach(([d,c])=>{ if(d>=from && d<=to && c && c.pain!=null) v.push(c.pain); });
+  return v.length ? Math.max(...v) : null;
+}
+const painMode = () => careMode() || (painIn(addDays(today(),-28), today())||0) > 0;
+let mcPainOpen = false;
 const userName = () => profile().name || 'der Nutzer';
 const fbTemplate = (d, hasRpe) => careMode()
   ? `Rückmeldung zur Einheit vom ${fmtDay(d)}: Schmerz während _/10, danach _/10${hasRpe?'':', RPE _/10'}. `
@@ -784,6 +868,7 @@ function render(){
   if(openK.size) window.scrollTo(0, sy);
   renderDialog();
   renderMoveDialog();
+  pushReminders();
 }
 
 /* Einheit auf einen anderen Tag verschieben */
@@ -795,6 +880,7 @@ const IC = {
   edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>',
   cancel:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
 };
+const IC_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function moveControl(s){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
@@ -805,6 +891,7 @@ function moveControl(s){
     : is==='ok' ? `<button class="pill p-ok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} aria-label="${esc(lbl)} gesendet, erneut senden">${IC.watchOk}${esc(lbl)} gesendet</button>`
     : is==='changed' ? `<button class="pill p-chg" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watchWarn}neu senden</button>` : '';
   return `<div class="actbar">${pill}<span class="acts">
+    ${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() ? `<button class="ic okc" data-action="done-mark" ${da} data-tip="Erledigt" aria-label="Als erledigt markieren">${IC_CHECK}</button>` : ''}
     <button class="ic" data-action="move-open" ${da} data-tip="Verschieben" aria-label="Verschieben">${IC.move}</button>
     <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
     <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
@@ -1032,11 +1119,30 @@ function plannedCard(s, label){
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
     ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} Schritte</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
+    ${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() && !s.cancelled ? `<button class="mbtn" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">${IC_CHECK}Erledigt</button>` : ''}
     ${moveControl(s)}
   </article>`;
 }
 
+function manualCard(a, planned){
+  const f = fb(a.id), rp = rpeOf(a);
+  const chips = [];
+  if(rp) chips.push(`<span class="chip">RPE ${rp.v}/10</span>`);
+  if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
+  if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
+  if(f && f.note) chips.push(`<span class="chip">${esc(f.note)}</span>`);
+  return `<article class="card">
+    <div class="card-head"><span class="tag done">Erledigt</span><span class="sport">${esc(SPORT[a.sport]||'')} · selbst eingetragen</span></div>
+    <h3 class="hic">${sic(a.sport, a.name)}<span>${esc(a.name)}</span></h3>
+    ${a.movingS?`<div class="target">ca. ${Math.round(a.movingS/60)} min</div>`:''}
+    ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
+    ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+    <div class="row"><span class="note">Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
+  </article>`;
+}
+
 function doneCard(a, planned, extra){
+  if(isManual(a)) return manualCard(a, planned);
   const f = fb(a.id), as = assess(a.id);
   const run = a.sport==='run' || a.sport==='walk';
   const m = [
@@ -1094,6 +1200,18 @@ function loadChart(mon){
     `<div class="lcol ${i===7?'cur':''}"><span class="lv">${vals[i]||''}</span><span class="lb" style="height:${Math.round(vals[i]/max*36)}px"></span><span class="lk">${isoWeek(w)}</span></div>`).join('')}</div>`;
 }
 
+function painChart(mon){
+  const weeks = []; for(let i=7;i>=0;i--) weeks.push(addDays(mon,-7*i));
+  const pains = weeks.map(w=>painIn(w, addDays(w,6)));
+  if(!pains.some(v=>v!=null && v>0)) return '';
+  const km = weeks.map(w=>weekStats(w).km), max = Math.max(1,...km);
+  return `<div class="card pc"><h2>Schmerz und Belastung</h2>
+    <div class="lc" role="img" aria-label="Lauf-km und höchster Schmerz der letzten 8 Wochen">${weeks.map((w,i)=>
+      `<div class="lcol ${i===7?'cur':''}"><span class="lv">${km[i]?fmtNum(km[i],0):''}</span><span class="lb" style="height:${Math.round(km[i]/max*36)}px"></span><span class="lk">${isoWeek(w)}</span>
+        <span class="pk"><span class="pv ${pains[i]==null?'':painClass(pains[i])}">${pains[i]==null?'–':pains[i]}</span></span></div>`).join('')}</div>
+    <p class="note" style="margin-top:8px">Balken: Lauf-km je Woche · Zahl: höchster Schmerz (Rückmeldungen und Morgen-Checks)</p></div>`;
+}
+
 let autoSyncTried = 0;
 function autoSync(){
   if(!window.IN_APP || !mcp || syncBusy || !S.loaded) return;
@@ -1113,6 +1231,45 @@ function syncBlock(){
     ${syncMsg&&syncMsg.err?`<div class="status err">${esc(syncMsg.text)}</div>`:''}`;
 }
 
+function checkText(c){
+  if(!c) return '';
+  if(c.state==='Schmerzen') return `Schmerz ${c.pain!=null?c.pain+'/10':''}${c.where?' · '+c.where:''}`;
+  if(c.state) return c.state;
+  return c.pain!=null ? `Schmerz ${c.pain}/10` : '';
+}
+function checkCard(){
+  const t = today(), c = checks()[t];
+  if(c && c.skipped) return '';
+  if(c){
+    const hi = c.pain!=null && c.pain>=3;
+    return `<div class="mc mcdone"><div class="mrow"><span class="tag">Morgen-Check</span><b>${esc(checkText(c))}</b>
+      <button class="dlink" data-action="check-redo">ändern</button></div>
+      ${hi?`<div class="mrow mhint"><span>Schmerz erhöht – Plan prüfen?</span><button class="btn ghost" data-action="prefill" data-text="${esc(`Morgen-Check heute: ${checkText(c)}. Bitte die nächsten Einheiten prüfen und bei Bedarf anpassen.`)}">Besprechen</button></div>`:''}</div>`;
+  }
+  const y = addDays(t,-1);
+  const ya = acts().filter(a=>a.date===y);
+  if(!ya.length) return '';
+  const what = ya.map(a=>SPORT[a.sport]||a.name).filter((v,i,arr)=>arr.indexOf(v)===i).join(' und ');
+  const scale = `<div class="scale">${Array.from({length:11},(_,i)=>`<button data-action="check-pain" data-v="${i}" aria-label="Schmerz ${i} von 10">${i}</button>`).join('')}</div>
+    <div class="scale-k"><span>schmerzfrei</span><span>stark</span></div>`;
+  let body;
+  if(painMode()){
+    const cl = complaints().join(', ');
+    body = `<div class="mq">Wie fühlt es sich heute an?<small>Schmerz${cl?' – '+esc(cl):''}, am Morgen nach ${esc(what)}</small></div>${scale}`;
+  } else {
+    const st = ['frisch','normal','müde','Muskelkater','Schmerzen'];
+    body = `<div class="mq">Wie fühlst du dich heute?<small>am Morgen nach ${esc(what)}</small></div>
+      <div class="states">${st.map(x=>`<button data-action="check-state" data-v="${x}" class="${x==='Schmerzen'&&mcPainOpen?'on':''}">${x}</button>`).join('')}</div>
+      ${mcPainOpen?`<input class="where" id="mcWhere" placeholder="Wo? z. B. Knie rechts, Achillessehne" autocomplete="off">${scale}`:''}`;
+  }
+  return `<div class="mc"><span class="tag">Morgen-Check</span>${body}<div class="mfoot"><button class="dlink" data-action="check-skip">Überspringen</button></div></div>`;
+}
+function setCheck(c){
+  const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+  log.checks = Object.assign({}, log.checks||{}, {[today()]: Object.assign(c, {ts:Date.now()})});
+  const keep = addDays(today(),-120); Object.keys(log.checks).forEach(d=>{ if(d<keep) delete log.checks[d]; });
+  mcPainOpen = false; save('log'); render();
+}
 function renderToday(){
   if(!S.loaded) return syncBlock()+`<div class="empty">Trainingsdaten werden geladen …</div>`;
   const t = today();
@@ -1128,11 +1285,12 @@ function renderToday(){
   cancelledToday.forEach(s => out.push(cancelledCard(s)));
   if(!planned.length && !done.length){
     const next = active().filter(s => s.date>t).sort((a,b)=>a.date<b.date?-1:1)[0];
-    if(!cancelledToday.length) out.push(`<div class="restday-line"><span class="tag">Heute</span><span>Ruhetag – kein Training geplant</span></div>`);
+    const abT = absenceAt(t);
+    if(!cancelledToday.length) out.push(`<div class="restday-line"><span class="tag">Heute</span><span>${abT?'Abwesend – '+esc(absText(abT)):'Ruhetag – kein Training geplant'}</span></div>`);
     if(next) out.push(plannedCard(next, 'Nächstes Training · '+fmtDay(next.date)));
     else out.push(`<div class="empty">Es gibt noch keinen Plan. Bitte Claude unten im Dialog, einen Plan für die nächsten zwei Wochen zu erstellen.</div>`);
   }
-  return syncBlock() + out.join('');
+  return syncBlock() + checkCard() + out.join('');
 }
 
 /* ---------- Gesamtplan ---------- */
@@ -1413,11 +1571,12 @@ function renderPlan(){
         ${moveControl(s)}
       </details>`;
     }).join('');
-    const doneLine = dn.map(a=>`<span class="donemark">✓ ${esc(SPORT[a.sport])} ${fmtNum(a.distKm,1)} km absolviert</span>`).join('');
+    const doneLine = dn.map(a=>`<span class="donemark">✓ ${esc(SPORT[a.sport])} ${a.distKm?fmtNum(a.distKm,1)+' km':Math.round(a.movingS/60)+' min'} ${isManual(a)?'erledigt':'absolviert'}</span>`).join('');
+    const ab = absenceAt(d);
     if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
     const isRest = !items && !doneLine;
     rows.push(`<div class="day ${i===0?'today':''} ${isRest?'restd':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="items">${items || (doneLine?'':'<span class="restline">Ruhe</span>')}${doneLine}</div></div>`);
+      <div class="items">${items || (doneLine?'':ab?`<span class="restline away">Abwesend · ${esc(absText(ab))}</span>`:'<span class="restline">Ruhe</span>')}${items&&ab?`<span class="restline away">${esc(absText(ab))}</span>`:''}${doneLine}</div></div>`);
   }
   const plan = S.plan;
   const rat = plan && plan.rationale ? `<details class="why" data-k="why14"><summary>Warum dieser Plan?${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · V'+plan.revision:''}</span>`:''}</summary><div class="rationale md">${md(plan.rationale)}</div></details>` : '';
@@ -1453,6 +1612,7 @@ function changeBanner(){
     ${busy?'<p class="note">Claude passt den Plan an …</p>':`<div><button class="btn primary" data-action="replan-changes" ${sample?'':'disabled'}>Plan jetzt anpassen</button></div>`}</div>`;
 }
 document.addEventListener('change', e => {
+  if(e.target && /^rem-(morning|evening)$/.test(e.target.id||'')){ const c=remindCfg(), k=e.target.id.slice(4); if(/^\d\d:\d\d$/.test(e.target.value)){ c[k+'Time']=e.target.value; setRemindCfg(c); } return; }
   const id = e.target && e.target.id; if(id!=='pfName' && id!=='pfPerf') return;
   const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
   if(id==='pfName') pr.name = e.target.value.trim().slice(0,40);
@@ -1513,7 +1673,8 @@ function renderHistory(){
       const p = planned.find(s=>!used.has(s) && normSport(s.sport)===a.sport); if(p) used.add(p);
       const f = fb(a.id), as = assess(a.id);
       const run = a.sport==='run'||a.sport==='walk';
-      const facts = [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm'].join(' · ');
+      const facts = !a.distKm ? Math.round(a.movingS/60)+' min'
+        : [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm'].join(' · ');
       const chips = [];
       if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
       else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
@@ -1531,6 +1692,7 @@ function renderHistory(){
         if(a.re) parts.push('RE '+a.re);
         pl = parts.join(' · ');
       } else if(a.re) pl = 'RE '+a.re;
+      if(isManual(a)) pl = 'selbst eingetragen';
       const canDetail = (a.sport==='run'||a.sport==='ride') && a.perf;
       rows.push(`<div class="entry${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
         <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||""))}<span>${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span></span>
@@ -1539,7 +1701,7 @@ function renderHistory(){
         ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
     });
     planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="body"><span class="facts">Ausgelassen: ${esc(s.title)}</span></div></div>`));
+      <div class="body"><span class="facts">Ausgelassen: ${esc(s.title)}</span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div></div>`));
     cancelledD.forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="body"><span class="facts">Abgesagt: ${esc(s.title)}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</div></div>`));
   }
@@ -1560,6 +1722,7 @@ function renderHistory(){
           <div class="metric"><span class="v">${st.ef?fmtNum(st.ef,2):'–'}</span><span class="k">Lauf-Effizienz${efd!=null?`<small>${Math.abs(efd)<0.05?'±0':(efd>0?'+':'')+fmtNum(efd,1)} % zur Vorwoche</small>`:''}</span></div>
         </div>
         ${infoOpen?GLOSSAR:''}</div>`; })()}
+    ${painChart(mon)}
     <div class="card"><div class="row"><h2>Wochenfazit</h2>${msgs?`<span class="note">${msgs} Dialognachrichten in dieser Woche</span>`:''}</div>
       ${ws?(()=>{ const sh = wsShort(ws.text); return `<div class="summary md">${md(sh && !fazitOpen ? sh : ws.text)}</div>${sh?`<button class="dlink" data-action="ws-more">${fazitOpen?'Weniger anzeigen':'Mehr anzeigen'}</button>`:''}`; })():`<p class="muted">Noch kein Fazit für diese Woche.</p>`}
       ${wa.length?`<div><button class="btn" data-action="week-summary" data-mon="${mon}" ${sample&&!busy?'':'disabled'}>${ws?'Fazit aktualisieren':'Fazit von Claude erstellen'}</button></div>`:''}</div>
@@ -1569,6 +1732,65 @@ function renderHistory(){
 /* ---------- Nur in der Android-App: Verbindungen und Datensicherung ---------- */
 const MODELS = [['claude-sonnet-5-5','Claude Sonnet 5.5 (empfohlen)'],['claude-opus-5-5','Claude Opus 5.5 (gründlicher, teurer)'],['claude-haiku-5-5','Claude Haiku 5.5 (schnell, günstig)']];
 function appStatus(){ try{ return JSON.parse(window.Android.getStatus()); }catch(e){ return {}; } }
+/* ---------- Erinnerungen (Android-Benachrichtigungen) ---------- */
+function remindCfg(){ let c={}; try{ c=JSON.parse(localStorage.getItem('ld-remind')||'{}'); }catch(_){} return Object.assign({morningOn:false, morningTime:'07:00', eveningOn:false, eveningTime:'20:00'}, c); }
+function setRemindCfg(c){ try{ localStorage.setItem('ld-remind', JSON.stringify(c)); }catch(_){} pushReminders(true); }
+function notifPerm(){ try{ return window.Android.notifPermission(); }catch(_){ return 'granted'; } }
+function remindItems(){
+  const t = today(), out = {morning:[], evening:[]};
+  const cl = complaints().join(', ');
+  for(let i=0;i<8;i++){
+    const d = addDays(t,i), y = addDays(d,-1);
+    const ses = active().filter(s=>s.date===d && normSport(s.sport)!=='rest');
+    const ab = absenceAt(d);
+    // Morgen-Check: heute nach einer Aktivität gestern (noch nicht beantwortet), später nach einer geplanten Einheit am Vortag
+    const chk = d===t ? (acts().some(a=>a.date===y) && !checks()[t]) : active().some(s=>s.date===y && normSport(s.sport)!=='rest' && !(absenceAt(y)&&absenceAt(y).type==='off'));
+    if(!(ab && ab.type==='off') && (ses.length || chk)){
+      const main = ses[0];
+      const tgt = main ? [main.distanceKm?fmtNum(main.distanceKm, main.distanceKm%1?1:0)+' km':'', main.durationMin?'ca. '+main.durationMin+' min':''].filter(Boolean).join(' · ') : '';
+      const ct = chk ? (painMode() ? 'Morgen-Check: Wie ist es heute?'+(cl?' ('+cl+')':'') : 'Morgen-Check: Wie fühlst du dich heute?') : '';
+      out.morning.push({date:d, title: main ? 'Heute: '+(main.title||SPORT[normSport(main.sport)]) + (ses.length>1?' (+'+(ses.length-1)+')':'') : 'Morgen-Check',
+        text: [tgt, ct].filter(Boolean).join(' · ') || 'Tippen, um die Einheit anzusehen.'});
+    }
+    // Abends: Rückmeldung zur geplanten Einheit, sofern noch keine vorliegt
+    if(ses.length && !(ab && ab.type==='off')){
+      const doneToday = acts().filter(a=>a.date===d);
+      const missingFb = d!==t || !doneToday.length || doneToday.some(a => { const f=fb(a.id); return careMode() ? (!f || (f.painDuring==null && f.painAfter==null)) : !rpeOf(a); });
+      if(missingFb) out.evening.push({date:d, title:`Wie lief „${ses[0].title||'das Training'}“?`,
+        text: careMode() ? 'Kurz Rückmeldung geben: Schmerz während und danach, RPE.' : 'Kurz Rückmeldung geben: RPE und Befinden.'});
+    }
+  }
+  return out;
+}
+let lastRemind = '';
+function pushReminders(force){
+  if(!IN_APP || !S.loaded || !window.Android || !window.Android.setReminders) return;
+  const c = remindCfg();
+  const it = (c.morningOn||c.eveningOn) ? remindItems() : {morning:[], evening:[]};
+  const js = JSON.stringify(Object.assign({}, c, it));
+  if(js===lastRemind && !force) return;
+  lastRemind = js;
+  try{ window.Android.setReminders(js); }catch(_){}
+}
+function remindCard(){
+  const c = remindCfg(), perm = notifPerm();
+  const row = (k, label, desc) => `<div class="remrow"><button class="toggle" data-action="rem-toggle" data-k="${k}" aria-pressed="${!!c[k+'On']}">${label}</button>
+    <input type="time" id="rem-${k}" value="${esc(c[k+'Time'])}" ${c[k+'On']?'':'disabled'} aria-label="Uhrzeit ${label}"><span class="note">${desc}</span></div>`;
+  return `<div class="card"><h2>Erinnerungen</h2>
+    ${row('morning','Morgens','Einheit des Tages und Morgen-Check')}
+    ${row('evening','Abends','Rückmeldung, falls sie noch fehlt')}
+    ${(c.morningOn||c.eveningOn) && perm==='denied' ? `<div class="status err">Benachrichtigungen sind für „Lauf doch!“ ausgeschaltet. Erlaube sie in den Android-Einstellungen unter Apps → Lauf doch! → Benachrichtigungen.</div>` : ''}
+    <p class="note">Die Texte stammen vom Stand beim letzten Öffnen der App. Was danach in Strava dazukommt, kennt die Erinnerung noch nicht.</p></div>`;
+}
+function usageBlock(){
+  let all = {}; try{ all = JSON.parse(localStorage.getItem('ld-usage')||'{}'); }catch(_){}
+  const MN = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const now = new Date(), cur = now.toISOString().slice(0,7), prev = new Date(now.getFullYear(), now.getMonth()-1, 15).toISOString().slice(0,7);
+  const line = k => { const r = all[k], m = MN[Number(k.slice(5,7))-1];
+    return `<div class="svcrow"><b>${m}</b><span class="st">${r ? `${r.n} ${r.n===1?'Anfrage':'Anfragen'} · ca. ${fmtNum(r.usd, r.usd<10?2:1)} $` : 'keine Anfragen'}</span></div>`; };
+  return `<div class="usage"><b>Verbrauch</b>${line(cur)}${all[prev]?line(prev):''}
+    <p class="note">Schätzung nach Listenpreisen des gewählten Modells (Stand 09/2026), inklusive Prompt-Caching. Die genaue Abrechnung steht in der Anthropic Console.</p></div>`;
+}
 function connCard(){
   const st = appStatus();
   const mLab = (MODELS.find(m=>m[0]===st.model)||MODELS[0])[1].replace(/ \(.*\)$/,'').replace('Claude ','');
@@ -1579,7 +1801,8 @@ function connCard(){
       <p class="note">${st.claudeKey?'API-Schlüssel hinterlegt.':'Noch kein API-Schlüssel. Anlegen unter console.anthropic.com → API Keys.'} Abgerechnet wird nach Verbrauch über dein Anthropic-Konto.</p>
       <input id="cfKey" type="password" autocomplete="off" placeholder="${st.claudeKey?'Neuen Schlüssel eintragen (optional)':'sk-ant-…'}">
       <select id="cfModel" class="sel">${MODELS.map(([v,l])=>`<option value="${v}" ${st.model===v?'selected':''}>${l}</option>`).join('')}</select>
-      <div><button class="btn" data-action="cf-claude">Speichern</button></div></div>`) +
+      <div><button class="btn" data-action="cf-claude">Speichern</button></div>
+      ${usageBlock()}</div>`) +
     svc('strava','Strava', !!st.stravaConnected, st.stravaConnected ? (st.stravaAthlete||'verbunden') : 'nicht verbunden', `
     <div class="fld">
       ${st.stravaConnected?`<div class="row"><p>Verbunden${st.stravaAthlete?' als '+esc(st.stravaAthlete):''}.</p><button class="btn" data-action="cf-strava-off">Trennen</button></div>`
@@ -1634,6 +1857,17 @@ function renderSettings(){
       <div class="fld"><span>Trainingstage</span>
       <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div>
       <p class="note">An diesen Tagen kann Claude Einheiten planen. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p></div></div>
+    <div class="card"><h2>Abwesenheiten</h2>
+      <p class="muted">Urlaub, Dienstreisen, Klassenfahrten: Claude plant diese Zeiträume im Wochen- und Gesamtplan ein.</p>
+      ${(() => { const list = absences().filter(a=>a.to>=today()).sort((a,b)=>a.from.localeCompare(b.from));
+        return list.length ? `<div class="abs-list">${list.map(a=>`<div class="abs-row"><span class="ab"><span class="ad">${esc(dmRange(a))}</span><span class="an">${esc(absText(a))}</span></span><button data-action="abs-rm" data-from="${esc(a.from)}" data-to="${esc(a.to)}" aria-label="Abwesenheit entfernen">×</button></div>`).join('')}</div>` : ''; })()}
+      <div class="absform">
+        <label><span>Von</span><input id="absFrom" type="date" min="${today()}"></label>
+        <label><span>Bis</span><input id="absTo" type="date" min="${today()}"></label>
+        <label class="full"><span>Art</span><select id="absType"><option value="off">Kein Training möglich</option><option value="limited">Eingeschränkt (Notiz beachten)</option></select></label>
+        <label class="full"><span>Notiz</span><input id="absNote" type="text" maxlength="80" placeholder="z. B. Klassenfahrt, nur Laufen möglich"></label>
+        <div class="full"><button class="btn" data-action="abs-add">Hinzufügen</button></div>
+      </div></div>
     <div class="card"><h2>Fitness und Beschwerden</h2>
       <p class="muted">${cs.length?'Claude plant vorsichtig, fragt nach Schmerz an diesen Stellen und steigert nur bei stabilen Signalen.':'Keine Beschwerden eingetragen. Claude plant leistungsorientiert auf dein Ziel hin.'}</p>
       ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
@@ -1644,7 +1878,7 @@ function renderSettings(){
       <button class="lrow" data-action="bg-open"><span><b>Hintergrund</b><small>Vorgeschichte und Rahmen für jede Planung</small></span><span class="cnt">›</span></button>
       <button class="lrow" data-action="hist-open"><span><b>Dialogverlauf</b><small>Gespeicherte Nachrichten zwischen dir und Claude</small></span><span class="cnt">${(S.chat&&S.chat.messages||[]).length||''} ›</span></button>
     </div></div>
-    ${IN_APP?connCard():''}`;
+    ${IN_APP?remindCard()+connCard():''}`;
 }
 
 /* Vorschläge im Dialogfeld: aus der aktuellen Lage abgeleitet (Regeln, kein Claude-Aufruf) */
@@ -1652,7 +1886,7 @@ function renderSettings(){
 const TOPICS = {
   heute: [['Aktivität nachtragen','Aktivität nachtragen: ','z. B. 30 min Kraft zu Hause, RPE 5'],
           ['Rückmeldung','Rückmeldung: ','z. B. Knie beim Lauf 1/10, danach 0, RPE 4, Beine schwer'],
-          ['Heute anders','Heute anders: ','z. B. nur 30 min Zeit, erkältet, Lust auf mehr']],
+          ['Umplanen','Umplanen: ','z. B. heute nur 30 min, Lauf auf morgen schieben, erkältet']],
   plan: [['Training planen','Training planen: ','z. B. Samstag lieber Trail statt Straße, nächste Woche mehr Rad'],
          ['Termine','Termine: ','z. B. 24.–31.10. Urlaub ohne Laufschuhe, Wettkampf am …'],
          ['Ziel','Ziel: ','z. B. Halbmarathon im Frühjahr unter 2 h']],
@@ -1728,7 +1962,15 @@ async function syncStrava(){
     const incoming = list.map(compact);
     const fresh = incoming.filter(a=>!known.has(a.id));
     const byId = new Map(log.activities.map(a=>[a.id,a])); incoming.forEach(a=>byId.set(a.id, Object.assign({}, byId.get(a.id)||{}, a)));
-    log.activities = [...byId.values()].sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time)).slice(0,120);
+    let merged = [...byId.values()];
+    merged.filter(isManual).forEach(m => {
+      const real = merged.find(x => !isManual(x) && x.date===m.date && x.sport===m.sport);
+      if(!real) return;
+      if(log.feedback[m.id] && !log.feedback[real.id]) log.feedback[real.id] = log.feedback[m.id];
+      delete log.feedback[m.id];
+      merged = merged.filter(x => x.id!==m.id);
+    });
+    log.activities = merged.sort((a,b)=> (b.date+(b.time||'')).localeCompare(a.date+(a.time||''))).slice(0,120);
     log.lastSync = new Date().toISOString();
     try{
       const z = (await mcp.callTool(SERVER,'get_athlete_zones',{},{cache:false})).payload || {};
@@ -1748,7 +1990,8 @@ async function syncStrava(){
     }
     // in den aktuellen Stand übernehmen (Rückmeldungen/Fazits können sich währenddessen geändert haben)
     const cur = S.log || {};
-    S.log = Object.assign({}, cur, {activities: log.activities, zones: log.zones || cur.zones, lastSync: log.lastSync});
+    S.log = Object.assign({}, cur, {activities: log.activities, feedback: Object.assign({}, cur.feedback||{}, log.feedback), zones: log.zones || cur.zones, lastSync: log.lastSync});
+    Object.keys(S.log.feedback).forEach(k => { if(k.startsWith('m-') && !log.activities.some(a=>a.id===k)) delete S.log.feedback[k]; });
     await save('log');
     syncMsg = {text: fresh.length ? fresh.length+(fresh.length===1?' neue Aktivität':' neue Aktivitäten')+' übernommen.' : 'Keine neuen Aktivitäten.'};
     syncBusy=false; render();
@@ -1788,7 +2031,7 @@ function buildContext(){
         return r.laps.map((l,i)=>{ const nz = st && rg[i] ? streamAvg(st,'w',rg[i].from,rg[i].to,true) : null;
           return `R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W${nz && nz-l.w>=5?` (ohne Stopp ${Math.round(nz)}W)`:''} ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`; }).join(' | '); })() : undefined,
       geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
-    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
+    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) || undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
       belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
   });
   const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null}); }
@@ -1800,7 +2043,7 @@ function buildContext(){
 
 Regeln:
 - Antworte auf Deutsch, direkt, knapp und fachlich präzise. Formatierung sparsam: kurze Absätze, bei Bedarf Aufzählungen mit „- “ und **fett** für Stichwörter; keine Überschriften, Tabellen oder Links. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
-${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel. Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
+${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel (Folgetag: siehe MORGEN-CHECKS). Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
 - Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
 - „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava" aus Strava), frag nicht erneut.
 - Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) vorliegt, frage danach; nach der RPE nur, wenn sie weder in der Rückmeldung noch aus Strava vorliegt.`
@@ -1826,7 +2069,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - "short" ist nur die Bewertung in wenigen Worten (z. B. „locker und kontrolliert, Tempo etwas zu zügig“). Wiederhole darin keine Werte, die die App ohnehin zeigt: Schmerz, RPE, Distanz, Pace, Höhenmeter, HF, Zonen, Effizienz, Entkopplung, Relative Effort, Trainingslast. Auch im Wochenfazit Rückmeldewerte nur nennen, wenn sie für die Bewertung wichtig sind.
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
-- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}oder Leistungsstand ändern oder ein klarer Anlass besteht: mindestens eine Woche mit deutlich weniger als 70 % des Wochen-Solls (Ausfall, Krankheit, Verhinderung), Beschwerdesignale über mehrere Einheiten, ein Übergangskriterium deutlich früher als geplant erfüllt oder ausdrücklicher Wunsch von ${nm}. Dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum. Einzelne verschobene Einheiten oder kleine Schwankungen sind kein Anlass. Sonst lass ihn weg. Der Plan bis Ende nächster Woche leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diesen Planungszeitraum betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
+- Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}, Abwesenheiten oder Leistungsstand ändern oder ein klarer Anlass besteht: mindestens eine Woche mit deutlich weniger als 70 % des Wochen-Solls (Ausfall, Krankheit, Verhinderung), Beschwerdesignale über mehrere Einheiten, ein Übergangskriterium deutlich früher als geplant erfüllt oder ausdrücklicher Wunsch von ${nm}. Dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum. Einzelne verschobene Einheiten oder kleine Schwankungen sind kein Anlass. Sonst lass ihn weg. Der Plan bis Ende nächster Woche leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diesen Planungszeitraum betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg. Halte die Antwort kompakt und gültiges JSON: Anführungszeichen innerhalb von Texten als „…“ schreiben.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -1840,18 +2083,23 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "trainingDays":[2,4,6],
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
+   "absences":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","type":"off|limited","note":"Urlaub, nur Wandern"}],
    "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
    "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
  }}
-Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" ist immer die vollständige Liste. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
+Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" und "absences" sind immer die vollständige Liste (nur liefern, wenn ${nm} eine Abwesenheit nennt oder ändert). An Tagen mit Abwesenheit "kein Training" planst du nichts; bei "eingeschränkt" richtest du dich nach der Notiz. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
 `HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}. Aktiver Tab in der App: ${tab}.`,
 `KALENDER (heute bis ${planEnd()}): ${Array.from({length:planDays()},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
+  const ab = absenceAt(d);
+  if(ab) return `${d} ${WD_LONG[wd]} (${ab.type==='off'?'abwesend, kein Training':'eingeschränkt: '+(ab.note||'siehe Notiz')}${ab.type==='off'&&ab.note?' – '+ab.note:''})`;
   return `${d} ${WD_LONG[wd]}${bl.includes(d)?' (gesperrt, Nutzer kann nicht)':al.includes(d)?' (Trainingstag, Einheit dorthin verschoben)':(pr.trainingDays||[]).includes(wd)?' (Trainingstag)':''}`; }).join('; ')}`,
 `ZIEL: ${pr.goal&&pr.goal.text ? pr.goal.text+(pr.goal.date?' (Zieldatum '+pr.goal.date+')':'') : 'noch nicht festgelegt'}`,
 `BESCHWERDEN: ${cl||'keine'}`,
+`ABWESENHEITEN: ${absences().filter(a=>a.to>=t).map(a=>a.from+' bis '+a.to+' '+(a.type==='off'?'kein Training':'eingeschränkt')+(a.note?' ('+a.note+')':'')).join('; ')||'keine'}`,
+`MORGEN-CHECKS (Zustand am Tag nach einer Einheit, letzte 4 Wochen): ${Object.entries(checks()).filter(([d,c])=>d>=addDays(t,-28) && c && !c.skipped).sort().map(([d,c])=>d+' '+checkText(c)).join('; ')||'keine'}`,
 `LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
 `ERKENNTNISSE: ${(pr.insights||[]).length ? (pr.insights||[]).map(x=>'- '+x).join('\n') : 'noch keine'}`,
 `TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}`,
@@ -1889,12 +2137,13 @@ async function applyUpdates(u){
   if(Array.isArray(u.trainingDays)){ pr.trainingDays = [...new Set(u.trainingDays.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6))].sort(); pc=true; }
   if(Array.isArray(u.sports)){ pr.sports = [...new Set(u.sports.map(normSport))]; pc=true; }
   if(typeof u.background==='string' && u.background.trim()){ pr.background = u.background.slice(0,2000); pc=true; }
+  if(Array.isArray(u.absences)){ pr.absences = u.absences.filter(x=>x && isDate(x.from)).map(x=>({from:x.from, to:isDate(x.to)&&x.to>=x.from?x.to:x.from, type:x.type==='limited'?'limited':'off', note:x.note?String(x.note).slice(0,80):undefined})).slice(0,20).sort((x,y)=>x.from.localeCompare(y.from)); pc=true; }
   if(u.plan && Array.isArray(u.plan.sessions)){
     // Einheiten an Nicht-Trainingstagen nur, wenn ausdrücklich als Zusatz markiert
     const td = new Set(pr.trainingDays||[]);
     const allow = new Set(((S.plan&&S.plan.allowDates)||[]).filter(d=>d>=t));
     const blocked = new Set(((S.plan&&S.plan.blockedDates)||[]).filter(d=>d>=t));
-    const ok = s => { if(blocked.has(s.date) && !s.extra) return false; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
+    const ok = s => { if(blocked.has(s.date) && !s.extra) return false; const ab = absenceAt(s.date); if(ab && ab.type==='off') return false; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
     const fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && s.date<=planEnd() && ok(s));
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
@@ -2123,7 +2372,8 @@ async function checkMissed(){
     await q;
   } finally { missedBusy = false; }
 }
-window.addEventListener('appresume', () => { render(); setTimeout(checkMissed, 300); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 500); });
+window.addEventListener('appresume', () => {
+  try{ const ot = window.Android && window.Android.takeOpenTab && window.Android.takeOpenTab(); if(ot && TABS[ot]){ tab=ot; detailId=null; try{localStorage.setItem('tb-tab',tab)}catch(_){} window.scrollTo({top:0}); } }catch(_){} render(); setTimeout(checkMissed, 300); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 500); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
 
 /* ---------- Langes Drücken auf Symbolknöpfe zeigt den Namen ---------- */
@@ -2173,6 +2423,10 @@ document.addEventListener('click', async e => {
   else if(a==='more'){ showAll=true; renderDialog(); }
   else if(a==='topic'){ const ta0=document.getElementById('msgInput'); if(ta0) draft=ta0.value; const l=b.dataset.label; if(topicSel===l){ topicSel=''; topicHint=''; } else { topicSel=l; topicHint=b.dataset.hint||''; } renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='ws-more'){ fazitOpen = !fazitOpen; render(); }
+  else if(a==='check-pain'){ const v=Number(b.dataset.v); if(painMode()) setCheck({pain:v}); else { const w=(document.getElementById('mcWhere')||{}).value||''; setCheck({state:'Schmerzen', pain:v, where:w.trim().slice(0,60)||undefined}); } }
+  else if(a==='check-state'){ if(b.dataset.v==='Schmerzen'){ mcPainOpen=!mcPainOpen; render(); } else setCheck({state:b.dataset.v}); }
+  else if(a==='check-skip'){ setCheck({skipped:true}); }
+  else if(a==='check-redo'){ const log=S.log; if(log && log.checks){ delete log.checks[today()]; save('log'); } render(); }
   else if(a==='prefill'){ draft=b.dataset.text||''; renderDialog(); const ta=document.getElementById('msgInput'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); ta.scrollIntoView({block:'center',behavior:'smooth'}); } }
   else if(a==='assess'){ const x=acts().find(y=>y.id===b.dataset.id); if(x) askClaude(`Bitte schätze die Einheit „${x.name}“ vom ${fmtDay(x.date)} (ID ${x.id}) ein.`); }
   else if(a==='week-prev'){ weekOffset++; render(); }
@@ -2184,6 +2438,27 @@ document.addEventListener('click', async e => {
     pr.complaints = list; markChange('complaints', 'Beschwerden: '+(list.join(', ')||'keine')); render(); save('profile');
   }
   else if(a==='replan-changes') replanFromChanges();
+  else if(a==='rem-toggle'){ const c=remindCfg(), k=b.dataset.k; c[k+'On']=!c[k+'On']; if(c[k+'On'] && notifPerm()==='ask'){ try{ window.Android.requestNotifPermission(); }catch(_){} } setRemindCfg(c); render(); }
+  else if(a==='abs-add' || a==='abs-rm'){
+    const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
+    let list = (pr.absences||[]).filter(x=>x && x.to>=addDays(today(),-30));
+    let txt;
+    if(a==='abs-add'){
+      const g = id => (document.getElementById(id)||{}).value||'';
+      let from = g('absFrom'), to = g('absTo') || from; const type = g('absType')==='limited'?'limited':'off', note = g('absNote').trim().slice(0,80);
+      if(!isDate(from)) return; if(!isDate(to) || to<from) to = from;
+      const item = {from, to, type, note: note||undefined};
+      list.push(item); txt = 'Abwesenheit '+dmRange(item)+': '+absText(item);
+    } else {
+      const item = list.find(x=>x.from===b.dataset.from && x.to===b.dataset.to);
+      list = list.filter(x=>x!==item); if(item) txt = 'Abwesenheit entfernt: '+dmRange(item);
+    }
+    pr.absences = list.sort((x,y)=>x.from.localeCompare(y.from));
+    if(txt) markChange('abs-'+Date.now(), txt);
+    render(); save('profile');
+  }
+  else if(a==='done-mark'){ const s0 = active().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(s0) markDone(s0); }
+  else if(a==='done-undo'){ unmarkDone(b.dataset.id); }
   else if(a==='rpe-set'){
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     log.feedback = log.feedback||{};

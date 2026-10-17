@@ -1,11 +1,14 @@
 package de.laufdoch;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.webkit.JavascriptInterface;
@@ -43,6 +46,8 @@ public class MainActivity extends Activity {
     private static final String STRAVA_REDIRECT = "laufdoch://laufdoch.app/strava";
     private static final String DEFAULT_MODEL = "claude-sonnet-5-5";
     private static final int REQ_BACKUP = 42;
+    private static final int REQ_NOTIF = 43;
+    private volatile String openTab = null;
 
     private WebView web;
     private SharedPreferences prefs;
@@ -107,6 +112,12 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_NOTIF) web.evaluateJavascript("window.dispatchEvent(new Event('appresume'))", null);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != REQ_BACKUP || resultCode != RESULT_OK || data == null || data.getData() == null) return;
@@ -122,6 +133,11 @@ public class MainActivity extends Activity {
 
     /** Rücksprung aus der Strava-Anmeldung: Code gegen Tokens tauschen. */
     private void handleIntent(Intent intent) {
+        if (intent != null && intent.getStringExtra("open_tab") != null) {
+            openTab = intent.getStringExtra("open_tab");
+            intent.removeExtra("open_tab");
+            if (web != null) web.evaluateJavascript("window.dispatchEvent(new Event('appresume'))", null);
+        }
         if (intent == null || intent.getData() == null) return;
         Uri u = intent.getData();
         if (!"laufdoch".equals(u.getScheme())) return;
@@ -425,6 +441,36 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void toast(String msg) {
             MainActivity.this.toast(msg);
+        }
+
+        /** Erinnerungen: Einstellungen und Texte je Tag ablegen und Weckzeiten setzen. */
+        @JavascriptInterface
+        public void setReminders(String json) {
+            prefs.edit().putString("remind_cfg", json).apply();
+            ReminderReceiver.schedule(MainActivity.this);
+        }
+
+        /** "granted", "denied" oder "ask" (Android 13+: noch nicht gefragt bzw. erneut fragbar). */
+        @JavascriptInterface
+        public String notifPermission() {
+            if (Build.VERSION.SDK_INT < 33) return "granted";
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return "granted";
+            return prefs.getBoolean("notif_asked", false) && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) ? "denied" : "ask";
+        }
+
+        @JavascriptInterface
+        public void requestNotifPermission() {
+            if (Build.VERSION.SDK_INT < 33) return;
+            prefs.edit().putBoolean("notif_asked", true).apply();
+            runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF));
+        }
+
+        /** Tab, den eine angetippte Benachrichtigung öffnen soll (einmalig). */
+        @JavascriptInterface
+        public String takeOpenTab() {
+            String t = openTab;
+            openTab = null;
+            return t == null ? "" : t;
         }
     }
 

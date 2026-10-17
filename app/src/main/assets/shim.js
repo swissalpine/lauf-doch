@@ -164,6 +164,22 @@
     if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch(e) {} }
     throw {code:'invalid_json', message:'Antwort war kein JSON', text:text};
   }
+  // Verbrauch je Monat mitschreiben (Listenpreise in US-$ je 1 Mio. Token: Eingabe, Cache schreiben, Cache lesen, Ausgabe)
+  const PRICES = {'claude-sonnet-5-5':[2,2.5,0.2,10], 'claude-opus-5-5':[4,5,0.2,20], 'claude-haiku-5-5':[1,1.25,0.1,5]};
+  function trackUsage(u){
+    try {
+      let model = ''; try { model = JSON.parse(window.Android.getStatus()).model || ''; } catch(e) {}
+      const p = PRICES[model] || PRICES['claude-sonnet-5-5'];
+      const i = u.input_tokens||0, cw = u.cache_creation_input_tokens||0, cr = u.cache_read_input_tokens||0, o = u.output_tokens||0;
+      const key = 'ld-usage', all = JSON.parse(localStorage.getItem(key) || '{}');
+      const m = new Date().toISOString().slice(0,7);
+      const r = all[m] || (all[m] = {n:0, i:0, cw:0, cr:0, o:0, usd:0});
+      r.n++; r.i += i; r.cw += cw; r.cr += cr; r.o += o;
+      r.usd += (i*p[0] + cw*p[1] + cr*p[2] + o*p[3]) / 1e6;
+      Object.keys(all).sort().slice(0, -13).forEach(function(k){ delete all[k]; });
+      localStorage.setItem(key, JSON.stringify(all));
+    } catch(e) {}
+  }
   async function ask(input, opts, system){
     const messages = typeof input === 'string' ? [{role:'user', content:input}] : merge(input);
     // Feste Regeln (bis zur Marke) als zwischengespeicherten Block senden (Prompt-Caching)
@@ -176,7 +192,7 @@
       ];
     }
     const res = await call('claude', {messages: messages, system: system});
-    if (res && res.usage) console.log('Claude-Token', JSON.stringify(res.usage));
+    if (res && res.usage) { console.log('Claude-Token', JSON.stringify(res.usage)); trackUsage(res.usage); }
     if (opts && typeof opts.onText === 'function') { try { opts.onText({text: res.text, delta: res.text}); } catch(e) {} }
     return res;
   }
