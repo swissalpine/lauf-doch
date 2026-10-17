@@ -881,7 +881,7 @@ const IC = {
   cancel:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
 };
 const IC_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-function moveControl(s){
+function moveControl(s, noCheck){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
@@ -891,7 +891,7 @@ function moveControl(s){
     : is==='ok' ? `<button class="pill p-ok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} aria-label="${esc(lbl)} gesendet, erneut senden">${IC.watchOk}${esc(lbl)} gesendet</button>`
     : is==='changed' ? `<button class="pill p-chg" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watchWarn}neu senden</button>` : '';
   return `<div class="actbar">${pill}<span class="acts">
-    ${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() ? `<button class="ic okc" data-action="done-mark" ${da} data-tip="Erledigt" aria-label="Als erledigt markieren">${IC_CHECK}</button>` : ''}
+    ${!noCheck && MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() ? `<button class="ic okc" data-action="done-mark" ${da} data-tip="Erledigt" aria-label="Als erledigt markieren">${IC_CHECK}</button>` : ''}
     <button class="ic" data-action="move-open" ${da} data-tip="Verschieben" aria-label="Verschieben">${IC.move}</button>
     <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
     <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
@@ -1118,9 +1118,9 @@ function plannedCard(s, label){
     <h3 class="hic">${rest?'':sic(normSport(s.sport), s.title)}<span>${esc(s.title||'Training')}</span></h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
-    ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} Schritte</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
+    ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} ${steps.length===1?'Schritt':'Schritte'}</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
     ${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() && !s.cancelled ? `<button class="mbtn" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">${IC_CHECK}Erledigt</button>` : ''}
-    ${moveControl(s)}
+    ${moveControl(s, true)}
   </article>`;
 }
 
@@ -2057,7 +2057,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava"), frag nicht erneut.
 - Wenn zu einer neuen Aktivität weder RPE noch Befinden bekannt sind, frage danach. Treten Schmerzen auf, frage, ob du sie als Beschwerde eintragen sollst.`}
 - Stelle höchstens eine Rückfrage pro Antwort.
-- Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen).
+- Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen). Kraft-, Mobilitäts- und Dehnübungen planst du immer als eigene Einheit ("sport":"strength", auch am selben Tag wie ein Lauf), nie als Schritt einer Lauf- oder Radeinheit – so kann ${nm} sie getrennt abhaken.
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
 - Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" (z. B. "154–184 W (Z3)"). Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
@@ -2119,6 +2119,26 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
   ].join('\n\n');
 }
 
+/* Kraft-/Dehnschritte aus Lauf- und Radeinheiten als eigene Krafteinheit abtrennen */
+const STR_STEP = /^(kraft|dehn|mobili|stabi|gymnastik|athletik|core|rumpf|beweglich|faszien|übungen)/i;
+function splitStrength(list){
+  let changed = false; const out = [];
+  list.forEach(s => {
+    const sp = normSport(s.sport);
+    const steps = Array.isArray(s.steps) ? s.steps : [];
+    const k = (sp==='run'||sp==='ride') && !s.cancelled ? steps.filter(st => STR_STEP.test(String(st&&st.label||'').trim())) : [];
+    if(!k.length || k.length===steps.length){ out.push(s); return; }
+    changed = true;
+    out.push(Object.assign({}, s, {steps: steps.filter(st => !k.includes(st))}));
+    const ks = k.map(st => ({label:st.label, detail:st.detail, rpe:st.rpe}));
+    const mins = k.reduce((sum,st) => { const m = String(st.detail||'').match(/(\d+)\s*min/); return sum + (m ? Number(m[1]) : 0); }, 0);
+    const ex = out.concat(list).find(x => x!==s && x.date===s.date && normSport(x.sport)==='strength' && !x.cancelled);
+    if(ex){ ex.steps = (Array.isArray(ex.steps)?ex.steps:[]).concat(ks); return; }
+    out.push({date:s.date, sport:'strength', extra:true, title: sp==='run' ? 'Kraft nach dem Lauf' : 'Kraft nach dem Radfahren',
+      goal: 'Ergänzung zu „'+(s.title||'Training')+'“', distanceKm:null, durationMin: mins || 10, steps: ks});
+  });
+  return changed ? out : null;
+}
 function cleanSession(s){
   if(!s || !isDate(s.date)) return null;
   return {date:s.date, sport:normSport(s.sport), extra: s.extra===true || undefined, title:String(s.title||'Training').slice(0,120), goal:s.goal?String(s.goal).slice(0,600):'',
@@ -2148,7 +2168,8 @@ async function applyUpdates(u){
     const allow = new Set(((S.plan&&S.plan.allowDates)||[]).filter(d=>d>=t));
     const blocked = new Set(((S.plan&&S.plan.blockedDates)||[]).filter(d=>d>=t));
     const ok = s => { if(blocked.has(s.date) && !s.extra) return false; const ab = absenceAt(s.date); if(ab && ab.type==='off') return false; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
-    const fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && s.date<=planEnd() && ok(s));
+    let fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && s.date<=planEnd() && ok(s));
+    fresh = splitStrength(fresh) || fresh;
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
     const keptCx = sessions().filter(s=>s.date>=t && s.cancelled);
     S.plan = {sessions: past.concat(keptCx, fresh.filter(f=>!keptCx.some(c=>c.date===f.date && c.title===f.title))).sort((a,b)=>a.date.localeCompare(b.date)), rationale:String(u.plan.rationale||(S.plan&&S.plan.rationale)||'').slice(0,4000), updatedAt:new Date().toISOString(), revision:((S.plan&&S.plan.revision)||0)+1,
@@ -2605,6 +2626,10 @@ render();
   ['profile','plan','log','chat'].forEach(name => {
     db.doc('data/users/'+uid+'/'+name).onSnapshot(snap => {
       S[name] = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
+      if(name==='plan' && S.plan && Array.isArray(S.plan.sessions)){
+        const t0 = today(), fut = S.plan.sessions.filter(x=>x.date>=t0), sp2 = splitStrength(fut);
+        if(sp2){ S.plan.sessions = S.plan.sessions.filter(x=>x.date<t0).concat(sp2).sort((a,b)=>a.date.localeCompare(b.date)); setTimeout(()=>save('plan'), 0); }
+      }
       if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 800); } }
       if(!(busy && name==='chat')) render();
     }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
