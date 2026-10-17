@@ -1,3 +1,5 @@
+import java.time.LocalDate
+
 plugins {
     id("com.android.application")
 }
@@ -17,7 +19,7 @@ android {
         versionCode = 74
         versionName = "1.73"
         // Erscheinungsdatum = Tag des Builds
-        buildConfigField("String", "BUILD_DATE", "\"" + java.time.LocalDate.now().toString() + "\"")
+        buildConfigField("String", "BUILD_DATE", "\"" + LocalDate.now().toString() + "\"")
     }
 
     // Fester Schlüssel, damit Updates ohne Deinstallation installiert werden können.
