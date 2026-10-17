@@ -207,6 +207,8 @@
   };
   sample.limits = async function(){ return {maxPromptBytes: 262144}; };
 
+  // Strava schreiben (nur App): Aktivität anlegen
+  window.stravaCreate = function(activity){ return call('strava', {method:'POST', path:'/activities', body: activity}); };
   const caps = {db: db, user: user, mcp: mcp, sample: sample};
   window.claude = { use: function(name){ return Promise.resolve(caps[name] || null); } };
   window.IN_APP = true;

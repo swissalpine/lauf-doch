@@ -850,13 +850,34 @@ function markDone(s){
   log.activities = log.activities||[];
   const sp = normSport(s.sport);
   if(log.activities.some(a=>a.date===s.date && a.sport===sp)) return;
-  log.activities.unshift({id:'m-'+s.date+'-'+sp+'-'+Date.now().toString(36), manual:true, date:s.date, time:'', sport:sp, name:s.title||SPORT[sp], type:'',
-    distKm:0, movingS:(s.durationMin||0)*60, elev:0, re:null});
+  const m = {id:'m-'+s.date+'-'+sp+'-'+Date.now().toString(36), manual:true, date:s.date, time:'', sport:sp, name:s.title||SPORT[sp], type:'',
+    distKm:0, movingS:(s.durationMin||0)*60, elev:0, re:null,
+    desc:(Array.isArray(s.steps)?s.steps:[]).map(st=>[st.label, st.detail].filter(Boolean).join(': ')).filter(Boolean).join('\n')};
+  log.activities.unshift(m);
   log.activities.sort((a,b)=> (b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
   save('log'); render();
+  if(stravaPushOn()) pushToStrava(m);
+}
+/* Selbst eingetragene Einheit als manuelle Aktivität in Strava anlegen (nur App, mit Schreibrecht) */
+function stravaPushOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-push')==='1' && !!appStatus().stravaWrite && !!window.stravaCreate; }catch(_){ return false; } }
+async function pushToStrava(m){
+  const dur = Math.max(60, m.movingS || 600);
+  let start;
+  if(m.date===today()){ const d = new Date(Date.now() - dur*1000); start = ymd(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':00'; }
+  else start = m.date+'T18:00:00';
+  // S.log wird beim Speichern neu eingelesen: Eintrag immer frisch über die ID suchen
+  const upd = f => { const x = acts().find(y=>y.id===m.id); if(x){ f(x); save('log'); } render(); };
+  upd(x => { x.push = 'busy'; });
+  try{
+    const r = await window.stravaCreate({name:m.name, sport_type: m.sport==='strength'?'WeightTraining':'Workout', start_date_local:start, elapsed_time:dur,
+      description:(m.desc ? m.desc+'\n\n' : '')+'Eingetragen mit Lauf doch!'});
+    upd(x => { x.push = 'ok'; x.stravaId = r && r.id ? String(r.id) : undefined; delete x.pushErr; });
+  }catch(e){ upd(x => { x.push = 'err'; x.pushErr = (e && e.message) || 'Senden fehlgeschlagen.'; }); }
 }
 function unmarkDone(id){
   const log = S.log; if(!log) return;
+  const m = (log.activities||[]).find(a=>a.id===id);
+  if(m && m.push==='ok') syncMsg = {err:true, text:'In Strava bleibt „'+m.name+'“ bestehen – bitte dort löschen, sonst kommt die Einheit beim nächsten Abgleich zurück.'};
   log.activities = (log.activities||[]).filter(a=>a.id!==id);
   if(log.feedback) delete log.feedback[id];
   save('log'); render();
@@ -1175,7 +1196,8 @@ function manualCard(a, planned){
     ${a.movingS?`<div class="target">ca. ${Math.round(a.movingS/60)} min</div>`:''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-    <div class="row"><span class="note">Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
+    ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
+    <div class="row"><span class="note">${a.push?'':'Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
   </article>`;
 }
 
@@ -1861,7 +1883,11 @@ function connCard(){
       ${usageBlock()}</div>`) +
     svc('strava','Strava', !!st.stravaConnected, st.stravaConnected ? (st.stravaAthlete||'verbunden') : 'nicht verbunden', `
     <div class="fld">
-      ${st.stravaConnected?`<div class="row"><p>Verbunden${st.stravaAthlete?' als '+esc(st.stravaAthlete):''}.</p><button class="btn" data-action="cf-strava-off">Trennen</button></div>`
+      ${st.stravaConnected?`<div class="row"><p>Verbunden${st.stravaAthlete?' als '+esc(st.stravaAthlete):''}.</p><button class="btn" data-action="cf-strava-off">Trennen</button></div>
+      ${(() => { let on=false; try{ on = localStorage.getItem('ld-strava-push')==='1'; }catch(_){}
+        return `<div class="row"><span>Kraft an Strava senden</span><button class="toggle" style="padding:8px 14px" data-action="cf-strava-push" aria-pressed="${on}">${on?'An':'Aus'}</button></div>
+        ${on && !st.stravaWrite ? `<div class="status err">Dafür muss Strava der App das Anlegen von Aktivitäten erlauben. Einmal neu verbinden und zustimmen.</div><div><button class="btn primary" data-action="cf-strava-re">Strava neu verbinden</button></div>` : ''}
+        <p class="note">Legt beim Tippen auf „Erledigt“ eine manuelle Aktivität in Strava an (ohne Puls). Nicht einschalten, wenn du Kraft mit der Uhr aufzeichnest – sonst doppelt.</p>`; })()}`
       :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>laufdoch.app</b> eintragen. Dann Client-ID und Client-Secret hier eintragen.</p>
       <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
@@ -2651,6 +2677,9 @@ document.addEventListener('click', async e => {
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
   else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
   else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
+  else if(a==='cf-strava-push'){ try{ const on = localStorage.getItem('ld-strava-push')==='1'; localStorage.setItem('ld-strava-push', on?'0':'1'); }catch(_){} render(); }
+  else if(a==='cf-strava-re'){ window.Android.stravaConnect(); }
+  else if(a==='done-push'){ const m = acts().find(x=>x.id===b.dataset.id); if(m) pushToStrava(m); }
   else if(a==='cf-icu-save'){
     const k=document.getElementById('cfIcu'); if(k && k.value.trim()) window.Android.setIntervals(k.value.trim());
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));

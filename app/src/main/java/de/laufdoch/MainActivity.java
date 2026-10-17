@@ -143,6 +143,7 @@ public class MainActivity extends Activity {
         if (!"laufdoch".equals(u.getScheme())) return;
         String code = u.getQueryParameter("code");
         String error = u.getQueryParameter("error");
+        String scope = u.getQueryParameter("scope");
         if (error != null || code == null) {
             toast("Strava-Verbindung abgebrochen.");
             notifyStrava();
@@ -165,6 +166,7 @@ public class MainActivity extends Activity {
                         .putString("strava_refresh", j.getString("refresh_token"))
                         .putLong("strava_expires", j.getLong("expires_at"))
                         .putString("strava_athlete", name)
+                        .putString("strava_scope", scope == null ? "" : scope)
                         .apply();
                 toast("Mit Strava verbunden.");
             } catch (Exception e) {
@@ -217,12 +219,17 @@ public class MainActivity extends Activity {
                 first = false;
             }
         }
-        Resp r = http("GET", url.toString(), null, null, "Bearer " + token);
+        String method = p.optString("method", "GET");
+        String body = p.has("body") ? p.get("body").toString() : null;
+        String ct = body != null ? "application/json" : null;
+        Resp r = http(method, url.toString(), ct, body, "Bearer " + token);
         if (r.status == 401) {
             token = stravaToken(true);
-            r = http("GET", url.toString(), null, null, "Bearer " + token);
+            r = http(method, url.toString(), ct, body, "Bearer " + token);
+            if (r.status == 401 && !"GET".equals(method)) throw new BridgeError("needs_scope", "Strava erlaubt der App das Anlegen von Aktivitäten noch nicht. Bitte Strava neu verbinden.");
             if (r.status == 401) throw new BridgeError("needs_reauth", "Strava-Anmeldung abgelaufen.");
         }
+        if (r.status == 403 && !"GET".equals(method)) throw new BridgeError("needs_scope", "Strava erlaubt der App das Anlegen von Aktivitäten noch nicht. Bitte Strava neu verbinden.");
         if (r.status == 429) throw new BridgeError("server_unavailable", "Strava-Abruflimit erreicht. Später erneut versuchen.");
         if (r.status >= 500) throw new BridgeError("server_unavailable", "Strava antwortet nicht (HTTP " + r.status + ").");
         if (r.status >= 400) throw new BridgeError("tool_error", "Strava-Fehler HTTP " + r.status);
@@ -343,6 +350,7 @@ public class MainActivity extends Activity {
                 j.put("stravaClientId", prefs.getString("strava_client_id", ""));
                 j.put("stravaConnected", prefs.getString("strava_refresh", null) != null);
                 j.put("stravaAthlete", prefs.getString("strava_athlete", ""));
+                j.put("stravaWrite", prefs.getString("strava_scope", "").contains("activity:write"));
                 j.put("icuKey", !prefs.getString("icu_key", "").isEmpty());
                 return j.toString();
             } catch (Exception e) {
@@ -388,7 +396,7 @@ public class MainActivity extends Activity {
                     .appendQueryParameter("redirect_uri", STRAVA_REDIRECT)
                     .appendQueryParameter("response_type", "code")
                     .appendQueryParameter("approval_prompt", "auto")
-                    .appendQueryParameter("scope", "read,activity:read_all,profile:read_all")
+                    .appendQueryParameter("scope", "read,activity:read_all,activity:write,profile:read_all")
                     .build();
             runOnUiThread(() -> openExternal(u));
         }
