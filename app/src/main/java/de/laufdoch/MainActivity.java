@@ -2,6 +2,7 @@ package de.laufdoch;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -325,6 +326,89 @@ public class MainActivity extends Activity {
         return out.toString();
     }
 
+    // ---------------------------------------------------------------- App-Update über GitHub-Releases
+
+    private static final String RELEASES = "https://api.github.com/repos/swissalpine/lauf-doch/releases/latest";
+
+    /** Neueste Version: {version, name, date, url, notes}. */
+    private String latestRelease() throws Exception {
+        Resp r = http("GET", RELEASES, null, null, null);
+        if (r.status == 404) throw new BridgeError("not_found", "Keine Releases gefunden (Repository privat?).");
+        if (r.status >= 400) throw new BridgeError("tool_error", "GitHub antwortet mit HTTP " + r.status);
+        JSONObject j = new JSONObject(r.body);
+        String url = null;
+        JSONArray assets = j.optJSONArray("assets");
+        if (assets != null) for (int i = 0; i < assets.length(); i++) {
+            JSONObject a = assets.getJSONObject(i);
+            if (a.optString("name").endsWith(".apk")) { url = a.optString("browser_download_url"); break; }
+        }
+        JSONObject out = new JSONObject();
+        out.put("version", j.optString("tag_name").replaceFirst("^v", ""));
+        out.put("name", j.optString("name"));
+        out.put("date", j.optString("published_at"));
+        out.put("notes", j.optString("body"));
+        out.put("url", url == null ? JSONObject.NULL : url);
+        out.put("current", BuildConfig.VERSION_NAME);
+        return out.toString();
+    }
+
+    /** APK herunterladen und über den Paketinstaller installieren (Android fragt nach Bestätigung). */
+    private String installUpdate(String url) throws Exception {
+        if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
+                } catch (Exception ignored) {}
+            });
+            throw new BridgeError("needs_permission", "Bitte „Installation aus dieser Quelle zulassen“ für Lauf doch! erlauben und dann erneut tippen.");
+        }
+        java.io.File f = new java.io.File(getCacheDir(), "update.apk");
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(url).openConnection();
+            c.setInstanceFollowRedirects(true);
+            c.setConnectTimeout(20000);
+            c.setReadTimeout(60000);
+            int code = c.getResponseCode();
+            if (code >= 400) throw new BridgeError("tool_error", "Download fehlgeschlagen (HTTP " + code + ").");
+            long total = c.getContentLengthLong();
+            try (InputStream in = c.getInputStream(); OutputStream out = new java.io.FileOutputStream(f)) {
+                byte[] buf = new byte[65536];
+                long done = 0; int n, last = -1;
+                while ((n = in.read(buf)) > 0) {
+                    out.write(buf, 0, n); done += n;
+                    int pct = total > 0 ? (int) (done * 100 / total) : -1;
+                    if (pct != last && pct >= 0 && pct % 5 == 0) {
+                        last = pct;
+                        final int pp = pct;
+                        runOnUiThread(() -> web.evaluateJavascript("window.onUpdateProgress && window.onUpdateProgress(" + pp + ")", null));
+                    }
+                }
+            }
+        } catch (java.io.IOException e) {
+            throw new BridgeError("server_unavailable", "Download abgebrochen. Internetverbindung prüfen.");
+        } finally {
+            if (c != null) c.disconnect();
+        }
+        android.content.pm.PackageInstaller pi = getPackageManager().getPackageInstaller();
+        android.content.pm.PackageInstaller.SessionParams params =
+                new android.content.pm.PackageInstaller.SessionParams(android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(getPackageName());
+        int sid = pi.createSession(params);
+        try (android.content.pm.PackageInstaller.Session session = pi.openSession(sid)) {
+            try (InputStream in = new java.io.FileInputStream(f); OutputStream out = session.openWrite("laufdoch", 0, f.length())) {
+                byte[] buf = new byte[65536]; int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                session.fsync(out);
+            }
+            Intent cb = new Intent(this, UpdateReceiver.class);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
+            PendingIntent p = PendingIntent.getBroadcast(this, sid, cb, flags);
+            session.commit(p.getIntentSender());
+        }
+        return "{\"ok\":true}";
+    }
+
     // ---------------------------------------------------------------- Bridge
 
     /** Wird aus JavaScript als window.Android aufgerufen. */
@@ -341,6 +425,8 @@ public class MainActivity extends Activity {
                     if ("claude".equals(kind)) result = claude(p);
                     else if ("strava".equals(kind)) result = strava(p);
                     else if ("intervals".equals(kind)) result = intervals(p);
+                    else if ("update".equals(kind)) result = latestRelease();
+                    else if ("updateInstall".equals(kind)) result = installUpdate(p.getString("url"));
                     else throw new BridgeError("bad_request", "Unbekannter Aufruf.");
                 } catch (BridgeError e) {
                     ok = false;

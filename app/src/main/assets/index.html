@@ -1017,7 +1017,7 @@ function render(){
   if(IN_APP && render.awake !== !!workout){ render.awake = !!workout; try{ window.Android.keepAwake && window.Android.keepAwake(!!workout); }catch(_){} }
   if(workout){ p.innerHTML = renderWorkout(); renderMoveDialog(); return; }
   if(detailId){ p.innerHTML = renderDetail(); const da=acts().find(x=>x.id===detailId); if(da && !getStreams(detailId) && !detailBusy && !detailErr && mcp) setTimeout(()=>loadStreams(detailId),0); renderDialog(); renderMoveDialog(); return; }
-  p.innerHTML = changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
+  p.innerHTML = (IN_APP ? updBanner() : '') + changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
   p.querySelectorAll('details[data-k]').forEach(d=>{ if(openK.has(d.dataset.k)) d.open=true; });
   if(openK.size) window.scrollTo(0, sy);
   renderDialog();
@@ -2179,6 +2179,47 @@ function usageBlock(){
   return `<div class="usage"><b>Verbrauch</b>${line(cur)}${all[prev]?line(prev):''}
     <p class="note">Schätzung nach Listenpreisen des gewählten Modells (Stand 09/2026), inklusive Prompt-Caching. Die genaue Abrechnung steht in der Anthropic Console.</p></div>`;
 }
+/* ---------- App-Update über GitHub-Releases ---------- */
+let upd = {info:null, busy:false, pct:null, err:null, checking:false, checked:false};
+const verNum = v => String(v||'').split('.').map(x=>parseInt(x,10)||0);
+function verNewer(a, b){ const x=verNum(a), y=verNum(b); for(let i=0;i<Math.max(x.length,y.length);i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
+function updAvailable(){ const st = appStatus(); return !!(upd.info && upd.info.url && verNewer(upd.info.version, st.appVersion)); }
+async function checkUpdate(manual){
+  if(!IN_APP || !window.__bridgeCall || upd.checking) return;
+  let last = 0; try{ last = Number(localStorage.getItem('ld-upd-check'))||0; }catch(_){}
+  if(!manual && Date.now()-last < 20*3600*1000){ try{ const c = JSON.parse(localStorage.getItem('ld-upd-info')||'null'); if(c) upd.info = c; }catch(_){} return; }
+  upd.checking = true; upd.err = null; if(manual) render();
+  try{
+    upd.info = await window.__bridgeCall('update', {});
+    try{ localStorage.setItem('ld-upd-check', String(Date.now())); localStorage.setItem('ld-upd-info', JSON.stringify(upd.info)); }catch(_){}
+  }catch(e){ if(manual) upd.err = (e && e.message) || 'Prüfung fehlgeschlagen.'; }
+  upd.checking = false; upd.checked = true; render();
+}
+async function installUpdate(){
+  if(!upd.info || !upd.info.url || upd.busy) return;
+  upd.busy = true; upd.pct = 0; upd.err = null; render();
+  try{ await window.__bridgeCall('updateInstall', {url: upd.info.url}); upd.done = true; }
+  catch(e){ upd.err = (e && e.message) || 'Update fehlgeschlagen.'; }
+  upd.busy = false; upd.pct = null; render();
+}
+window.onUpdateProgress = p => { upd.pct = p; const el = document.getElementById('updPct'); if(el) el.textContent = p+' %'; };
+function updBanner(){
+  if(!updAvailable()) return '';
+  let skip = ''; try{ skip = localStorage.getItem('ld-upd-skip')||''; }catch(_){}
+  if(skip===upd.info.version && !upd.busy) return '';
+  return `<div class="card banner upd"><p><b>Neue Version ${esc(upd.info.version)} verfügbar</b>${upd.info.date?' · erschienen am '+esc(new Date(upd.info.date).toLocaleDateString('de-DE')):''}</p>
+    ${upd.busy ? `<p class="note">Wird heruntergeladen … <span id="updPct">${upd.pct||0} %</span></p>`
+      : `<div class="row" style="justify-content:flex-start"><button class="btn primary" data-action="upd-install">Installieren</button><button class="btn ghost" data-action="upd-skip">Später</button></div>`}
+    ${upd.err?`<div class="status err">${esc(upd.err)}</div>`:''}</div>`;
+}
+function updAbout(st){
+  if(upd.busy) return `<p class="note">Update wird heruntergeladen … <span id="updPct">${upd.pct||0} %</span></p>`;
+  const av = updAvailable();
+  return `<div class="svcrow"><b>Update</b><span class="st ${av?'':'ok'}">${upd.checking ? 'wird geprüft …' : av ? 'Version '+esc(upd.info.version)+' verfügbar' : upd.info ? '✓ aktuell' : 'noch nicht geprüft'}</span></div>
+    <div class="row" style="justify-content:flex-start">${av?`<button class="btn primary" data-action="upd-install">Herunterladen und installieren</button>`:''}<button class="btn" data-action="upd-check" ${upd.checking?'disabled':''}>Nach Updates suchen</button></div>
+    ${upd.err?`<div class="status err">${esc(upd.err)}</div>`:''}
+    ${upd.done?`<p class="note">Android zeigt jetzt den Installationsdialog. Nach der Installation startet die App neu.</p>`:''}`;
+}
 function connCard(){
   const st = appStatus();
   const mLab = (MODELS.find(m=>m[0]===st.model)||MODELS[0])[1].replace(/ \(.*\)$/,'').replace('Claude ','');
@@ -2225,6 +2266,7 @@ function connCard(){
   <div class="card about"><h2>Über Lauf doch!</h2>
     <div class="svcrow"><b>Version</b><span class="st">${esc(st.appVersion||'–')}</span></div>
     <div class="svcrow"><b>Erschienen</b><span class="st">${st.buildDate ? esc(parseYmd(st.buildDate).toLocaleDateString('de-DE')) : '–'}</span></div>
+    ${updAbout(st)}
     <p class="note">Adaptives Lauftraining mit Claude. Neue Versionen gibt es unter <button class="dlink" data-action="open-releases">github.com/swissalpine/lauf-doch</button>.</p>
   </div>`;
 }
@@ -2803,6 +2845,7 @@ async function checkMissed(){
   } finally { missedBusy = false; }
 }
 window.addEventListener('appresume', () => {
+  setTimeout(()=>checkUpdate(false), 2000);
   try{ const ot = window.Android && window.Android.takeOpenTab && window.Android.takeOpenTab(); if(ot && TABS[ot]){ tab=ot; detailId=null; try{localStorage.setItem('tb-tab',tab)}catch(_){} window.scrollTo({top:0}); } }catch(_){} render(); setTimeout(checkMissed, 300); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 500); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ render(); setTimeout(checkMissed, 300); } });
 
@@ -3005,6 +3048,9 @@ document.addEventListener('click', async e => {
   }
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
   else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
+  else if(a==='upd-check'){ checkUpdate(true); }
+  else if(a==='upd-install'){ installUpdate(); }
+  else if(a==='upd-skip'){ try{ localStorage.setItem('ld-upd-skip', upd.info.version); }catch(_){} render(); }
   else if(a==='open-releases'){ try{ window.Android.openUrl('https://github.com/swissalpine/lauf-doch/releases'); }catch(_){} }
   else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
   else if(a==='cf-strava-push'){ try{ const on = localStorage.getItem('ld-strava-push')==='1'; localStorage.setItem('ld-strava-push', on?'0':'1'); }catch(_){} render(); }
@@ -3050,7 +3096,7 @@ render();
         const t0 = today(), fut = S.plan.sessions.filter(x=>x.date>=t0), sp2 = splitStrength(fut);
         if(sp2){ S.plan.sessions = S.plan.sessions.filter(x=>x.date<t0).concat(sp2).sort((a,b)=>a.date.localeCompare(b.date)); setTimeout(()=>save('plan'), 0); }
       }
-      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 800); } }
+      if(pending>0){ pending--; if(pending===0){ S.loaded=true; setTimeout(()=>checkUpdate(false), 4000); setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); icuAutoSync(); setTimeout(autoSync, 800); } }
       if(!(busy && name==='chat')) render();
     }, () => { if(pending>0){ pending--; if(pending===0) S.loaded=true; } render(); });
   });
