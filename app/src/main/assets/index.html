@@ -344,7 +344,7 @@ nav.tabs button{padding:4px 2px}
 .pc .pv{min-width:22px;height:20px;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted)}
 .pc .pv.ok{background:var(--ok-soft);color:var(--ok)}.pc .pv.warn{background:var(--warn-soft);color:var(--warn)}.pc .pv.crit{background:var(--crit-soft);color:var(--crit)}
 .pc .lcol .lb{background:var(--accent-soft)}.pc .lcol.cur .lb{background:var(--accent)}
-.abs-list{display:flex;flex-direction:column;gap:6px;margin:4px 0 12px}
+.abs-list{display:flex;flex-direction:column;gap:6px}
 .abs-row{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px}
 .abs-row .ad{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
 .abs-row .ab{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -1857,17 +1857,17 @@ function renderSettings(){
       <div class="fld"><span>Trainingstage</span>
       <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div>
       <p class="note">An diesen Tagen kann Claude Einheiten planen. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p></div></div>
-    <div class="card"><h2>Abwesenheiten</h2>
-      <p class="muted">Urlaub, Dienstreisen, Klassenfahrten: Claude plant diese Zeiträume im Wochen- und Gesamtplan ein.</p>
+    <details class="card macro" data-k="abs"><summary><div class="mhead"><h2>Abwesenheiten</h2><span class="note">${(() => { const n = absences().filter(a=>a.to>=today()).length; return n ? n+' eingetragen' : 'keine'; })()}</span><span class="chev">▼</span></div></summary><div class="mbody">
+      <p class="muted">Urlaub oder Reisen: Claude plant diese Zeiträume im Wochen- und Gesamtplan ein.</p>
       ${(() => { const list = absences().filter(a=>a.to>=today()).sort((a,b)=>a.from.localeCompare(b.from));
         return list.length ? `<div class="abs-list">${list.map(a=>`<div class="abs-row"><span class="ab"><span class="ad">${esc(dmRange(a))}</span><span class="an">${esc(absText(a))}</span></span><button data-action="abs-rm" data-from="${esc(a.from)}" data-to="${esc(a.to)}" aria-label="Abwesenheit entfernen">×</button></div>`).join('')}</div>` : ''; })()}
       <div class="absform">
         <label><span>Von</span><input id="absFrom" type="date" min="${today()}"></label>
         <label><span>Bis</span><input id="absTo" type="date" min="${today()}"></label>
         <label class="full"><span>Art</span><select id="absType"><option value="off">Kein Training möglich</option><option value="limited">Eingeschränkt (Notiz beachten)</option></select></label>
-        <label class="full"><span>Notiz</span><input id="absNote" type="text" maxlength="80" placeholder="z. B. Klassenfahrt, nur Laufen möglich"></label>
+        <label class="full"><span>Notiz</span><input id="absNote" type="text" maxlength="80" placeholder="z. B. Urlaub, nur Wandern möglich"></label>
         <div class="full"><button class="btn" data-action="abs-add">Hinzufügen</button></div>
-      </div></div>
+      </div></div></details>
     <div class="card"><h2>Fitness und Beschwerden</h2>
       <p class="muted">${cs.length?'Claude plant vorsichtig, fragt nach Schmerz an diesen Stellen und steigert nur bei stabilen Signalen.':'Keine Beschwerden eingetragen. Claude plant leistungsorientiert auf dein Ziel hin.'}</p>
       ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
