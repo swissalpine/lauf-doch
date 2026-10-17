@@ -862,6 +862,9 @@ function markDone(s){
 function stravaPushOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-push')==='1' && !!appStatus().stravaConnected && !!window.stravaCreate; }catch(_){ return false; } }
 async function pushToStrava(m){
   const dur = Math.max(60, m.movingS || 600);
+  // Beschreibung: Übungen der geplanten Einheit (auch für Einträge, die vor diesem Update abgehakt wurden)
+  if(!m.desc){ const ps = sessions().find(x=>x.date===m.date && normSport(x.sport)===m.sport && (x.title||'')===m.name) || sessions().find(x=>x.date===m.date && normSport(x.sport)===m.sport);
+    if(ps) m.desc = (Array.isArray(ps.steps)?ps.steps:[]).map(st=>[st.label, st.detail].filter(Boolean).join(': ')).filter(Boolean).join('\n') + (ps.goal ? '\n\nZiel: '+ps.goal : ''); }
   let start;
   if(m.date===today()){ const d = new Date(Date.now() - dur*1000); start = ymd(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':00'; }
   else start = m.date+'T18:00:00';
@@ -1207,7 +1210,8 @@ function doneCard(a, planned, extra){
   if(isManual(a)) return manualCard(a, planned);
   const f = fb(a.id), as = assess(a.id);
   const run = a.sport==='run' || a.sport==='walk';
-  const m = [
+  // Ohne Strecke (Kraft, Gymnastik …): nur Dauer, Puls und Relative Effort
+  const m = !a.distKm ? [['Dauer', fmtDur(a.movingS)], ['Ø HF', a.perf && a.perf.hr ? Math.round(a.perf.hr)+' bpm' : '–'], ['Relative Effort', a.re ?? '–']].filter(x => x[0]==='Dauer' || x[1]!=='–') : [
     ['Distanz', fmtNum(a.distKm,2)+' km'],
     ['Bewegungszeit', fmtDur(a.movingS)],
     run ? ['Pace /km', fmtPace(a.distKm,a.movingS)] : ['Ø km/h', fmtNum(a.distKm/(a.movingS/3600||1),1)],
