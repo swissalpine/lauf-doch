@@ -1654,12 +1654,15 @@ function renderHistory(){
   const runs = wa.filter(a=>a.sport==='run');
   const runKm = runs.reduce((s,a)=>s+a.distKm,0), runS = runs.reduce((s,a)=>s+a.movingS,0);
   const hm = runs.reduce((s,a)=>s+(a.elev||0),0);
-  const otherMin = Math.round(wa.filter(a=>a.sport==='ride'||a.sport==='strength').reduce((s,a)=>s+a.movingS,0)/60);
-  const pains = wa.map(a=>fb(a.id)).filter(Boolean).flatMap(f=>[f.painDuring,f.painAfter]).filter(v=>v!=null);
-  const maxPain = pains.length ? Math.max(...pains) : null;
+  const mins = list => Math.round(list.reduce((s,a)=>s+(a.movingS||0),0)/60);
+  const rides = wa.filter(a=>a.sport==='ride'), strength = wa.filter(a=>a.sport==='strength');
+  const rideMin = mins(rides), strMin = mins(strength), allMin = mins(wa);
+  const maxPain = painIn(mon, addDays(mon,6));
+  const hm2 = m => m>=60 ? Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+' h' : m+' min';
   const metrics = [
     ['Lauf-km', fmtNum(runKm,1)], ['Läufe', runs.length], ['Ø Pace /km', runs.length?fmtPace(runKm,runS):'–'],
-    ['Höhenmeter Lauf', Math.round(hm)+' m'], ['Rad / Kraft', otherMin?otherMin+' min':'–'], ['Max. Schmerz', maxPain==null?'–':maxPain+'/10']
+    ['Höhenmeter Lauf', Math.round(hm)+' m'], ['Rad', rideMin?hm2(rideMin):'–'], ['Kraft', strength.length?strength.length+'× · '+strMin+' min':'–'],
+    ['Max. Schmerz', maxPain==null?'–':maxPain+'/10'], ['Training gesamt', allMin?hm2(allMin):'–']
   ];
   // Tageseinträge: absolvierte Einheiten plus geplante, aber ausgelassene Einheiten (nur vergangene Tage)
   const t = today(); const rows = [];
@@ -2035,7 +2038,7 @@ function buildContext(){
     return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) || undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
       belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
   });
-  const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null}); }
+  const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null, kraftEinheiten:acts().filter(a=>a.sport==='strength'&&a.date>=m&&a.date<=addDays(m,6)).length, radMinuten:Math.round(acts().filter(a=>a.sport==='ride'&&a.date>=m&&a.date<=addDays(m,6)).reduce((x,a)=>x+(a.movingS||0),0)/60)}); }
   const zones = S.log && S.log.zones;
   const plan = sessions().filter(s=>s.date>=addDays(t,-7));
   const nm = userName(), care = careMode(), cl = complaints().join(', ');
