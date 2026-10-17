@@ -757,6 +757,7 @@ function mainPart(a){
 function decouple(a){
   const p = a.perf || {}, mp = mainPart(a);
   const st = getStreams(a.id);
+  if(!st && p.dec && p.dec.v!=null) return {value:p.dec.v, main:p.dec.main, src:'streams'};
   // genau: Streams im Hauptteil, nur Abschnitte in Bewegung
   if(st && st.t && st.hr && st.v && mp.t1!=null){
     const pts = []; st.t.forEach((t,i)=>{ if(t>=mp.t0 && t<mp.t1 && st.hr[i]>0 && st.v[i]>1.2) pts.push([t, st.v[i], st.hr[i]]); });
@@ -764,7 +765,7 @@ function decouple(a){
       const mid = (pts[0][0]+pts[pts.length-1][0])/2;
       const ef = arr => arr.reduce((x,q)=>x+q[1],0)/arr.reduce((x,q)=>x+q[2],0);
       const A = pts.filter(q=>q[0]<mid), B = pts.filter(q=>q[0]>=mid);
-      if(A.length>20 && B.length>20){ const e1=ef(A), e2=ef(B); return {value:(e1-e2)/e1*100, main:mp.main}; }
+      if(A.length>20 && B.length>20){ const e1=ef(A), e2=ef(B); return {value:(e1-e2)/e1*100, main:mp.main, src:'streams'}; }
     }
   }
   // sonst: Kilometer-Splits, anteilig auf den Hauptteil zugeschnitten
@@ -778,7 +779,7 @@ function decouple(a){
     else { const f=(half-q.from)/(q.to-q.from); A.push({d:q.d*f, s:q.s*f, hr:q.hr}); B.push({d:q.d*(1-f), s:q.s*(1-f), hr:q.hr}); } });
   const ef = arr => { const d=arr.reduce((x,q)=>x+q.d,0), t=arr.reduce((x,q)=>x+q.s,0), h=arr.reduce((x,q)=>x+q.hr*q.s,0)/t; return (d/(t/60))/h; };
   if(!A.length || !B.length) return null;
-  const e1=ef(A), e2=ef(B); return {value:(e1-e2)/e1*100, main:mp.main};
+  const e1=ef(A), e2=ef(B); return {value:(e1-e2)/e1*100, main:mp.main, src:'splits'};
 }
 function analyze(a){
   const p = a && a.perf; if(!p) return null;
@@ -1430,18 +1431,32 @@ function getStreams(id){
   return null;
 }
 function shrink(arr, n){ if(!arr || arr.length<=n) return arr; const out=[], f=arr.length/n; for(let i=0;i<n;i++) out.push(arr[Math.floor(i*f)]); return out; }
+/* Verlaufsdaten holen und zwischenspeichern (ohne Oberfläche) */
+async function fetchStreams(id){
+  const s = (await mcp.callTool(SERVER,'get_activity_streams',{activity_id:id, streams:['time','watts','heart_rate','cadence','velocity_smooth','altitude'], resolution:400},{cache:false})).payload || {};
+  const n = 400, v = {t:shrink(s.time,n), w:shrink(s.watts,n), hr:shrink(s.heart_rate,n), c:shrink(s.cadence,n), v:shrink(s.velocity_smooth,n), alt:shrink(s.altitude,n)};
+  if(!v.t || !v.t.length) throw {message:'Keine Verlaufsdaten'};
+  STREAMS[id] = v;
+  try{
+    localStorage.setItem(streamsKey(id), JSON.stringify(v));
+    const keys = Object.keys(localStorage).filter(k=>k.startsWith('ld:streams/'));
+    if(keys.length>30) keys.slice(0, keys.length-30).forEach(k=>localStorage.removeItem(k));
+  }catch(_){}
+  return v;
+}
+/* Genaue Entkopplung dauerhaft an der Aktivität merken (Verlaufsdaten werden nur begrenzt zwischengespeichert) */
+function persistDec(a){
+  if(!a || a.sport!=='run' || !a.perf) return false;
+  const dc = decouple(a);
+  if(dc && dc.src==='streams'){ a.perf.dec = {v: Math.round(dc.value*100)/100, main: dc.main}; return true; }
+  return false;
+}
 async function loadStreams(id){
   if(detailBusy || !mcp) return; detailBusy = true; detailErr = null; render();
   try{
-    const s = (await mcp.callTool(SERVER,'get_activity_streams',{activity_id:id, streams:['time','watts','heart_rate','cadence','velocity_smooth','altitude'], resolution:400},{cache:false})).payload || {};
-    const n = 400, v = {t:shrink(s.time,n), w:shrink(s.watts,n), hr:shrink(s.heart_rate,n), c:shrink(s.cadence,n), v:shrink(s.velocity_smooth,n), alt:shrink(s.altitude,n)};
-    if(!v.t || !v.t.length) throw {message:'Keine Verlaufsdaten'};
-    STREAMS[id] = v;
-    try{
-      localStorage.setItem(streamsKey(id), JSON.stringify(v));
-      const keys = Object.keys(localStorage).filter(k=>k.startsWith('ld:streams/'));
-      if(keys.length>12) keys.slice(0, keys.length-12).forEach(k=>localStorage.removeItem(k));
-    }catch(_){}
+    await fetchStreams(id);
+    const a = acts().find(x=>x.id===id);
+    if(persistDec(a)) save('log');
   }catch(e){ detailErr = (e && e.message) || 'Verlauf konnte nicht geladen werden.'; }
   finally{ detailBusy = false; render(); }
 }
@@ -2022,12 +2037,21 @@ async function syncStrava(){
       syncMsg = {text:`Leistungsdaten ${i+1} von ${need.length} …`}; render();
       try{
         const p = (await mcp.callTool(SERVER,'get_activity_performance',{activity_id:need[i].id},{cache:false})).payload || {};
+        const keepDec = need[i].perf && need[i].perf.dec;
         need[i].perf = {hr:p.has_heartrate&&p.average_heartrate?Math.round(p.average_heartrate*10)/10:null, hrMax:p.max_heartrate||null,
           watts:p.average_watts?Math.round(p.average_watts):null, deviceWatts:!!p.has_device_watts,
           rpe:(p.perceived_exertion ?? p.perceivedExertion ?? null)!=null ? Math.round(Number(p.perceived_exertion ?? p.perceivedExertion)) : null,
           laps:(p.laps||[]).slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null, e:l.elapsed_time||null})),
           rounds: Array.isArray(p.rounds) ? p.rounds.slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, e:l.elapsed_time||null, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null})) : undefined};
+        if(keepDec && need[i].perf) need[i].perf.dec = keepDec;
       }catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
+    }
+    // Verlaufsdaten neuer Läufe und Fahrten gleich mitholen (genaue Entkopplung, Analyse sofort verfügbar)
+    const wantSt = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !isManual(a) && a.perf && daysUntil(a.date)>=-14 && !getStreams(a.id) && !(a.perf.dec)).slice(0,6);
+    for(let i=0;i<wantSt.length;i++){
+      syncMsg = {text:`Verlaufsdaten ${i+1} von ${wantSt.length} …`}; render();
+      try{ await fetchStreams(wantSt[i].id); persistDec(wantSt[i]); }
+      catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
     }
     // in den aktuellen Stand übernehmen (Rückmeldungen/Fazits können sich währenddessen geändert haben)
     const cur = S.log || {};
