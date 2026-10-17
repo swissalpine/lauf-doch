@@ -424,6 +424,7 @@ nav.tabs button{padding:4px 2px}
 .wklog div{display:flex;gap:10px}.wklog b{font-weight:600;flex:1;min-width:0}.wklog span{color:var(--muted);text-align:right}
 body.wkon nav.tabs, body.wkon #dialog{display:none}
 .sic.done{background:var(--ok)}
+.sic.extra{background:#F2830B}
 .day .dn{color:var(--ok)}
 .day .xact{display:block;margin-top:2px}
 .day .xact + .xact, .day details + .xact{margin-top:4px}
@@ -1932,7 +1933,7 @@ function renderPlan(){
       </details>`;
     }).join('');
     const doneLine = dn.filter(a => !usedA.has(a.id)).map(a => { const det = (a.sport==='run'||a.sport==='ride') && a.perf;
-      return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${greenIc(sic(a.sport, (a.type||'')+' '+(a.name||'')))}<span class="t">${esc(a.name||SPORT[a.sport])}</span><span class="x">${esc(SPORT[a.sport])} · ${esc(doneFacts(a))} · zusätzlich</span></div>`; }).join('');
+      return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', 'class="sic extra"')}<span class="t">${esc(a.name||SPORT[a.sport])}</span><span class="x">${esc(SPORT[a.sport])} · ${esc(doneFacts(a))} · zusätzlich</span></div>`; }).join('');
     const ab = absenceAt(d);
     if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
     const isRest = !items && !doneLine;
