@@ -19,7 +19,6 @@
   - [5. Erinnerungen (optional)](#5-erinnerungen-optional)
   - [6. Profil ausfüllen und ersten Plan erstellen](#6-profil-ausfüllen-und-ersten-plan-erstellen)
 - [Datensicherung](#datensicherung)
-- [Selbst bauen](#selbst-bauen)
 - [Aufbau des Projekts](#aufbau-des-projekts)
 - [Grenzen](#grenzen)
 
@@ -193,31 +192,6 @@ API-Schlüssel und Strava-Verbindung sind nicht Teil der Sicherung und müssen a
 
 ---
 
-## Selbst bauen
-
-Jeder Push auf `main` baut über GitHub Actions eine signierte APK und veröffentlicht sie als Release „Lauf doch! &lt;Version&gt;“. Behalten werden die letzten drei Releases.
-
-1. Repository forken.
-2. Einen Signaturschlüssel erzeugen, falls noch keiner existiert:
-   ```bash
-   keytool -genkeypair -v -keystore laufdoch.keystore -alias laufdoch \
-     -keyalg RSA -keysize 2048 -validity 10000
-   base64 -w0 laufdoch.keystore > keystore.b64
-   ```
-3. Im Repository unter **Settings → Secrets and variables → Actions** anlegen:
-
-   | Secret | Inhalt |
-   |---|---|
-   | `KEYSTORE_BASE64` | Inhalt von `keystore.b64` |
-   | `KEYSTORE_PASSWORD` | Passwort des Keystores (wird auch als Schlüsselpasswort verwendet) |
-   | `KEY_ALIAS` | optional, Standard ist `laufdoch` |
-
-4. Vor jedem Build in `app/build.gradle.kts` `versionCode` erhöhen und `versionName` setzen. Der Name wird zum Release-Titel und Tag (`v1.72`).
-
-Den Keystore gut aufbewahren: Ohne denselben Schlüssel lassen sich Updates nicht über eine bestehende Installation installieren.
-
----
-
 ## Aufbau des Projekts
 
 Die Oberfläche ist eine Web-App in einer Android-WebView. Die native Seite stellt ihr über `window.Android` die Verbindungen bereit.
@@ -228,7 +202,6 @@ Die Oberfläche ist eine Web-App in einer Android-WebView. Die native Seite stel
 | `app/src/main/assets/shim.js` | Brücke zwischen Oberfläche und App: Speicher (localStorage), Strava-Abrufe, Claude-Anfragen mit Prompt-Caching, Verbrauchszählung |
 | `app/src/main/java/de/laufdoch/MainActivity.java` | WebView, Strava-OAuth, HTTP-Aufrufe an Anthropic, Strava und intervals.icu, Datensicherung, Berechtigungen |
 | `app/src/main/java/de/laufdoch/ReminderReceiver.java` | Erinnerungen per AlarmManager, auch nach Neustart |
-| `.github/workflows/build.yml` | Build, Signatur und Release |
 
 ---
 
