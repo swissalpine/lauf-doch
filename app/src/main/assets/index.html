@@ -859,7 +859,7 @@ function markDone(s){
   if(stravaPushOn()) pushToStrava(m);
 }
 /* Selbst eingetragene Einheit als manuelle Aktivität in Strava anlegen (nur App, mit Schreibrecht) */
-function stravaPushOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-push')==='1' && !!appStatus().stravaWrite && !!window.stravaCreate; }catch(_){ return false; } }
+function stravaPushOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-push')==='1' && !!appStatus().stravaConnected && !!window.stravaCreate; }catch(_){ return false; } }
 async function pushToStrava(m){
   const dur = Math.max(60, m.movingS || 600);
   let start;
@@ -871,8 +871,9 @@ async function pushToStrava(m){
   try{
     const r = await window.stravaCreate({name:m.name, sport_type: m.sport==='strength'?'WeightTraining':'Workout', start_date_local:start, elapsed_time:dur,
       description:(m.desc ? m.desc+'\n\n' : '')+'Eingetragen mit Lauf doch!'});
-    upd(x => { x.push = 'ok'; x.stravaId = r && r.id ? String(r.id) : undefined; delete x.pushErr; });
-  }catch(e){ upd(x => { x.push = 'err'; x.pushErr = (e && e.message) || 'Senden fehlgeschlagen.'; }); }
+    if(!r || !r.id) throw {message:'Strava hat keine Aktivität zurückgegeben.'};
+    upd(x => { x.push = 'ok'; x.stravaId = String(r.id); delete x.pushErr; });
+  }catch(e){ upd(x => { x.push = 'err'; x.pushErr = (e && (e.message || e.code)) || 'Senden fehlgeschlagen.'; }); }
 }
 function unmarkDone(id){
   const log = S.log; if(!log) return;
@@ -1197,6 +1198,7 @@ function manualCard(a, planned){
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
     ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
+    ${!a.push && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
     <div class="row"><span class="note">${a.push?'':'Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
   </article>`;
 }

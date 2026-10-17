@@ -222,6 +222,18 @@ public class MainActivity extends Activity {
         String method = p.optString("method", "GET");
         String body = p.has("body") ? p.get("body").toString() : null;
         String ct = body != null ? "application/json" : null;
+        JSONObject form = p.optJSONObject("form");
+        if (form != null) {
+            StringBuilder fb = new StringBuilder();
+            Iterator<String> fk = form.keys();
+            while (fk.hasNext()) {
+                String k = fk.next();
+                if (fb.length() > 0) fb.append('&');
+                fb.append(enc(k)).append('=').append(enc(form.get(k).toString()));
+            }
+            body = fb.toString();
+            ct = "application/x-www-form-urlencoded";
+        }
         Resp r = http(method, url.toString(), ct, body, "Bearer " + token);
         if (r.status == 401) {
             token = stravaToken(true);
@@ -232,7 +244,11 @@ public class MainActivity extends Activity {
         if (r.status == 403 && !"GET".equals(method)) throw new BridgeError("needs_scope", "Strava erlaubt der App das Anlegen von Aktivitäten noch nicht. Bitte Strava neu verbinden.");
         if (r.status == 429) throw new BridgeError("server_unavailable", "Strava-Abruflimit erreicht. Später erneut versuchen.");
         if (r.status >= 500) throw new BridgeError("server_unavailable", "Strava antwortet nicht (HTTP " + r.status + ").");
-        if (r.status >= 400) throw new BridgeError("tool_error", "Strava-Fehler HTTP " + r.status);
+        if (r.status >= 400) {
+            String detail = "";
+            try { detail = new JSONObject(r.body).optString("message", ""); } catch (Exception ignored) {}
+            throw new BridgeError("tool_error", "Strava-Fehler HTTP " + r.status + (detail.isEmpty() ? "" : ": " + detail));
+        }
         return r.body;
     }
 
