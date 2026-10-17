@@ -1286,7 +1286,7 @@ function manualCard(a, planned){
   if(noteText(f)) chips.push(`<span class="chip">${esc(f.note)}</span>`);
   return `<article class="card">
     <div class="card-head"><span class="tag done">Erledigt</span><span class="sport">${esc(SPORT[a.sport]||'')} · ${a.workout?'in der App aufgezeichnet':'selbst eingetragen'}</span></div>
-    <h3 class="hic">${sic(a.sport, a.name)}<span>${esc(a.name)}</span></h3>
+    <h3 class="hic">${sic(a.sport, a.name).replace('class="sic"', 'class="sic done"')}<span>${esc(a.name)}</span></h3>
     ${a.movingS?`<div class="target">${a.workout?'':'ca. '}${Math.round(a.movingS/60)} min${a.workout&&a.time?' · ab '+esc(a.time)+' Uhr':''}</div>`:''}
     ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${(x.log||[]).length ? x.log.map(l=>wkSetText(x,l)).join(' · ')+(x.reps?' Wdh.':'') : 'ausgelassen'}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
@@ -1321,7 +1321,7 @@ function doneCard(a, planned, extra){
   }
   return `<article class="card">
     <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type)} · ${esc(a.time||'')} Uhr</span></div>
-    <h3 class="hic">${sic(a.sport, (a.type||'')+' '+(a.name||''))}<span>${esc(a.name)}</span></h3>
+    <h3 class="hic">${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', extra ? 'class="sic extra"' : 'class="sic done"')}<span>${esc(a.name)}</span></h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
     ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
