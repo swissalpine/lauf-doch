@@ -362,7 +362,7 @@ nav.tabs button{padding:4px 2px}
 .entry .mdone .btn{padding-left:0;padding-right:0}
 .absform label{min-width:0}
 .absform input{min-width:0}
-.remrow{display:grid;grid-template-columns:110px 110px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.remrow{display:grid;grid-template-columns:110px 110px 1fr;gap:10px;align-items:center}
 .remrow .toggle{padding:9px 0}
 .remrow input[type=time]{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;min-width:0}
 .remrow input:disabled{opacity:.45}
@@ -1776,11 +1776,12 @@ function remindCard(){
   const c = remindCfg(), perm = notifPerm();
   const row = (k, label, desc) => `<div class="remrow"><button class="toggle" data-action="rem-toggle" data-k="${k}" aria-pressed="${!!c[k+'On']}">${label}</button>
     <input type="time" id="rem-${k}" value="${esc(c[k+'Time'])}" ${c[k+'On']?'':'disabled'} aria-label="Uhrzeit ${label}"><span class="note">${desc}</span></div>`;
-  return `<div class="card"><h2>Erinnerungen</h2>
+  const sum = [c.morningOn?'morgens '+c.morningTime:'', c.eveningOn?'abends '+c.eveningTime:''].filter(Boolean).join(' · ') || 'aus';
+  return `<details class="card macro" data-k="remind"><summary><div class="mhead"><h2>Erinnerungen</h2><span class="note">${esc(sum)}</span><span class="chev">▼</span></div></summary><div class="mbody">
     ${row('morning','Morgens','Einheit des Tages und Morgen-Check')}
     ${row('evening','Abends','Rückmeldung, falls sie noch fehlt')}
     ${(c.morningOn||c.eveningOn) && perm==='denied' ? `<div class="status err">Benachrichtigungen sind für „Lauf doch!“ ausgeschaltet. Erlaube sie in den Android-Einstellungen unter Apps → Lauf doch! → Benachrichtigungen.</div>` : ''}
-    <p class="note">Die Texte stammen vom Stand beim letzten Öffnen der App. Was danach in Strava dazukommt, kennt die Erinnerung noch nicht.</p></div>`;
+    <p class="note">Die Texte stammen vom Stand beim letzten Öffnen der App. Was danach in Strava dazukommt, kennt die Erinnerung noch nicht.</p></div></details>`;
 }
 function usageBlock(){
   let all = {}; try{ all = JSON.parse(localStorage.getItem('ld-usage')||'{}'); }catch(_){}
