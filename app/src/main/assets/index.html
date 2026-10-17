@@ -1012,7 +1012,7 @@ function moveControl(s, noCheck){
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   const is = icuState(s);
-  const lbl = is ? ({hr:'HF', pace:'Pace', watt:'Watt', rpe:'RPE'})[icuModeFor(icuEntry(s))] : '';
+  const lbl = is ? ({hr:'HF', pace:'Pace', watt:'Watt', erg:'Watt', rpe:'RPE'})[icuModeFor(icuEntry(s))] : '';
   const pill = is==='new' ? `<button class="pill p-new" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watch}senden</button>`
     : is==='ok' ? `<button class="pill p-ok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} aria-label="${esc(lbl)} gesendet, erneut senden">${IC.watchOk}${esc(lbl)} gesendet</button>`
     : is==='changed' ? `<button class="pill p-chg" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watchWarn}neu senden</button>` : '';
@@ -1036,7 +1036,7 @@ let bgDlg = null;   // {edit:bool}
 let icuDlg = null; // {ext, title, date, sport, mode}
 function renderIcuDialog(el){
   const opts = ICU_MODES[icuDlg.sport] || ICU_MODES.run;
-  const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rolle und Rad mit Leistungsmesser.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der RPE.'}[icuDlg.mode]||'';
+  const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rad mit Leistungsmesser, wenn du selbst im Bereich fährst.', erg:'Ein fester Wattwert je Abschnitt (Mitte des Zielbereichs). Für die Rolle im ERG-Modus, z. B. mit Tacx Training.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der RPE.'}[icuDlg.mode]||'';
   el.innerHTML = `<button class="overlay" data-action="icu-close" aria-label="Schließen" tabindex="-1"></button>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="icTitle">
       <h2 id="icTitle">${icuState(sessions().find(x=>icuEntry(x)&&icuEntry(x).ext===icuDlg.ext)||{})==='ok'?'Erneut an die Uhr senden':'An die Uhr senden'}</h2>
@@ -2172,7 +2172,7 @@ function connCard(){
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <label class="fld" for="cfIcuRide"><span>Zielvorgabe Rad</span>
-        <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt (Prozent der FTP)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+        <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt-Bereich (Prozent der FTP)'],['erg','Watt fest für ERG-Modus (Rolle)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <p class="note">Beim Senden einer einzelnen Einheit kannst du die Vorgabe jeweils neu wählen.</p>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
@@ -2419,7 +2419,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen). Kraft-, Mobilitäts- und Dehnübungen planst du immer als eigene Einheit ("sport":"strength", auch am selben Tag wie ein Lauf), nie als Schritt einer Lauf- oder Radeinheit – so kann ${nm} sie getrennt abhaken. In Krafteinheiten ist jeder Schritt genau eine Übung mit "sets", "reps" (Wiederholungen) oder "holdS" (Haltezeit in Sekunden), "restS" (Pause zwischen den Sätzen in Sekunden) und bei einseitigen Übungen "perSide":true; "detail" enthält nur Ausführungshinweise (Winkel, Tempo, worauf achten). Dehnen oder Mobilisation ebenfalls je Übung mit "holdS". Die App führt ${nm} damit Satz für Satz durch das Training.
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
-- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" (z. B. "154–184 W (Z3)"). Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
+- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" als enger Bereich um den Zielwert (etwa ±5 %, z. B. "160–176 W (Z3)"), nie bei 0 beginnend; Einrollen, Erholung und Pausen z. B. "95–110 W" (45–55 % FTP), damit die Mitte des Bereichs auch im ERG-Modus der Rolle sinnvoll ist. Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Trainingslast und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
@@ -2616,8 +2616,8 @@ function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.va
 /* ---------- Garmin über intervals.icu ---------- */
 const icuMode = () => (profile().icu && profile().icu.mode) || 'hr';
 const icuRideMode = () => (profile().icu && profile().icu.rideMode) || 'hr';
-const ICU_MODES = {run:[['hr','Herzfrequenz'],['pace','Pace'],['rpe','RPE']], ride:[['hr','Herzfrequenz'],['watt','Watt'],['rpe','RPE']]};
-const ICU_LABEL = {hr:'Herzfrequenz', pace:'Pace', watt:'Watt', rpe:'RPE'};
+const ICU_MODES = {run:[['hr','Herzfrequenz'],['pace','Pace'],['rpe','RPE']], ride:[['hr','Herzfrequenz'],['watt','Watt (Bereich)'],['erg','Watt (ERG)'],['rpe','RPE']]};
+const ICU_LABEL = {hr:'Herzfrequenz', pace:'Pace', watt:'Watt', erg:'Watt ERG', rpe:'RPE'};
 /* Zielvorgabe einer Einheit: eigene Wahl beim Einzelsenden, sonst Grundeinstellung der Sportart */
 function icuModeFor(e){ const o = S.plan && S.plan.icuModes && S.plan.icuModes[e.ext]; if(o) return o; return normSport(e.s.sport)==='ride' ? icuRideMode() : icuMode(); }
 const icuAuto = () => !!(profile().icu && profile().icu.auto);
@@ -2647,14 +2647,14 @@ const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk'
 async function icuTexts(items){
   const z = S.log && S.log.zones && S.log.zones.hrMins;
   const prompt = `Wandle Trainingseinheiten in die Workout-Syntax von intervals.icu um (für die Übertragung auf eine Garmin-Uhr).
-Jede Einheit hat ein Feld "zielvorgabe": hr, pace, watt oder rpe.
+Jede Einheit hat ein Feld "zielvorgabe": hr, pace, watt, erg oder rpe.
 HF-Zonen (Untergrenzen Z1–Z5): ${z?z.join(', '):'unbekannt'}. FTP: ${S.log&&S.log.zones&&S.log.zones.ftp||'unbekannt'} W.
 
 Regeln:
 - Abschnitte als Überschriftzeilen ohne Bindestrich, z. B. „Einlaufen“, „Hauptteil 4x“, „Auslaufen“. Wiederholungen nur als „… 4x“ in der Überschrift, keine verschachtelten Wiederholungen, je eine Leerzeile vor und nach einem Wiederholungsblock.
 - Jeder Schritt: „- <Hinweis> <Dauer> <Ziel>“. Dauer als Zeit (10m, 30s, 1m30) oder Strecke mit Dezimalpunkt (1.5km). „m“ heißt Minuten. Keine weiteren Zahlen mit Einheit im Hinweis.
 - Hinweis kurz auf Deutsch, immer mit der RPE, z. B. „Locker, RPE 2–3“ (Bereich mit Halbgeviertstrich).
-- Ziel je nach "zielvorgabe": hr → „Z2 HR“ oder „Z1-Z2 HR“; pace → „5:35-5:20/km Pace“ (langsamere Pace zuerst), ohne bekannte Pace stattdessen HF-Zone; watt (nur Rad) → Prozent der FTP wie „55-75%“; rpe → kein Ziel, die Zeile endet nach der Dauer.
+- Ziel je nach "zielvorgabe": hr → „Z2 HR“ oder „Z1-Z2 HR“; pace → „5:35-5:20/km Pace“ (langsamere Pace zuerst), ohne bekannte Pace stattdessen HF-Zone; watt (nur Rad) → enger Bereich in Prozent der FTP, etwa ±5 % um den Zielwert, nie bei 0 beginnend, z. B. „62-70%“, Einrollen, Erholung und Pausen „45-55%“; erg (Rolle im ERG-Modus, die Rolle fährt genau diesen Wert) → genau ein Prozentwert der FTP wie „66%“, nämlich die Mitte des gewünschten Bereichs, Einrollen, Erholung und Pausen 50–55 %, nie unter 45 %; rpe → kein Ziel, die Zeile endet nach der Dauer.
 - Nur echte zeitliche Abschnitte werden Schritte (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen). Verhaltenshinweise ohne eigene Dauer, z. B. „Bergab: steilere Abstiege gehen“, „Kadenz hoch halten“ oder „flache Strecke wählen“, sind kein eigener Schritt und keine eigene Überschrift; nimm sie kurz in den Hinweis des Laufschritts auf, zu dem sie gehören (z. B. „Locker, bergab gehen, RPE 3–4“).
 - Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
 - Nur der Lauf- bzw. Radteil. Lass Kraftübungen, Gymnastik, Dehnen und Mobilisation komplett weg, auch nicht als Text- oder Überschriftzeile; sie würden auf der Uhr als Laufabschnitt erscheinen.
