@@ -1868,11 +1868,11 @@ function renderSettings(){
         <label class="full"><span>Notiz</span><input id="absNote" type="text" maxlength="80" placeholder="z. B. Urlaub, nur Wandern möglich"></label>
         <div class="full"><button class="btn" data-action="abs-add">Hinzufügen</button></div>
       </div></div></details>
-    <div class="card"><h2>Fitness und Beschwerden</h2>
+    <details class="card macro" data-k="cmp"><summary><div class="mhead"><h2>Fitness und Beschwerden</h2><span class="note"></span><span class="chev">▼</span></div><span class="mcur muted">${cs.length ? esc(cs.join(', ')) : 'Keine Beschwerden eingetragen'}</span></summary><div class="mbody">
       <p class="muted">${cs.length?'Claude plant vorsichtig, fragt nach Schmerz an diesen Stellen und steigert nur bei stabilen Signalen.':'Keine Beschwerden eingetragen. Claude plant leistungsorientiert auf dein Ziel hin.'}</p>
       ${cs.length?`<div class="chips">${cs.map((c,i)=>`<span class="chip cmp">${esc(c)}<button data-action="rm-complaint" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join('')}</div>`:''}
       ${confirmRm!=null?`<div class="row"><span>„${esc(cs[confirmRm]||'')}“ entfernen? Danach plant Claude ohne Rücksicht darauf.</span><div class="row"><button class="btn primary" data-action="rm-yes">Entfernen</button><button class="btn" data-action="rm-no">Abbrechen</button></div></div>`:''}
-      <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div>
+      <div class="addrow"><input id="newComplaint" type="text" placeholder="z. B. Achillessehne rechts" aria-label="Beschwerde hinzufügen"><button class="btn" data-action="add-complaint">Hinzufügen</button></div></div></details>
     <div class="card"><h2>Was Claude weiß</h2><div class="lrows">
       <button class="lrow" data-action="ins-open"><span><b>Erkenntnisse</b><small>Was Claude sich dauerhaft über dein Training merkt</small></span><span class="cnt">${insights().length||''} ›</span></button>
       <button class="lrow" data-action="bg-open"><span><b>Hintergrund</b><small>Vorgeschichte und Rahmen für jede Planung</small></span><span class="cnt">›</span></button>
