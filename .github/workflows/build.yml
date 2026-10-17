@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -64,3 +66,15 @@ jobs:
               echo "Lösche $tag"
               gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag
             done
+
+      - name: Releases zu Tags außerhalb von main löschen (z. B. nach umgeschriebener Historie)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --tags --force
+          for tag in $(git tag); do
+            if ! git merge-base --is-ancestor "$tag" HEAD; then
+              echo "Lösche $tag (nicht in main)"
+              gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag || git push origin ":refs/tags/$tag" || true
+            fi
+          done
