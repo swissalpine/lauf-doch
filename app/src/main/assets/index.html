@@ -572,6 +572,12 @@ table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400
 .tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tg{font-size:12.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums}
 .rpepick{display:flex;flex-direction:column;gap:4px}
+.painpick{background:var(--crit-soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.painpick .pr{display:flex;flex-direction:column;gap:4px}
+.painpick .pr > span{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--crit)}
+.painpick .pb{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px}
+.painpick .pb button{border:1px solid transparent;background:var(--surface);border-radius:8px;padding:6px 0;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;color:var(--ink)}
+.painpick .pb button:hover{border-color:var(--crit);color:var(--crit)}
 .rpepick > span{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .rpebtns{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
 .rpebtns button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 0;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer}
@@ -899,6 +905,14 @@ const painClass = p => p==null?'':(p<=2?'ok':p<=4?'warn':'crit');
 
 const complaints = () => (profile().complaints||[]).filter(Boolean);
 const careMode = () => complaints().length>0;
+/* Schmerzabfrage direkt in der Karte (wie RPE), solange Beschwerden eingetragen sind */
+function painPick(a){
+  if(!careMode()) return '';
+  const f = fb(a.id) || {};
+  const row = (k, lbl) => f[k]!=null ? '' : `<div class="pr"><span>${lbl}</span><div class="pb">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="pain-set" data-id="${esc(a.id)}" data-k="${k}" data-v="${n}" aria-label="${lbl} ${n} von 10">${n}</button>`).join('')}</div></div>`;
+  const rows = row('painDuring', 'Schmerz während') + row('painAfter', 'Schmerz danach');
+  return rows ? `<div class="painpick">${rows}</div>` : '';
+}
 /* Notiz zur Rückmeldung nur zeigen, wenn sie mehr sagt als die Schmerz- und RPE-Werte */
 function noteText(f){
   if(!f || !f.note) return '';
@@ -1276,6 +1290,7 @@ function manualCard(a, planned){
     ${a.movingS?`<div class="target">${a.workout?'':'ca. '}${Math.round(a.movingS/60)} min${a.workout&&a.time?' · ab '+esc(a.time)+' Uhr':''}</div>`:''}
     ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${(x.log||[]).length ? x.log.map(l=>wkSetText(x,l)).join(' · ')+(x.reps?' Wdh.':'') : 'ausgelassen'}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
+    ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
     ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
     ${!a.push && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
@@ -1311,7 +1326,9 @@ function doneCard(a, planned, extra){
     ${perfBlock(a)}
     ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
     ${rpeOf(a)?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
-    ${(f && (f.painDuring!=null||f.painAfter!=null||f.note)) || (!careMode() && rp) ?`<div class="chips">${chips.join('')}</div>`:`${chips.length?`<div class="chips">${chips.join('')}</div>`:''}<div class="row"><span class="note">Noch keine Rückmeldung zu ${careMode()?'Beschwerden':'Befinden'}${rp?'':' und RPE'}.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>`}
+    ${painPick(a)}
+    ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+    ${!careMode() && !rp && !(f && f.note) ? `<div class="row"><span class="note">Noch keine Rückmeldung zum Befinden.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>` : ''}
     ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div>${staleAssess(a)?`<div class="row" style="margin-top:6px"><span class="note">Vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:''}</div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
     ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
   </article>`;
@@ -2426,7 +2443,7 @@ Regeln:
 ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel (Folgetag: siehe MORGEN-CHECKS). Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
 - Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
 - „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava" aus Strava), frag nicht erneut.
-- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) vorliegt, frage danach; nach der RPE nur, wenn sie weder in der Rückmeldung noch aus Strava vorliegt.`
+- Wenn zu einer neuen Aktivität keine Rückmeldung zu Schmerz (während/danach) vorliegt, bitte kurz darum, die Werte in der Karte der Aktivität anzutippen (dort gibt es Auswahlfelder für Schmerz während, danach und RPE); nach der RPE nur, wenn sie weder in der Rückmeldung noch aus Strava vorliegt.`
 : `- Periodisiere auf das Ziel hin: Aufbauwochen mit regelmäßigen Entlastungswochen (z. B. 3:1), Wochenumfang höchstens etwa 10 % steigern.
 - Intensitätsverteilung: etwa 80 % locker (Z1–Z2), der Rest gezielte Reize (Schwelle, Intervalle, Zieltempo). Harte Einheiten nicht an aufeinanderfolgenden Tagen.
 - Leite Zieltempi aus Ziel, Leistungsstand und Daten ab und gib Intervalle mit Pace oder HF-Zone an.
@@ -2865,6 +2882,15 @@ document.addEventListener('click', async e => {
   }
   else if(a==='done-mark'){ const s0 = active().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(s0) markDone(s0); }
   else if(a==='done-undo'){ unmarkDone(b.dataset.id); }
+  else if(a==='pain-set'){
+    const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
+    log.feedback = log.feedback||{};
+    log.feedback[b.dataset.id] = Object.assign({}, log.feedback[b.dataset.id], {[b.dataset.k]:Number(b.dataset.v), ts:new Date().toISOString()});
+    render(); await save('log');
+    const act = acts().find(x=>x.id===b.dataset.id), f2 = fb(b.dataset.id) || {};
+    if(act && f2.painDuring!=null && f2.painAfter!=null && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
+      askClaude(`Rückmeldung ergänzt: Schmerz während ${f2.painDuring}/10, danach ${f2.painAfter}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit. Keine Rückfrage.`, {auto:true});
+  }
   else if(a==='rpe-set'){
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     log.feedback = log.feedback||{};
