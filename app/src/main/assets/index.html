@@ -489,7 +489,7 @@ body.wkon nav.tabs, body.wkon #dialog{display:none}
 .svc > summary::-webkit-details-marker{display:none}
 .svc > summary .st{margin-left:auto;font-size:14px;color:var(--muted);text-align:right}
 .svc > summary .st.ok{color:var(--ok)}
-.svc > summary::after{content:'▾';color:var(--muted);font-size:13px;transition:transform .15s}
+.svc > summary::after{content:'▼';color:var(--muted);font-size:13px;transition:transform .15s}
 .svc[open] > summary::after{transform:rotate(180deg)}
 .svcb{padding:0 0 12px;display:flex;flex-direction:column;gap:10px}
 .more > summary{list-style:none;cursor:pointer;color:var(--accent);font-size:14px}
@@ -505,7 +505,7 @@ body.wkon nav.tabs, body.wkon #dialog{display:none}
 .stepsd{border-top:1px solid var(--line);padding-top:4px}
 .stepsd>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 0;font-weight:600;color:var(--accent)}
 .stepsd>summary::-webkit-details-marker{display:none}
-.stepsd>summary::after{content:'▾';margin-left:auto;color:var(--muted);transition:transform .15s}
+.stepsd>summary::after{content:'▼';margin-left:auto;color:var(--muted);font-size:13px;transition:transform .15s}
 .stepsd[open]>summary::after{transform:rotate(180deg)}
 .stepsd>summary .note{font-weight:400}
 .stepsd .steps{margin-top:4px}
