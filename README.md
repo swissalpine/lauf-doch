@@ -1,4 +1,31 @@
-# Lauf doch!
+<p align="center">
+  <img src="docs/logo.png" width="128" alt="Lauf doch! Logo">
+</p>
+
+<h1 align="center">Lauf doch!</h1>
+
+<p align="center"><b>Adaptives Lauftraining mit Claude als Trainingsbegleiter</b><br>
+Strava rein, Plan raus – und der Plan passt sich an dich an.</p>
+
+<p align="center">
+  <a href="https://github.com/swissalpine/lauf-doch/releases/latest"><img src="https://img.shields.io/github/v/release/swissalpine/lauf-doch?label=Android-App&color=0053FA" alt="Android-App"></a>
+  <a href="https://swissalpine.github.io/lauf-doch/web/"><img src="https://img.shields.io/badge/Web--App-iPhone%20%C2%B7%20iPad%20%C2%B7%20PC-0053FA" alt="Web-App"></a>
+  <img src="https://img.shields.io/badge/KI-Claude-D97757" alt="Claude">
+  <img src="https://img.shields.io/badge/Daten-Strava-FC4C02" alt="Strava">
+  <img src="https://img.shields.io/badge/Uhr-Garmin%20%C3%BCber%20intervals.icu-555" alt="Garmin über intervals.icu">
+</p>
+
+<p align="center">
+  <a href="https://github.com/swissalpine/lauf-doch/releases/latest"><b>APK herunterladen</b></a> ·
+  <a href="https://swissalpine.github.io/lauf-doch/web/"><b>Web-App öffnen</b></a> ·
+  <a href="#einrichtung"><b>Einrichtung</b></a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/heute.png" width="260" alt="Heute">&nbsp;
+  <img src="docs/screenshots/plan.png" width="260" alt="Plan">&nbsp;
+  <img src="docs/screenshots/rueckblick.png" width="260" alt="Rückblick">
+</p>
 
 **Lauf doch!** ist eine App für adaptives Lauftraining mit Claude als Trainingsbegleiter – als **Android-App** und als **Web-App** für iPhone, iPad und Computer. Die App holt deine Aktivitäten aus Strava, wertet sie aus und lässt Claude daraus einen Trainingsplan erstellen. Diesen Plan passt Claude laufend an deine Rückmeldungen, deine Belastung und eventuelle Beschwerden an. Rad, Kraft und Mobilität werden ergänzend geplant. Geplante Einheiten können über intervals.icu auf eine Garmin-Uhr übertragen werden.
 
@@ -29,7 +56,7 @@
 
 ## Funktionen im Überblick
 
-Die App hat vier Bereiche. Auf jeder Seite gibt es unten den Dialog mit Claude, mit Themenvorschlägen passend zur Seite.
+Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt es unten den Dialog mit Claude, mit Themenvorschlägen passend zur Seite.
 
 ### Heute
 - **Strava-Abgleich:** Beim Öffnen automatisch, wenn der letzte Abgleich länger als 15 Minuten zurückliegt, sonst per Knopf. Für neue Läufe und Radfahrten holt die App auch die Verlaufsdaten (Puls, Tempo, Leistung, Höhe).
@@ -46,11 +73,20 @@ Die App hat vier Bereiche. Auf jeder Seite gibt es unten den Dialog mit Claude, 
   - Orange: zusätzliche, nicht geplante Aktivität
 - **Senden an die Uhr** (mit intervals.icu) und **Neu planen**.
 
+<p align="center">
+  <img src="docs/screenshots/gesamtplan.png" width="260" alt="Gesamtplan mit Phasen und Wochenumfang Soll/Ist">
+</p>
+
 ### Rückblick
 - Wochenwerte: Lauf-km, Läufe, Pace, Höhenmeter, Rad, Kraft, maximaler Schmerz, Trainingszeit gesamt.
 - **Trainingslast und Form:** Relative Effort der letzten 8 Wochen, Verhältnis der Belastung 7 zu 28 Tagen, Lauf-Effizienz im Vergleich zur Vorwoche.
 - **Schmerz und Belastung:** Lauf-km und höchster Schmerzwert je Woche. Die Karte erscheint nur, wenn Schmerz gemeldet wurde.
 - **Wochenfazit** von Claude und alle Einheiten der Woche, jeweils mit Analyse.
+
+<p align="center">
+  <img src="docs/screenshots/detail.png" width="260" alt="Analyse einer Einheit mit Runden">&nbsp;
+  <img src="docs/screenshots/verlauf.png" width="260" alt="Verlaufskurven und Zeit in Zonen">
+</p>
 
 ### Einstellungen
 - **Profil:** Name, Sportarten, Leistungsstand, Trainingstage.
@@ -248,6 +284,7 @@ Die Oberfläche ist eine Web-App. In der Android-App läuft sie in einer WebView
 | `web/index.html` | Einstieg der Web-App: lädt dieselbe Oberfläche wie die Android-App |
 | `web/android-web.js` | Ersatz der Android-Brücke im Browser: Claude, Strava (inkl. Anmeldung), intervals.icu, Datensicherung, Bildschirmsperre |
 | `web/manifest.webmanifest`, `web/icon-*.png` | Name und Symbol für „Zum Home-Bildschirm“ |
+| `docs/` | Logo und Screenshots für diese Seite (mit Beispieldaten) |
 
 ---
 
