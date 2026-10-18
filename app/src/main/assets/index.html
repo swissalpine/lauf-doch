@@ -542,6 +542,8 @@ table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400
 .why>summary .note{margin-left:auto;font-weight:400}
 .why .rationale{padding:0 14px 12px}
 .macro{gap:0;padding:0}
+.mgap{border:1px solid var(--warn);background:var(--warn-soft);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
+.mgap b{color:var(--warn)}.mgap p{margin:4px 0 0}.mgap .mgb{margin-top:6px;font-weight:600}.mgap ul{margin:4px 0 0;padding-left:18px}
 .macro>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .macro>summary::-webkit-details-marker{display:none}
 .macro .mhead{display:flex;align-items:baseline;gap:8px}
@@ -1695,6 +1697,8 @@ function renderMacro(){
   if(!m || !(m.phases||[]).length){
     return `<div class="card"><div class="row"><h2>Gesamtplan</h2></div>
       <p class="muted">Noch kein Gesamtplan. Claude legt Phasen, Schwerpunkte und Steigerung bis zum Ziel fest${profile().goal&&profile().goal.date?'':' und schätzt ein realistisches Zieldatum'}.</p>
+      ${(()=>{ const b = trainingBase(); if(!b) return ''; const r = x => x ? b.fmt(x[0])+'–'+b.fmt(x[1]) : '–';
+        return `<p class="note">Ausgangspunkt aus Strava (8 Wochen): Ø ${fmtNum(b.avgKm,1)} km und ${fmtNum(b.avgN,1)} Läufe pro Woche · längster Lauf ${b.longest?fmtNum(b.longest.a.distKm,1):'–'} km · ${b.flat} flach, ${b.hilly} hügelig, ${b.mountain} bergig · locker ${r(b.easy)} /km (GAP)</p>`; })()}
       <div><button class="btn primary" data-action="macro-create" ${sample&&!busy?'':'disabled'}>Gesamtplan erstellen</button></div></div>`;
   }
   const t = today(), ph = m.phases;
@@ -1717,7 +1721,7 @@ function renderMacro(){
     <div class="mlegend"><span><i style="background:var(--accent-soft)"></i>Soll</span><span><i style="background:var(--accent)"></i>Ist (Strava)</span><span><i style="background:repeating-linear-gradient(135deg,var(--accent-soft) 0 3px,transparent 3px 5px);border:1px solid var(--line)"></i>Entlastung</span></div>` : '';
   const phases = ph.map((p,k) => {
     const isCur = mi && mi.i===k;
-    const kv = [rng(p.weeklyKm,'km/Woche'), p.longRunKm?'längster Lauf '+rng(p.longRunKm,'km'):''].filter(Boolean).join(' · ');
+    const kv = [rng(p.weeklyKm,'km/Woche'), p.longRunKm?'längster Lauf '+rng(p.longRunKm,'km'):'', rng(p.weeklyHm,'hm/Woche'), p.longRunHm?'langer Lauf '+rng(p.longRunHm,'hm'):''].filter(Boolean).join(' · ');
     return `<div class="mphase ${isCur?'cur':''}"><div class="ph"><span class="dot" style="background:${PH_COLORS[k%PH_COLORS.length]}"></span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span></div>
       ${(p.focus||[]).length?`<div class="chips">${p.focus.map(f=>`<span class="tag plan">${esc(f)}</span>`).join('')}</div>`:''}
       ${kv?`<div class="kv">${esc(kv)}</div>`:''}
@@ -1733,18 +1737,63 @@ function renderMacro(){
     <div class="mbody">
       ${m.note?`<div class="mnote"><b>Angepasst${m.updatedAt?' am '+dmyy(m.updatedAt.slice(0,10)):''}:</b> ${esc(m.note)}</div>`:''}
       ${chart}
+      ${m.terrainGap||(m.terrainBlocks||[]).length?`<div class="mgap"><b>Gelände${m.raceProfile?' · Wettkampf: '+esc(m.raceProfile):''}</b>${m.terrainGap?`<p>${esc(m.terrainGap)}</p>`:''}${(m.terrainBlocks||[]).length?`<div class="mgb">Geländeblöcke:</div><ul>${m.terrainBlocks.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</div>`:''}
       ${m.rationale?`<div class="md">${md(m.rationale)}</div>`:''}
       ${phases}
       <div><button class="btn" data-action="macro-create" ${sample&&!busy?'':'disabled'}>Gesamtplan überarbeiten</button></div>
     </div></details>`;
+}
+/* Trainingsstand der letzten 8 Wochen für das Neuaufsetzen eines Plans (GAP und Geländeprofil) */
+const minetti = i => { i = Math.max(-0.25, Math.min(0.25, i)); return 155.4*i**5 - 30.4*i**4 - 43.3*i**3 + 46.3*i**2 + 19.5*i + 3.6; };
+function gapSecPerKm(a){
+  const laps = (a.perf && a.perf.laps || []).filter(l => l.d > 100 && l.s > 0 && l.g != null);
+  if(laps.length && laps.reduce((x,l)=>x+l.d,0) >= a.distKm*1000*0.8){
+    const eq = laps.reduce((x,l) => x + l.d * minetti(l.g/100) / 3.6, 0), sec = laps.reduce((x,l)=>x+l.s,0);
+    return eq > 0 ? sec / eq * 1000 : null;
+  }
+  return null;
+}
+const hmClass = hpk => hpk < 10 ? 'flach' : hpk <= 25 ? 'hügelig' : 'bergig';
+function trainingBase(){
+  const t = today(), from = addDays(mondayOf(t), -56), hm = (S.log && S.log.zones && S.log.zones.hrMins) || null;
+  const runs = acts().filter(a => a.sport==='run' && !isManual(a) && a.date>=from && a.date<t && a.distKm>0.5 && a.movingS>0);
+  if(!runs.length) return null;
+  const weeks = []; for(let i=8;i>=1;i--){ const m = addDays(mondayOf(t), -7*i), r = runs.filter(a=>a.date>=m && a.date<=addDays(m,6));
+    weeks.push({m, km:r.reduce((x,a)=>x+a.distKm,0), n:r.length, hm:r.reduce((x,a)=>x+(a.elev||0),0)}); }
+  const fmt = sec => sec ? `${Math.floor(sec/60)}:${String(Math.round(sec%60)).padStart(2,'0')}` : '–';
+  const q = (arr, p) => { if(!arr.length) return null; const v=[...arr].sort((a,b)=>a-b); return v[Math.min(v.length-1, Math.max(0, Math.round((v.length-1)*p)))]; };
+  const rows = runs.map(a => { const hpk = (a.elev||0)/a.distKm, gap = gapSecPerKm(a), raw = a.movingS/a.distKm, f = fb(a.id);
+    const easy = (f && f.rpe!=null) ? f.rpe<=4 : (a.perf && a.perf.hr && hm && hm[2]) ? a.perf.hr < hm[2] : null;
+    return {a, hpk, cls:hmClass(hpk), gap, raw, pace:gap||raw, easy}; });
+  const cnt = c => rows.filter(r=>r.cls===c).length;
+  const easyP = rows.filter(r=>r.easy===true).map(r=>r.pace), hardP = rows.filter(r=>r.easy===false).map(r=>r.pace), allP = rows.map(r=>r.pace);
+  const active = weeks.filter(w=>w.n>0);
+  const avg = k => active.length ? active.reduce((x,w)=>x+w[k],0)/active.length : 0;
+  const longest = rows.reduce((b,r)=> r.a.distKm>(b?b.a.distKm:0) ? r : b, null);
+  return {weeks, rows, nGap: rows.filter(r=>r.gap).length, avgKm:avg('km'), avgN:avg('n'), avgHm:avg('hm'), activeWeeks:active.length,
+    longest, flat:cnt('flach'), hilly:cnt('hügelig'), mountain:cnt('bergig'),
+    hpk: runs.reduce((x,a)=>x+(a.elev||0),0) / runs.reduce((x,a)=>x+a.distKm,0),
+    easy: easyP.length ? [q(easyP,.2), q(easyP,.8)] : null, hard: hardP.length ? [q(hardP,0), q(hardP,.5)] : null, all:[q(allP,.1), q(allP,.9)], fmt};
+}
+function trainingBaseCtx(){
+  const b = trainingBase(); if(!b) return 'keine Läufe in den letzten 8 Wochen';
+  const r = x => x ? b.fmt(x[0])+'–'+b.fmt(x[1])+' /km' : '–';
+  return [
+    `Wochen (Montag: km/Läufe/hm): ${b.weeks.map(w=>`${w.m.slice(5)} ${fmtNum(w.km,1)}/${w.n}/${Math.round(w.hm)}`).join('; ')}`,
+    `Ø in Wochen mit Läufen (${b.activeWeeks} von 8): ${fmtNum(b.avgKm,1)} km, ${fmtNum(b.avgN,1)} Läufe, ${Math.round(b.avgHm)} hm`,
+    `Längster Lauf: ${b.longest ? fmtNum(b.longest.a.distKm,1)+' km am '+b.longest.a.date+' ('+Math.round(b.longest.a.elev||0)+' hm, '+b.longest.cls+')' : '–'}`,
+    `Profil der Läufe (hm/km: unter 10 flach, 10–25 hügelig, darüber bergig): ${b.flat} flach, ${b.hilly} hügelig, ${b.mountain} bergig; Ø ${fmtNum(b.hpk,1)} hm/km`,
+    `Tempobereiche als GAP (steigungsbereinigt aus den km-Splits, ${b.nGap} von ${b.rows.length} Läufen; sonst rohe Pace): locker ${r(b.easy)}, zügig/hart ${r(b.hard)}, Spanne aller Läufe ${r(b.all)}`,
+    `Einzelläufe: ${b.rows.map(x=>`${x.a.date} ${fmtNum(x.a.distKm,1)}km ${Math.round(x.a.elev||0)}hm ${x.cls} ${x.gap?'GAP '+b.fmt(x.gap):'Pace '+b.fmt(x.raw)}${x.easy===true?' locker':x.easy===false?' zügig':''}`).join('; ')}`
+  ].join('\n');
 }
 /* Gesamtplan kompakt für den Kontext: Phasen als JSON, Wochen als eine Zeile */
 function macroCtx(){
   const m = macro(); if(!m) return 'noch keiner – bitte unter "macro" anlegen';
   const t = today(), T = {build:'A', recover:'E', test:'T', taper:'V', race:'W'};
   const wk = (m.weeks||[]).map(w => `${w.week.slice(5)} ${fmtNum(w.km, w.km%1?1:0)}${w.week<=t?'/'+fmtNum(weekStats(w.week).km,1):''} ${T[w.type]||'A'}`).join('; ');
-  const ph = (m.phases||[]).map(p => ({name:p.name, from:p.from, to:p.to, focus:p.focus, weeklyKm:p.weeklyKm, longRunKm:p.longRunKm, keySessions:p.keySessions, advance:p.advance}));
-  return JSON.stringify({goal:m.goal, start:m.start, end:m.end, endEstimated:m.endEstimated, phases:ph, rationale:m.rationale, note:m.note||undefined})
+  const ph = (m.phases||[]).map(p => ({name:p.name, from:p.from, to:p.to, focus:p.focus, weeklyKm:p.weeklyKm, longRunKm:p.longRunKm, weeklyHm:p.weeklyHm, longRunHm:p.longRunHm, keySessions:p.keySessions, advance:p.advance}));
+  return JSON.stringify({goal:m.goal, start:m.start, end:m.end, endEstimated:m.endEstimated, raceProfile:m.raceProfile||undefined, terrainGap:m.terrainGap||undefined, terrainBlocks:(m.terrainBlocks||[]).length?m.terrainBlocks:undefined, phases:ph, rationale:m.rationale, note:m.note||undefined})
     + `\nWOCHEN (MM-TT Soll-km[/Ist-km] Typ; A=Aufbau, E=Entlastung, T=Test, V=Tapering, W=Wettkampf): ${wk||'–'}`;
 }
 function cleanMacro(x){
@@ -1753,13 +1802,15 @@ function cleanMacro(x){
   const phases = x.phases.filter(p=>p && isDate(p.from) && isDate(p.to) && p.from<=p.to).slice(0,8).map(p=>({
     name:String(p.name||'Phase').slice(0,40), from:p.from, to:p.to,
     focus:Array.isArray(p.focus)?p.focus.map(f=>String(f).slice(0,40)).slice(0,5):[],
-    weeklyKm:nr(p.weeklyKm), longRunKm:nr(p.longRunKm),
+    weeklyKm:nr(p.weeklyKm), longRunKm:nr(p.longRunKm), weeklyHm:nr(p.weeklyHm), longRunHm:nr(p.longRunHm),
     keySessions:Array.isArray(p.keySessions)?p.keySessions.map(f=>String(f).slice(0,120)).slice(0,5):[],
     advance:p.advance?String(p.advance).slice(0,240):''})).sort((a,b)=>a.from.localeCompare(b.from));
   if(!phases.length) return null;
   const weeks = Array.isArray(x.weeks) ? x.weeks.filter(w=>w && isDate(w.week)).slice(0,80).map(w=>({week:mondayOf(w.week), km:Math.max(0,Math.round((Number(w.km)||0)*10)/10), type:['build','recover','test','taper','race'].includes(w.type)?w.type:'build'})) : [];
   return {goal:x.goal?String(x.goal).slice(0,200):'', start:isDate(x.start)?x.start:phases[0].from, end:isDate(x.end)?x.end:phases[phases.length-1].to,
-    endEstimated:x.endEstimated===true, phases, weeks, rationale:x.rationale?String(x.rationale).slice(0,3000):'', note:x.note?String(x.note).slice(0,400):'', updatedAt:new Date().toISOString()};
+    endEstimated:x.endEstimated===true, phases, weeks,
+    raceProfile:x.raceProfile?String(x.raceProfile).slice(0,200):'', terrainGap:x.terrainGap?String(x.terrainGap).slice(0,600):'',
+    terrainBlocks:Array.isArray(x.terrainBlocks)?x.terrainBlocks.map(f=>String(f).slice(0,160)).slice(0,6):[], rationale:x.rationale?String(x.rationale).slice(0,3000):'', note:x.note?String(x.note).slice(0,400):'', updatedAt:new Date().toISOString()};
 }
 /* ---------- Detailseite: Analyse einer Einheit ---------- */
 let detailScroll = 0;
@@ -2593,6 +2644,9 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Trägst du Rückmeldungen ein, aktualisiere im selben Schritt die Einschätzung (text und short) der Aktivität, damit sie keinen offenen Punkt mehr nennt, der inzwischen beantwortet ist.
 - Wenn du eine Aktivität auswertest oder Rückmeldungen erhältst, aktualisiere das Wochenfazit der betroffenen Woche (Schlüssel = Montag der Woche, YYYY-MM-DD). Format: Markdown-Liste, jede Zeile beginnt mit „- **Stichwort:**“, in dieser Reihenfolge und nur, wenn es etwas zu sagen gibt: **Umfang**, **${care?'Beschwerden':'Befinden'}**, **Trainingslast**, **Auswertung**, **Besprochen**, **Ausblick**. Je Zeile ein knapper Satz oder Stichworte, kein Fließtext, keine Überschrift. Ein bestehendes Fazit ergänzt du, statt es zu verlieren.
 - Gesamtplan ("macro"): Führe einen Gesamtplan vom Beginn des aktuellen Aufbaus bis zum Ziel. Enddatum: das Zieldatum, wenn eins feststeht; sonst berechnest du aus Ziel, Leistungsstand, ${care?'Beschwerden, ':''}Erkenntnissen und Trainingshistorie ein realistisches Enddatum und setzt "endEstimated":true (das Ziel-Datum des Nutzers setzt du dafür nicht). Gliedere in 3–6 Phasen mit Name, Zeitraum, 2–4 Schwerpunkten (kurze Stichworte), Wochenumfang und längstem Lauf als [von, bis] in km, bis zu 4 Schlüsseleinheiten und einem prüfbaren Kriterium für den Übergang zur nächsten Phase. "weeks" enthält jede Woche von Start bis Ende (Montag, Soll-km Laufen, Typ build|recover|test|taper|race) mit sinnvoller Steigerung und Entlastungswochen. "rationale" erklärt den Aufbau in 3–6 knappen Sätzen oder Stichpunkten. Liefere "macro" immer vollständig, wenn noch keiner existiert, wenn sich Ziel, Trainingstage, Sportarten, ${care?'Beschwerden ':''}, Abwesenheiten oder Leistungsstand ändern oder ein klarer Anlass besteht: mindestens eine Woche mit deutlich weniger als 70 % des Wochen-Solls (Ausfall, Krankheit, Verhinderung), Beschwerdesignale über mehrere Einheiten, ein Übergangskriterium deutlich früher als geplant erfüllt oder ausdrücklicher Wunsch von ${nm}. Dann Phasengrenzen und Wochen anpassen und in "note" in einem Satz sagen, was und warum. Einzelne verschobene Einheiten oder kleine Schwankungen sind kein Anlass. Sonst lass ihn weg. Der Plan bis Ende nächster Woche leitet sich aus aktueller Phase und Wochen-Soll ab. Seine "rationale" nennt nur, was diesen Planungszeitraum betrifft (aktuelle Anpassungen, Reaktion auf Rückmeldungen, Trainingslast, Bezug zum Wochen-Soll), in 2–4 Stichpunkten; die Phasenlogik steht nur im Gesamtplan.
+- Neuaufsetzen eines Plans (PLANSTATUS „neu aufsetzen“; nicht bei bestehenden Plänen, dort zählt die laufende Entwicklung): Leite Startumfang, Läufe pro Woche, Länge des langen Laufs und Tempobereiche aus dem TRAININGSSTAND ab (Wochenumfang, Läufe pro Woche, längster Lauf, Pace-Bereiche der letzten 6–8 Wochen). Tempobereiche aus der GAP (steigungsbereinigt), nicht aus der rohen Pace. Läufe nach hm/km einordnen: unter 10 flach, 10–25 hügelig, darüber bergig.
+- Höhenmeter: Eine Höhenmeter-Progression ("weeklyHm", "longRunHm" je Phase, hm-Angaben in den Einheiten) planst du nur bei Zielen wie Trail, Ultra oder Berglauf, abgeleitet aus dem Wettkampfprofil (Distanz und hm, unter "raceProfile" festhalten; ist es unbekannt, frag danach). Bei Straße oder Stadtmarathon keine hm-Vorgaben.
+- Alpine Ziele ohne passendes Gelände (der TRAININGSSTAND zeigt überwiegend flache Läufe): Plane Ersatzreize ein (Steigungswiederholungen, Treppen, Laufband mit Steigung, exzentrische Kraft wie Step-downs und Bergab-Belastung). Beschreibe die Lücke zwischen Trainingsprofil und Wettkampfprofil in "terrainGap" und schlage in "terrainBlocks" konkrete Geländeblöcke vor (z. B. „Wochenende im Mittelgebirge: 2 × 15 km mit 600 hm, Woche 8“).
 - Ändere nur, was sich wirklich ändert; lass andere Felder in "updates" weg. Halte die Antwort kompakt und gültiges JSON: Anführungszeichen innerhalb von Texten als „…“ schreiben.
 
 Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
@@ -2608,7 +2662,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "background":"aktualisierter Hintergrundtext",
    "absences":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","type":"off|limited","note":"Urlaub, nur Wandern"}],
    "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]},{"date":"YYYY-MM-DD","sport":"strength","title":"Kraft Rumpf und Beine","goal":"…","durationMin":20,"steps":[{"label":"Unterarmstütz","detail":"Körper gerade, Bauch fest","sets":3,"holdS":40,"restS":45},{"label":"Ausfallschritt","detail":"langsam, Knie über dem Fuß","sets":3,"reps":10,"restS":60,"perSide":true}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
-   "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
+   "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei","weeklyHm":[300,500],"longRunHm":[200,400]}],"raceProfile":"nur bei Trail/Ultra/Berglauf: z. B. 42 km, 2400 hm","terrainGap":"…","terrainBlocks":["…"],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
@@ -2631,6 +2685,8 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
 `BEGRÜNDUNG DES PLANS: ${S.plan&&S.plan.rationale||'–'}`,
 `GESAMTPLAN: ${macroCtx()}`,
+`PLANSTATUS: ${macro() ? 'bestehender Plan – weiterführen, nicht neu aufsetzen' : 'neu aufsetzen (noch kein Gesamtplan)'}`,
+`TRAININGSSTAND (Strava, letzte 8 Wochen, für das Neuaufsetzen):\n${trainingBaseCtx()}`,
 `AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen): ${JSON.stringify(al)}`,
 `HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
 `WOCHENWERTE (letzte 6 Wochen): ${JSON.stringify(wochen)}`,
