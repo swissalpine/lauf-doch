@@ -2061,7 +2061,7 @@ function markChange(key, text){
 const pendingList = () => Object.values(profile().pendingChanges||{}).filter(Boolean);
 function replanFromChanges(){
   const ch = pendingList(); if(!ch.length || !sample || busy) return;
-  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan bis Ende nächster Woche daran an.', {auto:true});
+  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan bis Ende nächster Woche daran an.', {auto:true, display:'Einstellungen geändert – Plan anpassen'});
 }
 function changeBanner(){
   const ch = pendingList(); if(!ch.length) return '';
@@ -2604,7 +2604,7 @@ async function syncStrava(){
     const recent = fresh.filter(a => a.sport!=='walk' && daysUntil(a.date) >= -10);
     if(recent.length && sample && sampleState!=='denied' && !busy){
       const desc = recent.map(a=>`${fmtDay(a.date)} ${SPORT[a.sport]} „${a.name}“ ${fmtNum(a.distKm,2)} km (ID ${a.id})`).join('; ');
-      askClaude('Strava-Abgleich: '+desc+'. Bitte einschätzen, nach Schmerz und RPE fragen und den Plan bei Bedarf anpassen.', {auto:true});
+      askClaude('Strava-Abgleich: '+desc+'. Bitte einschätzen, nach Schmerz und RPE fragen und den Plan bei Bedarf anpassen.', {auto:true, display:`Strava-Abgleich: ${recent.length===1?'1 neue Aktivität':recent.length+' neue Aktivitäten'}`});
     }
   }catch(e){
     const c = e && e.code;
@@ -3001,7 +3001,7 @@ async function checkMissed(){
     }).join('; ');
     // synchron markieren und fragen, damit kein anderer Aufruf dazwischenkommt
     S.plan.missedHandled = [...new Set([...(S.plan.missedHandled||[]), ...keys])].slice(-60);
-    const q = askClaude(`Ausgelassen laut Strava: ${desc}. Bitte plane bis Ende nächster Woche neu: Entscheide, ob die Inhalte nachgeholt, gekürzt oder gestrichen werden, und rechne Ersatztraining an. Frag kurz nach dem Grund, falls er für die Planung wichtig ist.`, {auto:true});
+    const q = askClaude(`Ausgelassen laut Strava: ${desc}. Bitte plane bis Ende nächster Woche neu: Entscheide, ob die Inhalte nachgeholt, gekürzt oder gestrichen werden, und rechne Ersatztraining an. Frag kurz nach dem Grund, falls er für die Planung wichtig ist.`, {auto:true, display:'Ausgelassene Einheiten – Plan anpassen'});
     await save('plan');
     await q;
   } finally { missedBusy = false; }
@@ -3104,7 +3104,7 @@ document.addEventListener('click', async e => {
     render(); await save('log');
     const act = acts().find(x=>x.id===b.dataset.id), f2 = fb(b.dataset.id) || {};
     if(act && f2.painDuring!=null && f2.painAfter!=null && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
-      askClaude(`Rückmeldung ergänzt: Schmerz während ${f2.painDuring}/10, danach ${f2.painAfter}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit. Keine Rückfrage.`, {auto:true});
+      askClaude(`Rückmeldung ergänzt: Schmerz während ${f2.painDuring}/10, danach ${f2.painAfter}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit. Keine Rückfrage.`, {auto:true, display:`Schmerz eingetragen: ${act.name}`});
   }
   else if(a==='rpe-set'){
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
@@ -3113,7 +3113,7 @@ document.addEventListener('click', async e => {
     render(); await save('log');
     const act = acts().find(x=>x.id===b.dataset.id);
     if(act && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
-      askClaude(`Rückmeldung ergänzt: RPE ${b.dataset.v}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`, {auto:true});
+      askClaude(`Rückmeldung ergänzt: RPE ${b.dataset.v}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`, {auto:true, display:`RPE ${b.dataset.v} eingetragen: ${act.name}`});
   }
   else if(a==='guide'){ e.preventDefault(); const st={label:b.dataset.label, detail:b.dataset.detail}; guideDlg={label:st.label, detail:st.detail, key:guideKey(st), loading:false, error:null}; renderMoveDialog(); loadGuide(false); }
   else if(a==='guide-close'){ guideDlg=null; renderMoveDialog(); }
@@ -3169,7 +3169,7 @@ document.addEventListener('click', async e => {
     s.cancelled = {reason, ts:new Date().toISOString()};
     S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
     render(); await save('plan'); icuAutoSync();
-    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung bis Ende nächster Woche: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true});
+    if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung bis Ende nächster Woche: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true, display:`„${title}“ abgesagt${reason?' – '+reason:''}`});
   }
   else if(a==='move-open'){ moveDlg={from:b.dataset.date, title:b.dataset.title, to:null}; renderMoveDialog(); }
   else if(a==='move-close'){ moveDlg=null; renderMoveDialog(); }
@@ -3186,7 +3186,7 @@ document.addEventListener('click', async e => {
     S.plan.blockedDates = uniq([...(S.plan.blockedDates||[]).filter(d=>d!==to), from]);
     S.plan.sessions.sort((x,y)=>x.date.localeCompare(y.date));
     render(); await save('plan'); icuAutoSync();
-    if(sample && !busy) askClaude(`Ich habe „${s.title}“ von ${fmtDay(from)} auf ${fmtDay(to)} verschoben, weil ich am ${fmtDay(from)} nicht kann. Die Einheit bleibt am ${fmtDay(to)}, am ${fmtDay(from)} bitte nichts planen. Prüfe Abstände und Trainingslast der angrenzenden Einheiten und passe den Plan an: Einheiten bei Bedarf kürzen oder tauschen und dafür andere verlängern, damit der Wochenumfang passt.`, {auto:true});
+    if(sample && !busy) askClaude(`Ich habe „${s.title}“ von ${fmtDay(from)} auf ${fmtDay(to)} verschoben, weil ich am ${fmtDay(from)} nicht kann. Die Einheit bleibt am ${fmtDay(to)}, am ${fmtDay(from)} bitte nichts planen. Prüfe Abstände und Trainingslast der angrenzenden Einheiten und passe den Plan an: Einheiten bei Bedarf kürzen oder tauschen und dafür andere verlängern, damit der Wochenumfang passt.`, {auto:true, display:`„${s.title}“ auf ${fmtDay(to)} verschoben`});
   }
   else if(a==='rm-complaint'){ confirmRm=Number(b.dataset.i); render(); }
   else if(a==='rm-no'){ confirmRm=null; render(); }
