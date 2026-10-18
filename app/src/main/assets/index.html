@@ -544,6 +544,10 @@ table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400
 .macro{gap:0;padding:0}
 .mgap{border:1px solid var(--warn);background:var(--warn-soft);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
 .mgap b{color:var(--warn)}.mgap p{margin:4px 0 0}.mgap .mgb{margin-top:6px;font-weight:600}.mgap ul{margin:4px 0 0;padding-left:18px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn.danger.primary{background:var(--crit);color:#fff}
+.rsbox{border:1px solid var(--crit);background:var(--crit-soft);border-radius:10px;padding:10px 12px;margin-top:8px}
+.rsbox p{margin:0 0 8px}
 .macro>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .macro>summary::-webkit-details-marker{display:none}
 .macro .mhead{display:flex;align-items:baseline;gap:8px}
@@ -2337,6 +2341,14 @@ function connCard(){
         ${expSecrets?`<p class="note">Die Datei enthält dann deine Schlüssel – nicht weitergeben. Die Strava-Verbindung selbst wird nicht gesichert: Auf dem neuen Gerät einmal „Mit Strava verbinden“ tippen.</p>`:''}
         <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
   </div>
+  <details class="card macro" data-k="reset"><summary><div class="mhead"><h2>Neu beginnen</h2><span class="chev">▼</span></div></summary><div class="mbody">
+    <p class="muted"><b>Plan neu aufsetzen:</b> löscht Gesamtplan, Wochenplan, Wochenfazits, Bewertungen und Dialog. Profil, Ziel, Beschwerden, Erkenntnisse und Aktivitäten mit Rückmeldungen bleiben. Claude setzt danach mit deinem Trainingsstand aus Strava neu auf.</p>
+    <p class="muted"><b>Alles zurücksetzen:</b> löscht zusätzlich Profil, Ziel, Beschwerden, Erkenntnisse, Abwesenheiten, Aktivitäten, Rückmeldungen und Morgen-Checks. ${IN_APP?'Zugangsdaten, Erinnerungen und ':''}Kostenanzeige bleiben; die Aktivitäten werden danach frisch aus Strava geladen.</p>
+    <p class="note">Tipp: Vorher unter „Datensicherung“ eine Sicherung speichern.</p>
+    ${resetAsk ? `<div class="rsbox"><p><b>${resetAsk==='all'?'Wirklich alles zurücksetzen?':'Plan wirklich neu aufsetzen?'}</b> Das lässt sich nur mit einer Sicherung rückgängig machen.</p>
+      <div class="row" style="justify-content:flex-start"><button class="btn danger primary" data-action="reset-yes">${resetAsk==='all'?'Alles zurücksetzen':'Plan neu aufsetzen'}</button><button class="btn" data-action="reset-no">Abbrechen</button></div></div>`
+    : `<div class="row" style="justify-content:flex-start"><button class="btn" data-action="reset-plan">Plan neu aufsetzen</button><button class="btn danger" data-action="reset-all">Alles zurücksetzen</button></div>`}
+  </div></details>
   <div class="card about"><h2>Über Lauf doch!</h2>
     <div class="svcrow"><b>Version</b><span class="st">${esc(st.appVersion||'–')}</span></div>
     ${st.buildDate ? `<div class="svcrow"><b>Erschienen</b><span class="st">${esc(parseYmd(st.buildDate).toLocaleDateString('de-DE'))}</span></div>` : ''}
@@ -2345,6 +2357,25 @@ function connCard(){
   </div>`;
 }
 let expSecrets = false; // Zugangsdaten in die Sicherung (nur für diesen Vorgang)
+let resetAsk = null; // 'plan' | 'all' wartet auf Bestätigung
+async function doReset(kind){
+  const log = S.log || {};
+  S.plan = {sessions:[]};
+  S.chat = {messages:[]}; showAll = false; dialogSince = Date.now();
+  if(kind==='all'){
+    S.profile = {goal:null, trainingDays:[], sports:['run','ride','strength'], background:'', complaints:[], insights:[], absences:[]};
+    S.log = {activities:[], feedback:{}, assessments:{}, weekSummaries:{}, checks:{}};
+    try{ Object.keys(localStorage).filter(k=>k.startsWith('ld:streams/') || k==='ld-workout').forEach(k=>localStorage.removeItem(k)); }catch(_){}
+    try{ Object.keys(STREAMS).forEach(k=>delete STREAMS[k]); }catch(_){}
+  } else {
+    S.log = Object.assign({}, log, {assessments:{}, weekSummaries:{}});
+  }
+  await Promise.all(['plan','chat','log'].concat(kind==='all'?['profile']:[]).map(n=>save(n)));
+  weekInit = false; tab = 'heute'; detailId = null;
+  syncMsg = {text: kind==='all' ? 'Alles zurückgesetzt. Aktivitäten werden aus Strava geladen …' : 'Plan zurückgesetzt. Erstelle unter „Plan“ einen neuen Gesamtplan.'};
+  render(); window.scrollTo({top:0});
+  if(kind==='all' && mcp) syncStrava();
+}
 let confirmImport = null; // geladene Sicherung, wartet auf Bestätigung
 window.onAppStatus = () => render();
 window.onBackupLoaded = text => {
@@ -3204,6 +3235,9 @@ document.addEventListener('click', async e => {
   else if(a==='cf-export'){ const o=window.__ldExport(); if(expSecrets && window.Android.getSecrets){ try{ o.secrets=JSON.parse(window.Android.getSecrets()); }catch(e){} }
     if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(o))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); else { expSecrets=false; render(); } }
   else if(a==='cf-import'){ window.Android.pickBackup(); }
+  else if(a==='reset-plan'||a==='reset-all'){ resetAsk = a==='reset-all'?'all':'plan'; render(); }
+  else if(a==='reset-no'){ resetAsk = null; render(); }
+  else if(a==='reset-yes'){ const k = resetAsk; resetAsk = null; await doReset(k); }
   else if(a==='cf-import-no'){ confirmImport=null; render(); }
   else if(a==='cf-import-yes'){ const o=confirmImport; const sec=o.secrets && (document.getElementById('cfImpSec')||{}).checked; confirmImport=null;
     if(sec && window.Android.setSecrets) window.Android.setSecrets(JSON.stringify(o.secrets));
