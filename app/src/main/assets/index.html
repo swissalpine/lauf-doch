@@ -133,6 +133,22 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .msg.error{background:var(--crit-soft);color:var(--crit)}
 .msg.auto{align-self:center;background:none;color:var(--muted);font-size:13px;text-align:center;max-width:100%;padding:2px 0}
 .thinking{align-self:flex-start;color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
+.msg.think{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--accent);color:var(--accent);font-weight:600;width:100%;max-width:100%;box-sizing:border-box;padding:10px 12px 10px 14px;box-shadow:0 2px 10px rgba(0,83,250,.15)}
+.msg.think #thinkTxt{flex:1;min-width:0}
+.msg.think .tdots{display:inline-flex;gap:4px}
+.msg.think .tdots i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:tdot 1.2s ease-in-out infinite}
+.msg.think .tdots i:nth-child(2){animation-delay:.15s}.msg.think .tdots i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-5px);opacity:1}}
+.msg.think #thinkTxt{transition:opacity .25s}
+.msg.think .btn{flex-shrink:0;white-space:nowrap;padding:4px 10px;font-size:13px}
+header.bar::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:4px;opacity:0;pointer-events:none;transition:opacity .3s;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent) no-repeat;background-size:35% 100%}
+body.cbusy header.bar::after{opacity:1;animation:cbar 1.3s linear infinite}
+@keyframes cbar{from{background-position:-40% 0}to{background-position:140% 0}}
+.cdone{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:7;display:flex;align-items:center;gap:8px;
+  background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:10px 18px;white-space:nowrap;font:inherit;font-size:15px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer;animation:cdin .25s ease-out}
+@keyframes cdin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){.msg.think .tdots i,body.cbusy header.bar::after{animation:none}body.cbusy header.bar::after{background-size:100% 100%;opacity:.6}}
 .compose{display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line)}
 .compose textarea{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
 .compose .row{flex-wrap:nowrap}
@@ -2360,6 +2376,33 @@ function reminder(){
   return null;
 }
 let topicHint = '', topicSel = '';
+/* Claude arbeitet: Laufband oben, Blase im Dialog, Hinweis nach der Antwort */
+const THINK_STEPS = ['Claude liest deine Aktivitäten …','Claude prüft die Belastung …','Claude schaut in den Plan …','Claude denkt nach …'];
+let thinkMode = 'think', thinkIdx = 0, thinkTimer = null, claudeCount = 0;
+function thinkLabel(){ return thinkMode==='write' ? 'Claude schreibt …' : thinkMode==='retry' ? thinkRetryText : THINK_STEPS[thinkIdx % THINK_STEPS.length]; }
+let thinkRetryText = '';
+function setThink(mode, txt){ thinkMode = mode; if(txt) thinkRetryText = txt; const el=document.getElementById('thinkTxt'); if(el) el.textContent = thinkLabel(); }
+function thinkStart(){ thinkMode='think'; thinkIdx=0; clearInterval(thinkTimer);
+  thinkTimer = setInterval(()=>{ if(thinkMode!=='think') return; thinkIdx++; const el=document.getElementById('thinkTxt'); if(!el) return;
+    el.style.opacity=0; setTimeout(()=>{ el.textContent=thinkLabel(); el.style.opacity=1; }, 250); }, 2600); }
+function thinkStop(){ clearInterval(thinkTimer); thinkTimer=null; }
+function claudeBusy(d){ claudeCount = Math.max(0, claudeCount+d); document.body.classList.toggle('cbusy', claudeCount>0); }
+function wrapSample(s){ if(!s || !s.json) return s; const w = Object.create(s); const orig = s.json.bind(s);
+  w.json = async (...a) => { claudeBusy(1); try{ return await orig(...a); } finally{ claudeBusy(-1); } }; return w; }
+let cdoneTimer = null;
+let unreadTitle = null;
+function answerNotice(){
+  if(document.hidden){ if(unreadTitle==null){ unreadTitle = document.title; document.title = '(1) ' + unreadTitle; } return; }
+  const last = [...document.querySelectorAll('#dialog .msg')].pop(); if(!last) return;
+  const r = last.getBoundingClientRect(), vh = window.innerHeight;
+  if(r.top < vh-90 && r.bottom > 60) return; // Antwort ist sichtbar
+  let b = document.getElementById('cdone');
+  if(!b){ b = document.createElement('button'); b.id='cdone'; b.className='cdone'; b.dataset.action='cdone'; document.body.appendChild(b); }
+  b.innerHTML = '<span aria-hidden="true">💬</span> Claude hat geantwortet';
+  clearTimeout(cdoneTimer); cdoneTimer = setTimeout(hideNotice, 8000);
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden && unreadTitle!=null){ document.title = unreadTitle; unreadTitle = null; setTimeout(answerNotice, 150); } });
+function hideNotice(){ const b=document.getElementById('cdone'); if(b) b.remove(); clearTimeout(cdoneTimer); }
 const a2s = a => a.sport==='run' ? 'Lauf' : a.sport==='ride' ? 'Radtraining' : 'Training';
 
 function renderDialog(){
@@ -2370,7 +2413,7 @@ function renderDialog(){
   if(!msgs.length && !busy) body = '';
   else body = (msgs.length>shown.length?`<button class="btn ghost" data-action="more">Ältere Nachrichten anzeigen (${msgs.length-shown.length})</button>`:'') +
     shown.map(m => `<div class="msg ${m.auto?'auto':m.error?'assistant error':m.role}">${m.role==='assistant'&&!m.error&&!m.auto?`<div class="md">${md(m.text)}</div>`:esc(m.text)}</div>`).join('');
-  if(busy) body += `<div class="thinking"><span class="dot"></span><span id="thinkTxt">Claude denkt nach …</span><button class="btn ghost" data-action="stop">Stopp</button></div>`;
+  if(busy) body += `<div class="msg think" role="status"><span class="tdots" aria-hidden="true"><i></i><i></i><i></i></span><span id="thinkTxt">${esc(thinkLabel())}</span><button class="btn ghost" data-action="stop">Stopp</button></div>`;
   let compose;
   if(sampleState==='none') compose = `<p class="note">Der Dialog mit Claude ist in dieser Ansicht nicht verfügbar.</p>`;
   else if(sampleState==='denied') compose = `<p class="note">Du hast der App den Zugriff auf Claude nicht erlaubt. Lade die Seite neu, um erneut gefragt zu werden.</p>`;
@@ -2677,19 +2720,19 @@ async function askClaude(text, opt={}){
   // Immer in den aktuellen S.chat schreiben: Snapshots ersetzen das Objekt während der Anfrage
   const push = m => { if(!S.chat) S.chat={messages:[]}; S.chat.messages = (S.chat.messages||[]).concat([m]).slice(-80); };
   push(Object.assign({role:'user', text:(opt.display||text).trim(), ts:Date.now(), auto:!!opt.auto}, opt.display?{full:text.trim().slice(0,12000)}:{}));
-  busy=true; render(); save('chat');
+  busy=true; hideNotice(); thinkStart(); render(); save('chat');
   const turns = [{role:'user', content:buildContext()}];
   S.chat.messages.filter(m=>!m.error && (m.ts||0)>=dialogSince).slice(-16).forEach(m => turns.push({role:m.role, content:m.full||m.text}));
   ctl = new AbortController();
   try{
-    const onText = ()=>{ const el=document.getElementById('thinkTxt'); if(el) el.textContent='Claude schreibt …'; };
+    const onText = ()=>{ if(thinkMode!=='write') setThink('write'); };
     let res;
     try{ res = await sample.json(turns, {cache:false, signal:ctl.signal, onText}); }
     catch(e1){
       if(!e1 || e1.code!=='invalid_json') throw e1;
       // Einmal automatisch knapper wiederholen
       const cut = /abgeschnitten/.test(e1.message||'');
-      const el=document.getElementById('thinkTxt'); if(el) el.textContent = cut ? 'Antwort zu lang – Claude fasst sich kürzer …' : 'Antwort unlesbar – Claude versucht es erneut …';
+      setThink('retry', cut ? 'Antwort zu lang – Claude fasst sich kürzer …' : 'Antwort unlesbar – Claude versucht es erneut …');
       console.warn('Claude-Antwort unbrauchbar', e1.message, String(e1.text||'').slice(-400));
       res = await sample.json(turns.concat([{role:'user', content:`Deine vorige Antwort ${cut?'war zu lang und wurde abgeschnitten':'war kein gültiges JSON'}. Antworte erneut auf die letzte Nachricht, als gültiges JSON und deutlich knapper: "reply" höchstens 4 Sätze, nur die nötigen Felder in "updates", Einheiten mit höchstens 5 Schritten und kurzen Details, Gesamtplan-Begründung höchstens 4 Stichpunkte. Anführungszeichen innerhalb von Texten als „…“ schreiben.`}]), {cache:false, signal:ctl.signal, onText});
     }
@@ -2700,7 +2743,7 @@ async function askClaude(text, opt={}){
     if(e && e.code==='cancelled') push({role:'assistant', text:'Abgebrochen.', ts:Date.now(), error:true});
     else push({role:'assistant', text:errText(e), ts:Date.now(), error:true});
   }finally{
-    busy=false; ctl=null; await save('chat'); render();
+    busy=false; ctl=null; thinkStop(); await save('chat'); render(); setTimeout(answerNotice, 60);
   }
 }
 function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; const msg = topicSel && !v.startsWith(topicSel) ? topicSel+': '+v : v; draft=''; topicHint=''; topicSel=''; askClaude(msg); }
@@ -2884,6 +2927,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.action==='cdone'){ hideNotice(); const last=[...document.querySelectorAll('#dialog .msg')].pop(); if(last) last.scrollIntoView({behavior:'smooth', block:'center'}); return; }
   if(b.dataset.tab) detailId = null;
   const da = b.dataset.action;
   if(da==='detail-open'){ detailScroll = window.scrollY; detailId = b.dataset.id; detailErr = null; render(); window.scrollTo({top:0}); return; }
@@ -3095,7 +3139,7 @@ render();
   const cl = window.claude;
   if(!cl || !cl.use){ mcpState='none'; sampleState='none'; S.loaded=true; render(); return; }
   cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); setTimeout(autoSync, 800); });
-  cl.use('sample').then(s => { sample=s; sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); });
+  cl.use('sample').then(s => { sample=wrapSample(s); sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); });
   const [user, dbx] = await Promise.all([cl.use('user'), cl.use('db')]);
   db = dbx; uid = user ? await user.id() : null;
   if(!db || !uid){ S.loaded=true; syncMsg={err:true, text:'Speichern ist in dieser Ansicht nicht möglich. Öffne die App angemeldet in claude.ai.'}; render(); return; }
