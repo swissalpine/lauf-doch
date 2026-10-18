@@ -1312,9 +1312,10 @@ function manualCard(a, planned){
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-    ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
+    ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet.${a.workout?'':' Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.'}</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
     ${!a.push && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
-    <div class="row"><span class="note">${a.push?'':'Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
+    ${a.workout && a.stravaId && (!a.push || (a.perf&&a.perf.hr) || a.re!=null) ? `<p class="note">✓ Mit Strava verknüpft${a.perf&&a.perf.hr?' · Ø '+Math.round(a.perf.hr)+(a.perf.hrMax?' / max. '+a.perf.hrMax:'')+' bpm':''}${a.re!=null?' · Relative Effort '+a.re:''}</p>` : ''}
+    <div class="row"><span class="note">${a.push?'':a.workout?(a.stravaId?'':'Kommt die Einheit auch über Strava (z. B. von der Uhr), bleibt dieses Protokoll erhalten; Puls und Relative Effort werden übernommen.'):'Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
   </article>`;
 }
 
@@ -2447,13 +2448,26 @@ async function syncStrava(){
     const list = (r && r.payload && Array.isArray(r.payload.activities)) ? r.payload.activities : [];
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     log.activities = log.activities||[]; log.feedback = log.feedback||{}; log.assessments = log.assessments||{};
-    const known = new Set(log.activities.map(a=>a.id));
+    // bekannt: eigene IDs und Strava-IDs, die in einem App-Protokoll aufgegangen sind
+    const known = new Set(log.activities.flatMap(a=>[a.id, a.stravaId, ...(a.linked||[])].filter(Boolean)));
     const incoming = list.map(compact);
-    const fresh = incoming.filter(a=>!known.has(a.id));
+    const fresh = incoming.filter(a=>!known.has(a.id) && !log.activities.some(m=>m.workout && m.date===a.date && m.sport===a.sport));
     const byId = new Map(log.activities.map(a=>[a.id,a])); incoming.forEach(a=>byId.set(a.id, Object.assign({}, byId.get(a.id)||{}, a)));
     let merged = [...byId.values()];
     merged.filter(isManual).forEach(m => {
-      const real = merged.find(x => !isManual(x) && x.date===m.date && x.sport===m.sport);
+      if(m.workout){
+        // In der App aufgezeichnet: Protokoll bleibt, Strava-Aktivitäten desselben Tags (gesendet und/oder von der Uhr) werden verknüpft
+        const cands = merged.filter(x => !isManual(x) && (x.id===m.stravaId || (x.date===m.date && x.sport===m.sport)));
+        if(!cands.length) return;
+        m.linked = [...new Set([...(m.linked||[]), ...cands.map(x=>x.id)])];
+        if(!m.stravaId) m.stravaId = cands[0].id;
+        const withRe = cands.find(x=>x.re!=null); if(withRe) m.re = withRe.re;
+        const withHr = cands.find(x=>x.perf && x.perf.hr); if(withHr) m.perf = withHr.perf;
+        cands.forEach(x => { if(log.feedback[x.id] && !log.feedback[m.id]) log.feedback[m.id] = log.feedback[x.id]; delete log.feedback[x.id]; });
+        merged = merged.filter(x => !cands.includes(x));
+        return;
+      }
+      const real = merged.find(x => !isManual(x) && m.stravaId && x.id===m.stravaId) || merged.find(x => !isManual(x) && x.date===m.date && x.sport===m.sport);
       if(!real) return;
       if(log.feedback[m.id] && !log.feedback[real.id]) log.feedback[real.id] = log.feedback[m.id];
       delete log.feedback[m.id];
@@ -2478,6 +2492,17 @@ async function syncStrava(){
           rounds: Array.isArray(p.rounds) ? p.rounds.slice(0,60).map(l=>({d:Math.round(l.distance||0), s:l.moving_time||0, e:l.elapsed_time||null, hr:l.avg_hr?Math.round(l.avg_hr*10)/10:null, g:l.avg_grade!=null?Math.round(l.avg_grade*10)/10:null, w:l.avg_watts?Math.round(l.avg_watts):null, c:l.avg_cadence?Math.round(l.avg_cadence):null})) : undefined};
         if(keepDec && need[i].perf) need[i].perf.dec = keepDec;
       }catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
+    }
+    // Puls zu verknüpften App-Protokollen (z. B. Kraft mit der Uhr aufgezeichnet)
+    const wkNeed = log.activities.filter(a=>a.workout && (a.linked||[]).length && !a.perf && daysUntil(a.date)>=-14).slice(0,5);
+    for(const a of wkNeed){
+      let perf = {hr:null, hrMax:null};
+      for(const sid of a.linked){
+        try{ const p = (await mcp.callTool(SERVER,'get_activity_performance',{activity_id:sid},{cache:false})).payload || {};
+          if(p.average_heartrate){ perf = {hr:Math.round(p.average_heartrate*10)/10, hrMax:p.max_heartrate||null}; break; } }
+        catch(err){ if(['needs_reauth','server_not_connected','not_in_manifest','consent_required'].includes(err&&err.code)) break; }
+      }
+      a.perf = perf;
     }
     // Verlaufsdaten neuer Läufe und Fahrten gleich mitholen (genaue Entkopplung, Analyse sofort verfügbar)
     const wantSt = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !isManual(a) && a.perf && daysUntil(a.date)>=-14 && !getStreams(a.id) && !(a.perf.dec)).slice(0,6);
