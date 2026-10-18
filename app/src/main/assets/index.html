@@ -2076,9 +2076,18 @@ function changeBanner(){
 function keepVisible(el){ if(!el) return; const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const r = el.getBoundingClientRect(); if(r.bottom > vh - 8) window.scrollBy(0, r.bottom - vh + 16); }
 const isTyping = el => el && (el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && /^(text|search|number|email|password|url|tel|date|time)$/.test(el.type||'text')));
-document.addEventListener('focusin', e => { if(isTyping(e.target)){ document.body.classList.add('typing'); setTimeout(()=>keepVisible(e.target.closest('.compose')||e.target), 350); } });
-document.addEventListener('focusout', () => setTimeout(() => { if(!isTyping(document.activeElement)) document.body.classList.remove('typing'); }, 50));
-(window.visualViewport || window).addEventListener('resize', () => { const a = document.activeElement; if(isTyping(a)) keepVisible(a.closest('.compose')||a); });
+/* Tastatur offen = Fokus in einem Eingabefeld UND sichtbare Höhe deutlich kleiner als ohne Tastatur.
+   Schließt man die Tastatur (Zurück/Pfeil), bleibt der Fokus im Feld – deshalb zählt die Höhe. */
+const vpH = () => window.visualViewport ? window.visualViewport.height : window.innerHeight;
+let vpMax = vpH();
+function kbUpdate(){ const h = vpH(); if(!isTyping(document.activeElement)) vpMax = Math.max(vpMax, h);
+  const open = isTyping(document.activeElement) && h < vpMax - 120;
+  document.body.classList.toggle('typing', open);
+  if(open) keepVisible(document.activeElement.closest('.compose')||document.activeElement); }
+window.addEventListener('orientationchange', () => { vpMax = 0; setTimeout(()=>{ vpMax = vpH(); kbUpdate(); }, 400); });
+document.addEventListener('focusin', e => { if(isTyping(e.target)) setTimeout(kbUpdate, 350); });
+document.addEventListener('focusout', () => setTimeout(kbUpdate, 50));
+(window.visualViewport || window).addEventListener('resize', kbUpdate);
 document.addEventListener('change', e => {
   if(e.target && e.target.id==='cfExpSec'){ expSecrets = !!e.target.checked; render(); return; }
   if(e.target && /^rem-(morning|evening)$/.test(e.target.id||'')){ const c=remindCfg(), k=e.target.id.slice(4); if(/^\d\d:\d\d$/.test(e.target.value)){ c[k+'Time']=e.target.value; setRemindCfg(c); } return; }
