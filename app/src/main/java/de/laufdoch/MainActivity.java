@@ -44,7 +44,8 @@ import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
 
     private static final String PREFS = "laufdoch";
-    private static final String STRAVA_REDIRECT = "laufdoch://laufdoch.app/strava";
+    /** Callback-Domain der eigenen Strava-API-Anwendung; der Rücksprung lautet laufdoch://<domain>/strava. */
+    private static final String STRAVA_DOMAIN_DEFAULT = "swissalpine.github.io";
     private static final String DEFAULT_MODEL = "claude-sonnet-5-5";
     private static final int REQ_BACKUP = 42;
     private static final int REQ_NOTIF = 43;
@@ -452,6 +453,7 @@ public class MainActivity extends Activity {
                 j.put("stravaClient", !prefs.getString("strava_client_id", "").isEmpty()
                         && !prefs.getString("strava_client_secret", "").isEmpty());
                 j.put("stravaClientId", prefs.getString("strava_client_id", ""));
+                j.put("stravaDomain", prefs.getString("strava_domain", STRAVA_DOMAIN_DEFAULT));
                 j.put("stravaConnected", prefs.getString("strava_refresh", null) != null);
                 j.put("stravaAthlete", prefs.getString("strava_athlete", ""));
                 j.put("stravaWrite", prefs.getString("strava_scope", "").contains("activity:write"));
@@ -483,6 +485,12 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void setStravaDomain(String domain) {
+            String d = domain == null ? "" : domain.trim().replaceFirst("^https?://", "").replaceAll("/.*$", "");
+            prefs.edit().putString("strava_domain", d.isEmpty() ? STRAVA_DOMAIN_DEFAULT : d).apply();
+        }
+
+        @JavascriptInterface
         public void setStravaClient(String id, String secret) {
             SharedPreferences.Editor e = prefs.edit();
             if (id != null && !id.trim().isEmpty()) e.putString("strava_client_id", id.trim());
@@ -497,7 +505,7 @@ public class MainActivity extends Activity {
             if (id.isEmpty()) { toast("Zuerst Client-ID und Secret eintragen."); return; }
             Uri u = Uri.parse("https://www.strava.com/oauth/mobile/authorize").buildUpon()
                     .appendQueryParameter("client_id", id)
-                    .appendQueryParameter("redirect_uri", STRAVA_REDIRECT)
+                    .appendQueryParameter("redirect_uri", "laufdoch://" + prefs.getString("strava_domain", STRAVA_DOMAIN_DEFAULT) + "/strava")
                     .appendQueryParameter("response_type", "code")
                     .appendQueryParameter("approval_prompt", "auto")
                     .appendQueryParameter("scope", "read,activity:read_all,activity:write,profile:read_all")

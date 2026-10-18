@@ -23,12 +23,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Rücksprung aus der Strava-Anmeldung: laufdoch://laufdoch.app/strava?code=… -->
+            <!-- Rücksprung aus der Strava-Anmeldung: laufdoch://<Callback-Domain>/strava?code=… -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="laufdoch" android:host="laufdoch.app" />
+                <data android:scheme="laufdoch" />
             </intent-filter>
         </activity>
         <receiver android:name=".UpdateReceiver" android:exported="false" />

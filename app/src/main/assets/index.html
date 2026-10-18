@@ -1130,7 +1130,7 @@ function renderGoalDialog(el){
   el.innerHTML = `<button class="overlay" data-action="goal-close" aria-label="Schließen" tabindex="-1"></button>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="goalTitle">
       <h2 id="goalTitle">Ziel bearbeiten</h2>
-      <label class="fld" for="goalText"><span>Ziel</span><textarea id="goalText" rows="3" placeholder="z. B. Schmerzfrei 23 km auf dem Trail">${esc(goalDlg.text||'')}</textarea></label>
+      <label class="fld" for="goalText"><span>Ziel</span><textarea id="goalText" rows="3" placeholder="z. B. Halbmarathon unter 2 Stunden">${esc(goalDlg.text||'')}</textarea></label>
       <label class="fld" for="goalDate"><span>Zieldatum (optional)</span><input id="goalDate" type="date" value="${esc(goalDlg.date||'')}"></label>
       <p class="muted">Ohne Datum berechnet Claude ein realistisches Enddatum. Nach dem Speichern passt Claude Gesamtplan und Plan an.</p>
       <div class="row end"><button class="btn" data-action="goal-close">Abbrechen</button><button class="btn primary" data-action="goal-save">Speichern</button></div>
@@ -1188,7 +1188,7 @@ function renderInsightDialog(el){
         ? `<li><textarea id="insEdit" rows="2" aria-label="Erkenntnis bearbeiten">${esc(x)}</textarea><div class="row end"><button class="btn" data-action="ins-edit-no">Abbrechen</button><button class="btn primary" data-action="ins-edit-yes" data-i="${i}">Speichern</button></div></li>`
         : `<li><span>${esc(x)}</span><span class="ia"><button class="ib" data-action="ins-edit" data-i="${i}" aria-label="Bearbeiten">✎</button><button class="ib" data-action="ins-del" data-i="${i}" aria-label="Löschen">×</button></span></li>`).join('')}</ul>`
         :`<p class="empty">Noch keine Erkenntnisse. Claude legt sie im Laufe der Zeit an. Du kannst Claude auch bitten, sie jetzt aus deinen bisherigen Daten abzuleiten.</p>`}
-      <div class="addrow"><input id="insNew" type="text" placeholder="z. B. Bergab über 5 % reizt das Knie" aria-label="Erkenntnis hinzufügen"><button class="btn" data-action="ins-add">Hinzufügen</button></div>
+      <div class="addrow"><input id="insNew" type="text" placeholder="z. B. Nach Intervallen zwei lockere Tage einplanen" aria-label="Erkenntnis hinzufügen"><button class="btn" data-action="ins-add">Hinzufügen</button></div>
       <div class="row end"><button class="btn" data-action="ins-derive" ${sample&&!busy?'':'disabled'}>Von Claude ableiten lassen</button><button class="btn primary" data-action="ins-close">Fertig</button></div>
     </div>`;
   const ta = document.getElementById('insEdit'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
@@ -1215,7 +1215,7 @@ function renderCancelDialog(el){
       <h2 id="cxTitle">Einheit absagen</h2>
       <p class="muted">„${esc(cancelDlg.title)}“ · ${esc(fmtDay(cancelDlg.date))}</p>
       <div class="chips">${presets.map(p=>`<button class="pchip" data-action="cancel-preset" data-p="${esc(p)}" aria-pressed="${cancelDlg.preset===p}">${esc(p)}</button>`).join('')}</div>
-      <label class="fld" for="cancelReason"><span>Grund (optional genauer)</span><textarea id="cancelReason" rows="2" placeholder="z. B. Knie seit gestern gereizt, Treppe schmerzt">${esc(cancelDlg.reason||'')}</textarea></label>
+      <label class="fld" for="cancelReason"><span>Grund (optional genauer)</span><textarea id="cancelReason" rows="2" placeholder="z. B. erkältet, Termin dazwischengekommen">${esc(cancelDlg.reason||'')}</textarea></label>
       <p class="note">Claude berücksichtigt den Grund bei der Umplanung, etwa mit Entlastung bei Krankheit oder Beschwerden oder einer Umverteilung bei Zeitmangel.</p>
       <div class="row end"><button class="btn" data-action="cancel-close">Zurück</button><button class="btn primary" data-action="cancel-do" ${cancelDlg.preset||(cancelDlg.reason||'').trim()?'':'disabled'}>Absagen</button></div>
     </div>`;
@@ -1424,7 +1424,7 @@ function checkCard(){
     const st = ['frisch','normal','müde','Muskelkater','Schmerzen'];
     body = `<div class="mq">Wie fühlst du dich heute?<small>am Morgen nach ${esc(what)}</small></div>
       <div class="states">${st.map(x=>`<button data-action="check-state" data-v="${x}" class="${x==='Schmerzen'&&mcPainOpen?'on':''}">${x}</button>`).join('')}</div>
-      ${mcPainOpen?`<input class="where" id="mcWhere" placeholder="Wo? z. B. Knie rechts, Achillessehne" autocomplete="off">${scale}`:''}`;
+      ${mcPainOpen?`<input class="where" id="mcWhere" placeholder="Wo? z. B. Wade links, Rücken" autocomplete="off">${scale}`:''}`;
   }
   return `<div class="mc"><span class="tag">Morgen-Check</span>${body}<div class="mfoot"><button class="dlink" data-action="check-skip">Überspringen</button></div></div>`;
 }
@@ -2239,7 +2239,8 @@ function connCard(){
         return `<div class="row"><span>Kraft an Strava senden</span><button class="toggle" style="padding:8px 14px" data-action="cf-strava-push" aria-pressed="${on}">${on?'An':'Aus'}</button></div>
         ${on && !st.stravaWrite ? `<div class="status err">Dafür muss Strava der App das Anlegen von Aktivitäten erlauben. Einmal neu verbinden und zustimmen.</div><div><button class="btn primary" data-action="cf-strava-re">Strava neu verbinden</button></div>` : ''}
         <p class="note">Legt beim Tippen auf „Erledigt“ eine manuelle Aktivität in Strava an (ohne Puls). Nicht einschalten, wenn du Kraft mit der Uhr aufzeichnest – sonst doppelt.</p>`; })()}`
-      :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>laufdoch.app</b> eintragen. Dann Client-ID und Client-Secret hier eintragen.</p>
+      :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>${esc(st.stravaDomain||'swissalpine.github.io')}</b> eintragen (oder unten die dort eingetragene Domain angeben). Dann Client-ID und Client-Secret hier eintragen.</p>
+      <input id="cfDomain" type="text" autocomplete="off" autocapitalize="off" placeholder="Callback-Domain" value="${esc(st.stravaDomain||'swissalpine.github.io')}" aria-label="Callback-Domain">
       <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>`) +
@@ -2324,7 +2325,7 @@ function renderSettings(){
 /* Themen je Seite (feste Begriffe) und höchstens eine Erinnerung aus den Daten */
 const TOPICS = {
   heute: [['Aktivität nachtragen','Aktivität nachtragen: ','z. B. 30 min Kraft zu Hause, RPE 5'],
-          ['Rückmeldung','Rückmeldung: ','z. B. Knie beim Lauf 1/10, danach 0, RPE 4, Beine schwer'],
+          ['Rückmeldung','Rückmeldung: ','z. B. Schmerz beim Lauf 1/10, danach 0, RPE 4, Beine schwer'],
           ['Umplanen','Umplanen: ','z. B. heute nur 30 min, Lauf auf morgen schieben, erkältet']],
   plan: [['Training planen','Training planen: ','z. B. Samstag lieber Trail statt Straße, nächste Woche mehr Rad'],
          ['Termine','Termine: ','z. B. 24.–31.10. Urlaub ohne Laufschuhe, Wettkampf am …'],
@@ -2332,7 +2333,7 @@ const TOPICS = {
   rueckblick: [['Auswertung','Auswertung: ','z. B. Wie war mein Lauf am Dienstag? Wie entwickelt sich meine Form?'],
                ['Vergleich','Vergleich: ','z. B. diese Woche mit der Vorwoche, gleiche Strecke wie vor einem Monat']],
   einstellungen: [['Fitness und Leistungsstand','Fitness und Leistungsstand: ','z. B. 10 km in 55 min, FTP 200 W'],
-                  ['Beschwerden','Beschwerden: ','z. B. Knie seit gestern besser, Achillessehne zieht'],
+                  ['Beschwerden','Beschwerden: ','z. B. seit gestern besser, Wade zieht'],
                   ['Trainingstage und Sportarten','Trainingstage und Sportarten: ','z. B. Di, Do, Sa; Rad und Kraft dazu'],
                   ['Hintergrund','Hintergrund: ','z. B. Vorgeschichte, Arbeitszeiten, Gelände vor der Haustür']]
 };
@@ -2524,7 +2525,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
 {"reply":"Text an ${nm}",
  "updates":{
    "name":"Vorname",
-   "complaints":["Knie (Patella)"],
+   "complaints":["Achillessehne rechts"],
    "performance":"Leistungsstand, z. B. Bestzeiten",
    "insights":["vollständige Liste der Erkenntnisse, je eine kurze Zeile"],
    "goal":{"text":"knappes Ziel","date":"YYYY-MM-DD"},
@@ -2532,7 +2533,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "sports":["run","ride","strength"],
    "background":"aktualisierter Hintergrundtext",
    "absences":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","type":"off|limited","note":"Urlaub, nur Wandern"}],
-   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]},{"date":"YYYY-MM-DD","sport":"strength","title":"Kraft Knie","goal":"…","durationMin":20,"steps":[{"label":"Wandsitz","detail":"Knie 60°, Gewicht auf den Fersen","sets":3,"holdS":45,"restS":60},{"label":"Step-down","detail":"langsam, Knie über dem Fuß","sets":3,"reps":10,"restS":60,"perSide":true}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
+   "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]},{"date":"YYYY-MM-DD","sport":"strength","title":"Kraft Rumpf und Beine","goal":"…","durationMin":20,"steps":[{"label":"Unterarmstütz","detail":"Körper gerade, Bauch fest","sets":3,"holdS":40,"restS":45},{"label":"Ausfallschritt","detail":"langsam, Knie über dem Fuß","sets":3,"reps":10,"restS":60,"perSide":true}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
    "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei"}],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
@@ -3047,7 +3048,7 @@ document.addEventListener('click', async e => {
     render(); save('profile');
   }
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
-  else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
+  else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'), dm=document.getElementById('cfDomain'); if(dm && window.Android.setStravaDomain) window.Android.setStravaDomain(dm.value); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
   else if(a==='upd-check'){ checkUpdate(true); }
   else if(a==='upd-install'){ installUpdate(); }
   else if(a==='upd-skip'){ try{ localStorage.setItem('ld-upd-skip', upd.info.version); }catch(_){} render(); }

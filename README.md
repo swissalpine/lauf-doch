@@ -130,8 +130,8 @@ Strava erlaubt den Datenzugriff nur über eine eigene API-Anwendung. Diese legt 
 1. Unter [strava.com/settings/api](https://www.strava.com/settings/api) eine Anwendung anlegen:
    - **Anwendungsname:** beliebig, z. B. „Lauf doch“
    - **Kategorie:** z. B. „Training“
-   - **Website:** beliebig, z. B. `https://laufdoch.app`
-   - **Autorisierungs-Callback-Domain:** `laufdoch.app` (genau so, sonst klappt die Anmeldung nicht)
+   - **Website:** beliebig, z. B. `https://swissalpine.github.io/lauf-doch`
+   - **Autorisierungs-Callback-Domain:** `swissalpine.github.io` (genau so, sonst klappt die Anmeldung nicht)
 2. Nach dem Speichern zeigt Strava **Client-ID** und **Client-Secret**.
 3. In der App: **Einstellungen → Verbindungen → Strava** beide Werte eintragen und **Mit Strava verbinden** tippen.
 4. Im Browser bei Strava anmelden und zustimmen. Strava leitet danach zurück in die App, die Verbindung ist eingerichtet.
