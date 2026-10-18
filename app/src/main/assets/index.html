@@ -1509,6 +1509,9 @@ function wkElapsed(w){ const now = w.end || Date.now(); return Math.max(0, (now 
 function wkPause(){ const w = workout; if(!w || w.paused) return; w.paused = Date.now(); if(w.until){ w.left = w.until - Date.now(); w.until = null; } wkSave(); render(); }
 function wkResume(){ const w = workout; if(!w || !w.paused) return; w.pausedMs = (w.pausedMs||0) + (Date.now() - w.paused); w.paused = null; if(w.left!=null){ w.until = Date.now() + w.left; w.left = null; } wkSave(); render(); }
 function wkPrep(){ const e = wkCur(); if(!e) return; workout.val = e.reps || e.holdS || null; workout.until = null; workout.dur = null; }
+/* Nach der Satzpause: nächster Satz derselben Übung startet bei Halteübungen ohne erneutes Tippen */
+function wkAfterRest(){ const w = workout, keep = w.lastHold; w.phase = 'work'; wkPrep(); const e = wkCur();
+  if(e && e.holdS){ if(keep) w.val = keep; w.dur = w.val; w.until = Date.now() + w.val*1000; } }
 function wkBeep(n){
   try{ navigator.vibrate && navigator.vibrate(n>1 ? [200,120,200] : 250); }catch(_){}
   try{ const C = window.AudioContext || window.webkitAudioContext; if(!C) return; const c = wkBeep.ctx || (wkBeep.ctx = new C());
@@ -1517,7 +1520,7 @@ function wkBeep(n){
 }
 function wkLogSet(entry){
   const e = wkCur(); e.log.push(entry);
-  if(workout.set + 1 < e.sets){ workout.set++; workout.phase = 'rest'; workout.dur = e.restS; workout.until = e.restS ? Date.now() + e.restS*1000 : null; if(!e.restS){ workout.phase='work'; wkPrep(); } }
+  if(workout.set + 1 < e.sets){ workout.set++; workout.phase = 'rest'; workout.dur = e.restS; workout.until = e.restS ? Date.now() + e.restS*1000 : null; if(!e.restS) wkAfterRest(); }
   else wkExerciseDone();
   wkSave(); render();
 }
@@ -1528,7 +1531,7 @@ function wkExerciseDone(){
 function wkNextExercise(){
   workout.i++; workout.set = 0;
   if(workout.i >= workout.ex.length){ workout.phase = 'done'; workout.until = null; workout.end = Date.now(); return; }
-  workout.phase = 'work'; wkPrep();
+  workout.phase = 'work'; workout.lastHold = null; wkPrep();
 }
 function wkTick(){
   clearInterval(wkTimer);
@@ -1543,7 +1546,7 @@ function wkTick(){
     const r = document.getElementById('wkRing'); if(r && workout.dur){ const L = 2*Math.PI*90; r.style.strokeDashoffset = String(L * (1 - Math.min(1, (workout.dur - (workout.until-Date.now())/1000) / workout.dur))); }
     if(left <= 0){
       if(workout.phase==='work'){ wkBeep(2); const e = wkCur(); wkLogSet({holdS: workout.dur}); }
-      else if(workout.phase==='rest'){ wkBeep(1); workout.phase = 'work'; wkPrep(); wkSave(); render(); }
+      else if(workout.phase==='rest'){ wkBeep(1); wkAfterRest(); wkSave(); render(); }
     }
   }, 250);
 }
@@ -1607,7 +1610,7 @@ function renderWorkout(){
     const left = Math.max(0, Math.ceil((w.until - Date.now())/1000)), L = 2*Math.PI*90;
     body = `<div class="cur rest"><span class="setl">Pause</span>
       <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${L*(1-Math.min(1,(w.dur-left)/w.dur))}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
-      <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}</p>
+      <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}${e.holdS?' · startet automatisch':''}</p>
       <div class="sub"><button class="btn" data-action="wk-rest-add">+15 s</button></div></div>`;
   } else if(e.holdS){
     const running = !!w.until, L = 2*Math.PI*90;
@@ -1638,13 +1641,13 @@ function wkAction(a, b){
   else if(a==='wk-save-now'){ w.confirmQuit = false; w.end = Date.now(); w.phase = 'done'; w.until = null; wkSave(); render(); }
   else if(a==='wk-adj'){ const d = Number(b.dataset.d); w.val = Math.max(e.holdS ? 5 : 1, (w.val||0) + d); wkSave(); render(); }
   else if(a==='wk-set-done'){ wkLogSet(e.reps ? {reps:w.val} : {}); }
-  else if(a==='wk-hold-start'){ w.dur = w.val; w.until = Date.now() + w.val*1000; wkSave(); render(); wkBeep(1); }
+  else if(a==='wk-hold-start'){ w.lastHold = w.val; w.dur = w.val; w.until = Date.now() + w.val*1000; wkSave(); render(); wkBeep(1); }
   else if(a==='wk-hold-stop'){ const done = Math.max(1, Math.round(w.dur - (w.until - Date.now())/1000)); wkLogSet({holdS: Math.min(done, w.dur)}); }
   else if(a==='wk-rest-add'){ w.until += 15000; w.dur += 15; wkSave(); render(); }
-  else if(a==='wk-rest-skip'){ w.phase = 'work'; wkPrep(); wkSave(); render(); }
+  else if(a==='wk-rest-skip'){ wkAfterRest(); wkSave(); render(); wkBeep(1); }
   else if(a==='wk-pain'){ e.pain = b.dataset.v==='' ? null : Number(b.dataset.v); wkNextExercise(); wkSave(); render(); }
   else if(a==='wk-next'){
-    if(w.phase==='rest'){ w.phase='work'; wkPrep(); wkSave(); render(); }
+    if(w.phase==='rest'){ wkAfterRest(); wkSave(); render(); wkBeep(1); }
     else if(w.phase==='pain'){ e.pain = null; wkNextExercise(); wkSave(); render(); }
     else if(e.holdS && w.until){ const done = Math.max(1, Math.round(w.dur - (w.until - Date.now())/1000)); wkLogSet({holdS: Math.min(done, w.dur)}); }
     else { w.until = null; wkLogSet({skip:true}); }
