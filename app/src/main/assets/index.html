@@ -2239,8 +2239,7 @@ function connCard(){
         return `<div class="row"><span>Kraft an Strava senden</span><button class="toggle" style="padding:8px 14px" data-action="cf-strava-push" aria-pressed="${on}">${on?'An':'Aus'}</button></div>
         ${on && !st.stravaWrite ? `<div class="status err">Dafür muss Strava der App das Anlegen von Aktivitäten erlauben. Einmal neu verbinden und zustimmen.</div><div><button class="btn primary" data-action="cf-strava-re">Strava neu verbinden</button></div>` : ''}
         <p class="note">Legt beim Tippen auf „Erledigt“ eine manuelle Aktivität in Strava an (ohne Puls). Nicht einschalten, wenn du Kraft mit der Uhr aufzeichnest – sonst doppelt.</p>`; })()}`
-      :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>${esc(st.stravaDomain||'swissalpine.github.io')}</b> eintragen (oder unten die dort eingetragene Domain angeben). Dann Client-ID und Client-Secret hier eintragen.</p>
-      <input id="cfDomain" type="text" autocomplete="off" autocapitalize="off" placeholder="Callback-Domain" value="${esc(st.stravaDomain||'swissalpine.github.io')}" aria-label="Callback-Domain">
+      :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>swissalpine.github.io</b> eintragen. Dann Client-ID und Client-Secret hier eintragen.</p>
       <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
       <div><button class="btn primary" data-action="cf-strava">Mit Strava verbinden</button></div>`}</div>`) +
@@ -3048,7 +3047,7 @@ document.addEventListener('click', async e => {
     render(); save('profile');
   }
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
-  else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'), dm=document.getElementById('cfDomain'); if(dm && window.Android.setStravaDomain) window.Android.setStravaDomain(dm.value); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
+  else if(a==='cf-strava'){ const i=document.getElementById('cfSid'), sc=document.getElementById('cfSecret'); window.Android.setStravaClient(i?i.value:'', sc?sc.value:''); window.Android.stravaConnect(); }
   else if(a==='upd-check'){ checkUpdate(true); }
   else if(a==='upd-install'){ installUpdate(); }
   else if(a==='upd-skip'){ try{ localStorage.setItem('ld-upd-skip', upd.info.version); }catch(_){} render(); }
