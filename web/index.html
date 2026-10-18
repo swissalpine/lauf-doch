@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lauf doch!</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lauf doch!">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#0053FA">
+<style>body{margin:0;background:#F3F5FA;font:16px system-ui,sans-serif;color:#5B6476;display:flex;align-items:center;justify-content:center;min-height:100vh}</style>
+</head>
+<body>
+<p id="msg">Lauf doch! wird geladen …</p>
+<script>
+/* Lädt dieselbe Oberfläche wie die Android-App und ersetzt die Android-Brücke durch android-web.js. */
+(async function(){
+  try {
+    const opt = {cache: 'no-cache'};
+    const [html, gradle] = await Promise.all([
+      fetch('../app/src/main/assets/index.html', opt).then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }),
+      fetch('../app/build.gradle.kts', opt).then(r => r.ok ? r.text() : '').catch(() => '')
+    ]);
+    const ver = (gradle.match(/versionName\s*=\s*"([^"]+)"/) || [])[1] || '';
+    const head = document.head.innerHTML.replace(/<style>[\s\S]*?<\/style>/, '');
+    let h = html
+      .replace('<head>', '<head>' + head + '<script>window.WEB_VERSION=' + JSON.stringify(ver) + ';<\/script>')
+      .replace('<script src="shim.js"><\/script>', '<script src="android-web.js"><\/script><script src="../app/src/main/assets/shim.js"><\/script>');
+    document.open(); document.write(h); document.close();
+  } catch(e) {
+    document.getElementById('msg').textContent = 'Lauf doch! konnte nicht geladen werden (' + e.message + '). Bitte Internetverbindung prüfen und neu laden.';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1379,6 +1379,7 @@ function painChart(mon){
 let autoSyncTried = 0;
 function autoSync(){
   if(!window.IN_APP || !mcp || syncBusy || !S.loaded) return;
+  try{ if(!appStatus().stravaConnected) return; }catch(_){}
   const last = S.log && S.log.lastSync ? new Date(S.log.lastSync).getTime() : 0;
   if(Date.now() - last < 15*60000 || Date.now() - autoSyncTried < 60000) return;
   autoSyncTried = Date.now(); syncStrava();
@@ -2185,7 +2186,7 @@ const verNum = v => String(v||'').split('.').map(x=>parseInt(x,10)||0);
 function verNewer(a, b){ const x=verNum(a), y=verNum(b); for(let i=0;i<Math.max(x.length,y.length);i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
 function updAvailable(){ const st = appStatus(); return !!(upd.info && upd.info.url && verNewer(upd.info.version, st.appVersion)); }
 async function checkUpdate(manual){
-  if(!IN_APP || !window.__bridgeCall || upd.checking) return;
+  if(!IN_APP || window.IS_WEB || !window.__bridgeCall || upd.checking) return;
   let last = 0; try{ last = Number(localStorage.getItem('ld-upd-check'))||0; }catch(_){}
   if(!manual && Date.now()-last < 20*3600*1000){ try{ const c = JSON.parse(localStorage.getItem('ld-upd-info')||'null'); if(c) upd.info = c; }catch(_){} return; }
   upd.checking = true; upd.err = null; if(manual) render();
@@ -2204,7 +2205,7 @@ async function installUpdate(){
 }
 window.onUpdateProgress = p => { upd.pct = p; const el = document.getElementById('updPct'); if(el) el.textContent = p+' %'; };
 function updBanner(){
-  if(!updAvailable()) return '';
+  if(window.IS_WEB || !updAvailable()) return '';
   let skip = ''; try{ skip = localStorage.getItem('ld-upd-skip')||''; }catch(_){}
   if(skip===upd.info.version && !upd.busy) return '';
   return `<div class="card banner upd"><p><b>Neue Version ${esc(upd.info.version)} verfügbar</b>${upd.info.date?' · erschienen am '+esc(new Date(upd.info.date).toLocaleDateString('de-DE')):''}</p>
@@ -2259,15 +2260,15 @@ function connCard(){
   </div>
   <div class="card"><h2>Datensicherung</h2>
     <div class="fld">
-      <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei in „Downloads“. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
+      <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei ${window.IS_WEB ? '(Download)' : 'in „Downloads“'}. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
       ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p><div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
       :`<div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
   </div>
   <div class="card about"><h2>Über Lauf doch!</h2>
     <div class="svcrow"><b>Version</b><span class="st">${esc(st.appVersion||'–')}</span></div>
-    <div class="svcrow"><b>Erschienen</b><span class="st">${st.buildDate ? esc(parseYmd(st.buildDate).toLocaleDateString('de-DE')) : '–'}</span></div>
-    ${updAbout(st)}
-    <p class="note">Adaptives Lauftraining mit Claude. Neue Versionen gibt es unter <button class="dlink" data-action="open-releases">github.com/swissalpine/lauf-doch</button>.</p>
+    ${st.buildDate ? `<div class="svcrow"><b>Erschienen</b><span class="st">${esc(parseYmd(st.buildDate).toLocaleDateString('de-DE'))}</span></div>` : ''}
+    ${window.IS_WEB ? '' : updAbout(st)}
+    <p class="note">Adaptives Lauftraining mit Claude. ${window.IS_WEB ? 'Die Web-Version ist nach dem Neuladen automatisch aktuell. Die Android-App und die Anleitung gibt es unter' : 'Neue Versionen gibt es unter'} <button class="dlink" data-action="open-releases">github.com/swissalpine/lauf-doch</button>.</p>
   </div>`;
 }
 let confirmImport = null; // geladene Sicherung, wartet auf Bestätigung
@@ -2317,7 +2318,7 @@ function renderSettings(){
       <button class="lrow" data-action="bg-open"><span><b>Hintergrund</b><small>Vorgeschichte und Rahmen für jede Planung</small></span><span class="cnt">›</span></button>
       <button class="lrow" data-action="hist-open"><span><b>Dialogverlauf</b><small>Gespeicherte Nachrichten zwischen dir und Claude</small></span><span class="cnt">${(S.chat&&S.chat.messages||[]).length||''} ›</span></button>
     </div></div>
-    ${IN_APP?remindCard()+connCard():''}`;
+    ${IN_APP?(window.IS_WEB?'':remindCard())+connCard():''}`;
 }
 
 /* Vorschläge im Dialogfeld: aus der aktuellen Lage abgeleitet (Regeln, kein Claude-Aufruf) */
@@ -3051,7 +3052,7 @@ document.addEventListener('click', async e => {
   else if(a==='upd-check'){ checkUpdate(true); }
   else if(a==='upd-install'){ installUpdate(); }
   else if(a==='upd-skip'){ try{ localStorage.setItem('ld-upd-skip', upd.info.version); }catch(_){} render(); }
-  else if(a==='open-releases'){ try{ window.Android.openUrl('https://github.com/swissalpine/lauf-doch/releases'); }catch(_){} }
+  else if(a==='open-releases'){ try{ window.Android.openUrl(window.IS_WEB ? 'https://github.com/swissalpine/lauf-doch' : 'https://github.com/swissalpine/lauf-doch/releases'); }catch(_){} }
   else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
   else if(a==='cf-strava-push'){ try{ const on = localStorage.getItem('ld-strava-push')==='1'; localStorage.setItem('ld-strava-push', on?'0':'1'); }catch(_){} render(); }
   else if(a==='cf-strava-re'){ window.Android.stravaConnect(); }

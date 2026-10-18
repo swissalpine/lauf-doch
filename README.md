@@ -1,6 +1,6 @@
 # Lauf doch!
 
-**Lauf doch!** ist eine Android-App für adaptives Lauftraining mit Claude als Trainingsbegleiter. Die App holt deine Aktivitäten aus Strava, wertet sie aus und lässt Claude daraus einen Trainingsplan erstellen. Diesen Plan passt Claude laufend an deine Rückmeldungen, deine Belastung und eventuelle Beschwerden an. Rad, Kraft und Mobilität werden ergänzend geplant. Geplante Einheiten können über intervals.icu auf eine Garmin-Uhr übertragen werden.
+**Lauf doch!** ist eine App für adaptives Lauftraining mit Claude als Trainingsbegleiter – als **Android-App** und als **Web-App** für iPhone, iPad und Computer. Die App holt deine Aktivitäten aus Strava, wertet sie aus und lässt Claude daraus einen Trainingsplan erstellen. Diesen Plan passt Claude laufend an deine Rückmeldungen, deine Belastung und eventuelle Beschwerden an. Rad, Kraft und Mobilität werden ergänzend geplant. Geplante Einheiten können über intervals.icu auf eine Garmin-Uhr übertragen werden.
 
 > Die App ersetzt keine ärztliche oder physiotherapeutische Beratung. Bei neuen, anhaltenden oder zunehmenden Schmerzen bitte abklären lassen.
 
@@ -13,12 +13,15 @@
 - [Daten und Datenschutz](#daten-und-datenschutz)
 - [Einrichtung](#einrichtung)
   - [1. App installieren](#1-app-installieren)
+    - [Android](#android)
+    - [iPhone, iPad und Computer (Web-App)](#iphone-ipad-und-computer-web-app)
   - [2. Claude (Anthropic API)](#2-claude-anthropic-api)
   - [3. Strava](#3-strava)
   - [4. Garmin über intervals.icu (optional)](#4-garmin-über-intervalsicu-optional)
   - [5. Erinnerungen (optional)](#5-erinnerungen-optional)
   - [6. Profil ausfüllen und ersten Plan erstellen](#6-profil-ausfüllen-und-ersten-plan-erstellen)
 - [Datensicherung](#datensicherung)
+- [Android-App und Web-App im Vergleich](#android-app-und-web-app-im-vergleich)
 - [Aufbau des Projekts](#aufbau-des-projekts)
 - [Grenzen](#grenzen)
 
@@ -83,7 +86,7 @@ Claude bekommt bei jeder Anfrage einen festen Regelteil und den aktuellen Stand 
 Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Training des Modells, z. B. zu Periodisierung, Grundlagen- und Intensitätsverteilung, Belastungssteuerung über HF, RPE und Leistung sowie Kraft- und Reha-Übungen. Während der Planung wird nichts live nachgeschlagen. Das Ergebnis ist eine plausible, an die eigenen Daten angepasste Ableitung, kein geprüftes medizinisches Protokoll. Vorgaben von Physiotherapie oder Arzt trägt man am besten unter **Hintergrund** oder **Erkenntnisse** ein, dann richtet sich Claude danach.
 
 **Wann Claude von sich aus tätig wird**
-- Neue Aktivitäten nach dem Strava-Abgleich werden eingeschätzt, danach fragt Claude nach Schmerz und RPE.
+- Neue Aktivitäten nach dem Strava-Abgleich werden eingeschätzt, danach fragt Claude nach der Anstrengung (RPE) und – bei eingetragenen Beschwerden – nach Schmerz.
 - Ausgelassene Einheiten der letzten Tage werden neu verteilt, gekürzt oder gestrichen.
 - Nach Änderungen in den Einstellungen wird neu geplant, sobald man die Einstellungen verlässt.
 
@@ -91,8 +94,8 @@ Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Trai
 
 ## Daten und Datenschutz
 
-- Alle Trainingsdaten (Profil, Plan, Aktivitäten, Rückmeldungen, Dialog) liegen **nur auf dem Handy**. Es gibt keinen eigenen Server.
-- API-Schlüssel und Strava-Zugangsdaten liegen in den Android-App-Einstellungen, nicht im JavaScript der Oberfläche.
+- Alle Trainingsdaten (Profil, Plan, Aktivitäten, Rückmeldungen, Dialog) liegen **nur auf dem eigenen Gerät**. Es gibt keinen eigenen Server; auch die Web-App ist nur eine Seite, die im Browser läuft.
+- API-Schlüssel und Strava-Zugangsdaten liegen in der Android-App in deren Einstellungen, in der Web-App im Speicher des Browsers.
 - An **Anthropic** geht bei jeder Claude-Anfrage der oben beschriebene Kontext. An **Strava** gehen nur Abrufe und, wenn eingeschaltet, selbst angelegte Krafteinheiten. An **intervals.icu** gehen nur die geplanten Lauf- und Radeinheiten.
 
 ---
@@ -101,11 +104,28 @@ Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Trai
 
 ### 1. App installieren
 
-1. Unter [Releases](../../releases) die neueste `LaufDoch.apk` herunterladen.
+#### Android
+
+1. Unter [Releases](https://github.com/swissalpine/lauf-doch/releases) die neueste `LaufDoch.apk` herunterladen.
 2. Auf dem Handy öffnen. Android fragt beim ersten Mal, ob die Installation aus dieser Quelle erlaubt werden soll.
 3. Voraussetzung ist Android 10 oder neuer.
 
-Updates werden genauso installiert. Die Daten bleiben erhalten, weil alle Versionen mit demselben Schlüssel signiert sind.
+**Updates:** Die App prüft einmal am Tag, ob es eine neue Version gibt, und bietet sie zum Installieren an (auch unter Einstellungen → Über Lauf doch! → „Nach Updates suchen“). Android fragt dabei einmalig, ob die App Updates installieren darf. Die Daten bleiben erhalten.
+
+#### iPhone, iPad und Computer (Web-App)
+
+Die Web-App ist dieselbe Oberfläche wie die Android-App und läuft direkt im Browser. Es muss nichts gebaut oder installiert werden.
+
+**iPhone und iPad**
+1. In **Safari** die Adresse **[swissalpine.github.io/lauf-doch/web/](https://swissalpine.github.io/lauf-doch/web/)** öffnen.
+2. Unten auf **Teilen** (Quadrat mit Pfeil) tippen → **Zum Home-Bildschirm** → **Hinzufügen**.
+3. Lauf doch! ab jetzt über das neue Symbol auf dem Home-Bildschirm öffnen – nicht über einen Safari-Tab. Die App läuft dann im Vollbild und behält ihre Daten getrennt von Safari.
+
+**Computer** (Chrome, Edge, Safari, Firefox): Die Adresse oben öffnen. In Chrome und Edge lässt sich die Seite über das Installieren-Symbol in der Adressleiste auch als eigenes Fenster anlegen.
+
+**Updates:** Die Web-App ist immer aktuell; neue Versionen erscheinen beim nächsten Öffnen bzw. Neuladen.
+
+**Daten übernehmen:** Wer schon die Android-App nutzt, legt dort eine Sicherung an und lädt die Datei in der Web-App unter Einstellungen → Datensicherung → „Sicherung laden“. Beide Versionen haben danach getrennte Datenstände.
 
 ### 2. Claude (Anthropic API)
 
@@ -134,7 +154,9 @@ Strava erlaubt den Datenzugriff nur über eine eigene API-Anwendung. Diese legt 
    - **Autorisierungs-Callback-Domain:** `swissalpine.github.io` (genau so, sonst klappt die Anmeldung nicht)
 2. Nach dem Speichern zeigt Strava **Client-ID** und **Client-Secret**.
 3. In der App: **Einstellungen → Verbindungen → Strava** beide Werte eintragen und **Mit Strava verbinden** tippen.
-4. Im Browser bei Strava anmelden und zustimmen. Strava leitet danach zurück in die App, die Verbindung ist eingerichtet.
+4. Bei Strava anmelden und zustimmen. Strava leitet danach zurück in die App bzw. die Web-App, die Verbindung ist eingerichtet.
+
+Die Callback-Domain ist für Android-App und Web-App dieselbe; eine Strava-Anwendung reicht also auch, wenn man beide Versionen nutzt.
 
 **Krafteinheiten an Strava senden (optional)**
 Unter Verbindungen → Strava gibt es den Schalter **„Kraft an Strava senden“**. Ist er an, legt die App für erledigte oder aufgezeichnete Krafteinheiten eine manuelle Strava-Aktivität an. Sie enthält Dauer, Startzeit und die Übungen als Beschreibung. Beim nächsten Abgleich ersetzt diese Strava-Aktivität den Eintrag in der App.
@@ -163,7 +185,7 @@ Geplante Lauf- und Radeinheiten lassen sich als strukturierte Workouts auf eine 
 - Kraft und Mobilität bleiben in der App und gehen nicht an die Uhr.
 - Für Watt-Vorgaben muss in Strava eine FTP hinterlegt sein.
 
-### 5. Erinnerungen (optional)
+### 5. Erinnerungen (optional, nur Android)
 
 Unter **Einstellungen → Erinnerungen** lassen sich zwei Benachrichtigungen einschalten:
 - **Morgens** (Standard 7:00): Einheit des Tages und Morgen-Check.
@@ -178,23 +200,43 @@ Beim ersten Einschalten fragt Android nach der Erlaubnis für Benachrichtigungen
 3. Auf **Heute** oder **Plan** im Dialog das Ziel nennen, z. B. „Halbmarathon im Frühjahr, schmerzfrei“, und um einen Plan bitten.
 4. Claude legt Ziel, Gesamtplan und den Plan bis Ende nächster Woche an.
 
-Danach läuft alles weitgehend von selbst: trainieren, Strava abgleichen, Schmerz und RPE in der Karte antippen.
+Danach läuft alles weitgehend von selbst: trainieren, Strava abgleichen, Rückmeldungen (RPE, bei Beschwerden auch Schmerz) in der Karte antippen.
 
 ---
 
 ## Datensicherung
 
 Unter **Einstellungen → Datensicherung**:
-- **Sicherung speichern** legt eine Datei `lauf-doch-sicherung-JJJJ-MM-TT.json` im Ordner „Downloads“ ab.
-- **Sicherung laden** liest eine solche Datei ein und **ersetzt** alle Daten auf dem Handy.
+- **Sicherung speichern** legt eine Datei `lauf-doch-sicherung-JJJJ-MM-TT.json` ab – unter Android im Ordner „Downloads“, in der Web-App als Download (auf dem iPhone in der App „Dateien“).
+- **Sicherung laden** liest eine solche Datei ein und **ersetzt** alle Daten auf dem Gerät.
+
+In der Web-App sind regelmäßige Sicherungen besonders wichtig: Die Daten liegen im Speicher des Browsers, und den kann das System bei Platzmangel oder beim Löschen der Website-Daten leeren.
 
 API-Schlüssel und Strava-Verbindung sind nicht Teil der Sicherung und müssen auf einem neuen Gerät neu eingetragen werden.
 
 ---
 
+## Android-App und Web-App im Vergleich
+
+| Funktion | Android-App | Web-App (iPhone/iPad) | Web-App (Computer) |
+|---|---|---|---|
+| Planen, Auswerten, Dialog mit Claude | ✓ | ✓ | ✓ |
+| Strava, Garmin über intervals.icu, Kraft an Strava | ✓ | ✓ | ✓ |
+| Trainingsmodus für Kraft | ✓ | ✓ | ✓ |
+| Bildschirm bleibt im Training an | ✓ | ab iOS 18.4 | je nach Browser |
+| Ton am Ende von Haltezeit und Pause | ✓ | ✓ (bei eingeschaltetem Bildschirm) | ✓ |
+| Vibration | ✓ | – (von iOS nicht unterstützt) | – |
+| Erinnerungen morgens/abends | ✓ | – | – |
+| Updates | in der App angeboten | automatisch | automatisch |
+| Speicherort der Daten | App-Speicher | Browser-Speicher | Browser-Speicher |
+
+Für die Web-App gibt es keine lokal geplanten Benachrichtigungen, weil iOS Web-Apps nur Push-Nachrichten von einem Server erlaubt – und Lauf doch! bewusst ohne Server auskommt.
+
+---
+
 ## Aufbau des Projekts
 
-Die Oberfläche ist eine Web-App in einer Android-WebView. Die native Seite stellt ihr über `window.Android` die Verbindungen bereit.
+Die Oberfläche ist eine Web-App. In der Android-App läuft sie in einer WebView, die über `window.Android` die Verbindungen bereitstellt. In der Web-App übernimmt `web/android-web.js` diese Rolle und ruft Claude, Strava und intervals.icu direkt aus dem Browser auf.
 
 | Datei | Aufgabe |
 |---|---|
@@ -202,6 +244,10 @@ Die Oberfläche ist eine Web-App in einer Android-WebView. Die native Seite stel
 | `app/src/main/assets/shim.js` | Brücke zwischen Oberfläche und App: Speicher (localStorage), Strava-Abrufe, Claude-Anfragen mit Prompt-Caching, Verbrauchszählung |
 | `app/src/main/java/de/laufdoch/MainActivity.java` | WebView, Strava-OAuth, HTTP-Aufrufe an Anthropic, Strava und intervals.icu, Datensicherung, Berechtigungen |
 | `app/src/main/java/de/laufdoch/ReminderReceiver.java` | Erinnerungen per AlarmManager, auch nach Neustart |
+| `app/src/main/java/de/laufdoch/UpdateReceiver.java` | Rückmeldung des Paketinstallers beim App-Update |
+| `web/index.html` | Einstieg der Web-App: lädt dieselbe Oberfläche wie die Android-App |
+| `web/android-web.js` | Ersatz der Android-Brücke im Browser: Claude, Strava (inkl. Anmeldung), intervals.icu, Datensicherung, Bildschirmsperre |
+| `web/manifest.webmanifest`, `web/icon-*.png` | Name und Symbol für „Zum Home-Bildschirm“ |
 
 ---
 
@@ -209,5 +255,5 @@ Die Oberfläche ist eine Web-App in einer Android-WebView. Die native Seite stel
 
 - **Keine Diagnose:** Die App ersetzt keine medizinische Beurteilung. Die Schmerzregeln sind bewusst vorsichtig, aber allgemein.
 - **Abhängig von Strava:** Ohne Strava-Abgleich fehlen Auswertung und Anpassung. Die Abrufe der App liegen weit unter den Limits der Strava-API.
-- **Erinnerungen ohne Hintergrundabgleich:** Was nach dem letzten Öffnen in Strava dazukommt, kennt die Abenderinnerung noch nicht.
-- **Nur Android:** Eine iOS-Version gibt es nicht.
+- **Erinnerungen ohne Hintergrundabgleich (Android):** Was nach dem letzten Öffnen in Strava dazukommt, kennt die Abenderinnerung noch nicht.
+- **Web-App:** keine Erinnerungen, keine Vibration auf dem iPhone, Daten nur im Browser des jeweiligen Geräts. Kein Zugriff auf Apple Health oder die Apple Watch.
