@@ -1,0 +1,7 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* Automatischen Seitentitel von GitHub Pages ausblenden */
+.container-lg > h1:first-child { display: none; }
