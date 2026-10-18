@@ -147,6 +147,8 @@
     },
     setClaude(key, model){ if(key && key.trim()) set('claude_key', key.trim()); if(model && model.trim()) set('claude_model', model.trim()); toast('Claude-Einstellungen gespeichert.'); },
     clearClaude(){ set('claude_key', null); },
+    getSecrets(){ const o={}; ['claude_key','claude_model','strava_client_id','strava_client_secret','icu_key'].forEach(k=>{ const v=get(k); if(v) o[k]=v; }); return JSON.stringify(o); },
+    setSecrets(json){ let o={}; try{ o=JSON.parse(json)||{}; }catch(e){} ['claude_key','claude_model','strava_client_id','strava_client_secret','icu_key'].forEach(k=>{ const v=typeof o[k]==='string'?o[k].trim():''; if(v) set(k,v); }); },
     setIntervals(key){ set('icu_key', key && key.trim() ? key.trim() : null); },
     setStravaClient(id, secret){ if(id && id.trim()) set('strava_client_id', id.trim()); if(secret && secret.trim()) set('strava_client_secret', secret.trim()); },
     stravaConnect(){

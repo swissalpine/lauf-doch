@@ -1997,6 +1997,7 @@ function changeBanner(){
     ${busy?'<p class="note">Claude passt den Plan an …</p>':`<div><button class="btn primary" data-action="replan-changes" ${sample?'':'disabled'}>Plan jetzt anpassen</button></div>`}</div>`;
 }
 document.addEventListener('change', e => {
+  if(e.target && e.target.id==='cfExpSec'){ expSecrets = !!e.target.checked; render(); return; }
   if(e.target && /^rem-(morning|evening)$/.test(e.target.id||'')){ const c=remindCfg(), k=e.target.id.slice(4); if(/^\d\d:\d\d$/.test(e.target.value)){ c[k+'Time']=e.target.value; setRemindCfg(c); } return; }
   const id = e.target && e.target.id; if(id!=='pfName' && id!=='pfPerf') return;
   const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
@@ -2260,9 +2261,13 @@ function connCard(){
   </div>
   <div class="card"><h2>Datensicherung</h2>
     <div class="fld">
-      <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei ${window.IS_WEB ? '(Download)' : 'in „Downloads“'}. Beim Laden werden die Daten auf dem Handy ersetzt.</p>
-      ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p><div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
-      :`<div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
+      <p class="note">Ziel, Plan, Aktivitäten, Rückmeldungen und Dialog als Datei ${window.IS_WEB ? '(Download)' : 'in „Downloads“'}. Beim Laden werden die Daten auf ${window.IS_WEB ? 'diesem Gerät' : 'dem Handy'} ersetzt.</p>
+      ${confirmImport?`<div class="row"><p>Daten aus der Sicherung übernehmen? Der aktuelle Stand wird ersetzt.</p>
+        ${confirmImport.secrets?`<label class="chk"><input id="cfImpSec" type="checkbox" checked> Auch Zugangsdaten übernehmen (Claude, Strava Client-ID/Secret, intervals.icu)</label>`:''}
+        <div class="row"><button class="btn primary" data-action="cf-import-yes">Übernehmen</button><button class="btn" data-action="cf-import-no">Abbrechen</button></div></div>`
+      :`<label class="chk"><input id="cfExpSec" type="checkbox" ${expSecrets?'checked':''}> Zugangsdaten mitsichern</label>
+        ${expSecrets?`<p class="note">Die Datei enthält dann deine Schlüssel – nicht weitergeben. Die Strava-Verbindung selbst wird nicht gesichert: Auf dem neuen Gerät einmal „Mit Strava verbinden“ tippen.</p>`:''}
+        <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-export">Sicherung speichern</button><button class="btn" data-action="cf-import">Sicherung laden</button></div>`}</div>
   </div>
   <div class="card about"><h2>Über Lauf doch!</h2>
     <div class="svcrow"><b>Version</b><span class="st">${esc(st.appVersion||'–')}</span></div>
@@ -2271,6 +2276,7 @@ function connCard(){
     <p class="note">Adaptives Lauftraining mit Claude. ${window.IS_WEB ? 'Die Web-Version ist nach dem Neuladen automatisch aktuell. Die Android-App und die Anleitung gibt es unter' : 'Neue Versionen gibt es unter'} <button class="dlink" data-action="open-releases">github.com/swissalpine/lauf-doch</button>.</p>
   </div>`;
 }
+let expSecrets = false; // Zugangsdaten in die Sicherung (nur für diesen Vorgang)
 let confirmImport = null; // geladene Sicherung, wartet auf Bestätigung
 window.onAppStatus = () => render();
 window.onBackupLoaded = text => {
@@ -3070,10 +3076,14 @@ document.addEventListener('click', async e => {
   else if(a==='icu-pick'){ if(icuDlg){ icuDlg.mode = b.dataset.m; renderMoveDialog(); } }
   else if(a==='icu-close'){ icuDlg=null; renderMoveDialog(); }
   else if(a==='icu-send'){ const d=icuDlg; icuDlg=null; renderMoveDialog(); if(d) icuSync(true, d.ext, d.mode); }
-  else if(a==='cf-export'){ if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(window.__ldExport()))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); }
+  else if(a==='cf-export'){ const o=window.__ldExport(); if(expSecrets && window.Android.getSecrets){ try{ o.secrets=JSON.parse(window.Android.getSecrets()); }catch(e){} }
+    if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(o))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); else { expSecrets=false; render(); } }
   else if(a==='cf-import'){ window.Android.pickBackup(); }
   else if(a==='cf-import-no'){ confirmImport=null; render(); }
-  else if(a==='cf-import-yes'){ const o=confirmImport; confirmImport=null; window.__ldImport(o); window.Android.toast('Sicherung übernommen.'); weekInit=false; render(); }
+  else if(a==='cf-import-yes'){ const o=confirmImport; const sec=o.secrets && (document.getElementById('cfImpSec')||{}).checked; confirmImport=null;
+    if(sec && window.Android.setSecrets) window.Android.setSecrets(JSON.stringify(o.secrets));
+    const d=Object.assign({},o); delete d.secrets; window.__ldImport(d);
+    window.Android.toast(sec?'Sicherung und Zugangsdaten übernommen.':'Sicherung übernommen.'); weekInit=false; render(); }
   else if(a==='clear'){ confirmClear=true; render(); }
   else if(a==='clear-no'){ confirmClear=false; render(); }
   else if(a==='clear-yes'){ confirmClear=false; S.chat={messages:[]}; showAll=false; render(); save('chat'); }

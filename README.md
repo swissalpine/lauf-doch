@@ -212,7 +212,7 @@ Unter **Einstellungen → Datensicherung**:
 
 In der Web-App sind regelmäßige Sicherungen besonders wichtig: Die Daten liegen im Speicher des Browsers, und den kann das System bei Platzmangel oder beim Löschen der Website-Daten leeren.
 
-API-Schlüssel und Strava-Verbindung sind nicht Teil der Sicherung und müssen auf einem neuen Gerät neu eingetragen werden.
+Mit dem Häkchen „Zugangsdaten mitsichern“ kommen auch Claude-Schlüssel, Strava Client-ID/Secret und intervals.icu-Schlüssel in die Datei – so lassen sie sich z. B. von der Android-App in die Web-App übertragen. Eine solche Datei nicht weitergeben. Die Strava-Verbindung selbst wird nie gesichert: Auf dem neuen Gerät einmal „Mit Strava verbinden“ tippen.
 
 ---
 

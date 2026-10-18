@@ -478,6 +478,28 @@ public class MainActivity extends Activity {
             else prefs.edit().putString("icu_key", key.trim()).apply();
         }
 
+        private final String[] SECRET_KEYS = {"claude_key", "claude_model", "strava_client_id", "strava_client_secret", "icu_key"};
+
+        /** Zugangsdaten für eine Sicherung (nur auf ausdrücklichen Wunsch). Strava-Anmeldung bleibt außen vor. */
+        @JavascriptInterface
+        public String getSecrets() {
+            try {
+                JSONObject j = new JSONObject();
+                for (String k : SECRET_KEYS) { String v = prefs.getString(k, ""); if (!v.isEmpty()) j.put(k, v); }
+                return j.toString();
+            } catch (Exception e) { return "{}"; }
+        }
+
+        @JavascriptInterface
+        public void setSecrets(String json) {
+            try {
+                JSONObject j = new JSONObject(json);
+                SharedPreferences.Editor e = prefs.edit();
+                for (String k : SECRET_KEYS) { String v = j.optString(k, "").trim(); if (!v.isEmpty()) e.putString(k, v); }
+                e.apply();
+            } catch (Exception ignored) { }
+        }
+
         @JavascriptInterface
         public void clearClaude() {
             prefs.edit().remove("claude_key").apply();
