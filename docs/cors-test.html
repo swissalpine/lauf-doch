@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lauf doch! · Verbindungstest</title>
+<style>
+  :root{--bg:#F3F5FA;--surface:#fff;--ink:#141A26;--muted:#5B6476;--line:#D9DEE8;--ok:#2B7A4B;--ok-soft:#DFF0E5;--crit:#B3261E;--crit-soft:#F7DEDB;--accent:#0053FA}
+  @media (prefers-color-scheme: dark){:root{--bg:#0A0F1C;--surface:#121A2B;--ink:#E8ECF4;--muted:#9AA4B8;--line:#26304A;--ok:#72C690;--ok-soft:#18301F;--crit:#F08C82;--crit-soft:#3A1E1B;--accent:#5C95FF}}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,system-ui,sans-serif;padding:16px}
+  main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  h1{font-size:22px;margin:4px 0}
+  p{margin:0;color:var(--muted)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  button{width:100%;height:50px;border:0;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:17px}
+  .row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row b{font-weight:600}
+  .row small{display:block;color:var(--muted);font-size:13px;font-weight:400}
+  .st{white-space:nowrap;font-weight:600;border-radius:8px;padding:2px 8px;align-self:center}
+  .st.ok{background:var(--ok-soft);color:var(--ok)}.st.no{background:var(--crit-soft);color:var(--crit)}
+  .sum{font-weight:600;color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Verbindungstest</h1>
+  <p>Prüft, ob Safari die Schnittstellen von Strava, intervals.icu und Anthropic direkt aufrufen darf. Es werden keine Zugangsdaten gesendet, die Antworten „nicht angemeldet“ sind erwartet.</p>
+  <button id="go">Test starten</button>
+  <div class="card" id="out"><p>Noch nicht getestet.</p></div>
+  <p id="sum" class="sum"></p>
+  <p id="ua" style="font-size:12px"></p>
+</main>
+<script>
+const TESTS = [
+  {name:'Strava · Daten abrufen', note:'GET /api/v3/athlete mit Anmeldekopf', url:'https://www.strava.com/api/v3/athlete', opt:{headers:{Authorization:'Bearer test'}}},
+  {name:'Strava · Anmeldung (Token)', note:'POST /oauth/token', url:'https://www.strava.com/oauth/token', opt:{method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'grant_type=refresh_token'}},
+  {name:'Strava · Aktivität anlegen', note:'POST /api/v3/activities', url:'https://www.strava.com/api/v3/activities', opt:{method:'POST', headers:{Authorization:'Bearer test','Content-Type':'application/x-www-form-urlencoded'}, body:'name=test'}},
+  {name:'intervals.icu · Abruf', note:'GET /api/v1/athlete/0 mit Anmeldekopf', url:'https://intervals.icu/api/v1/athlete/0', opt:{headers:{Authorization:'Basic dGVzdDp0ZXN0'}}},
+  {name:'intervals.icu · Senden', note:'PUT /events/bulk-delete', url:'https://intervals.icu/api/v1/athlete/0/events/bulk-delete', opt:{method:'PUT', headers:{Authorization:'Basic dGVzdDp0ZXN0','Content-Type':'application/json'}, body:'[]'}},
+  {name:'Anthropic · Claude', note:'POST /v1/messages', url:'https://api.anthropic.com/v1/messages', opt:{method:'POST', headers:{'x-api-key':'test','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','content-type':'application/json'}, body:'{}'}},
+  {name:'GitHub · Updates', note:'GET releases/latest', url:'https://api.github.com/repos/swissalpine/lauf-doch/releases/latest', opt:{}}
+];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+document.getElementById('ua').textContent = navigator.userAgent;
+document.getElementById('go').onclick = async () => {
+  const out = document.getElementById('out'); out.innerHTML = '<p>Läuft …</p>';
+  const rows = []; let okN = 0;
+  for(const t of TESTS){
+    let ok = false, info = '';
+    try{
+      const r = await fetch(t.url, Object.assign({mode:'cors', cache:'no-store'}, t.opt));
+      ok = true; info = 'erreichbar (HTTP ' + r.status + ')';
+    }catch(e){ info = 'blockiert'; }
+    if(ok) okN++;
+    rows.push(`<div class="row"><b>${esc(t.name)}<small>${esc(t.note)}</small></b><span class="st ${ok?'ok':'no'}">${esc(info)}</span></div>`);
+    out.innerHTML = rows.join('');
+  }
+  document.getElementById('sum').textContent = okN===TESTS.length
+    ? 'Alles direkt erreichbar – die Web-Version braucht keinen Zwischenserver.'
+    : (TESTS.length-okN) + ' von ' + TESTS.length + ' Schnittstellen blockiert – dafür bräuchte die Web-Version einen Weiterleitungsdienst.';
+};
+</script>
+</body>
+</html>
