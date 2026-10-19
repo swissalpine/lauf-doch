@@ -85,6 +85,12 @@ ol.steps .d{color:var(--muted);font-size:14px}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
 .chip.crit{background:var(--crit-soft);color:var(--crit)}
 .assess{border-left:3px solid var(--accent);padding:2px 0 2px 12px;white-space:pre-wrap}
+details.assess>summary{list-style:none;cursor:pointer;white-space:normal}
+details.assess>summary::-webkit-details-marker{display:none}
+details.assess .ashort{display:block;margin-top:2px}
+details.assess .amore{display:block;margin-top:4px;font-size:13px;color:var(--accent);font-weight:600}
+details.assess[open] .ashort,details.assess[open] .amore{display:none}
+details.assess .md{margin-top:4px}
 .assess b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .planref{font-size:14px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px}
 .rest{display:flex;flex-direction:column;gap:4px}
@@ -926,6 +932,33 @@ function weekStats(mon){
 }
 /* Belastung (RPE 1–10): eigene Rückmeldung, sonst „Wahrgenommene Anstrengung“ aus Strava */
 function rpeOf(a){ const f=fb(a.id); if(f && f.rpe!=null) return {v:f.rpe, src:'du'}; if(a.perf && a.perf.rpe!=null) return {v:a.perf.rpe, src:'Strava'}; return null; }
+/* Neue Strava-Aktivitäten erst bewerten, wenn die Rückmeldung vorliegt (spätestens nach 2 Stunden) */
+const isPending = id => !!(S.log && S.log.pendingAssess && S.log.pendingAssess[id]);
+function fbComplete(a){ const f = fb(a.id) || {}; return !!rpeOf(a) && (!careMode() || (f.painDuring!=null && f.painAfter!=null)); }
+const fbQueue = new Set(); let fbTimer = null;
+function fbChanged(id){ if(!isPending(id)) fbQueue.add(id); clearTimeout(fbTimer); fbTimer = setTimeout(maybeAssess, 4000); }
+function fbLine(a){ const f = fb(a.id) || {}, r = rpeOf(a);
+  return [r?'RPE '+r.v+'/10':'', f.painDuring!=null?'Schmerz während '+f.painDuring+'/10':'', f.painAfter!=null?'danach '+f.painAfter+'/10':'', f.note?'Notiz: '+f.note:''].filter(Boolean).join(', ') || 'keine'; }
+function maybeAssess(){
+  if(!sample || busy || syncBusy || sampleState==='denied' || !S.log) return;
+  const pend = S.log.pendingAssess || {};
+  const ready = Object.keys(pend).map(id => acts().find(a=>a.id===id)).filter(Boolean).filter(a => fbComplete(a) || Date.now() - pend[a.id] > 2*3600e3);
+  Object.keys(pend).forEach(id => { if(!acts().some(a=>a.id===id)) delete pend[id]; });
+  if(ready.length){
+    ready.forEach(a => delete pend[a.id]); S.log.pendingAssess = pend; save('log');
+    const desc = ready.map(a=>`${fmtDay(a.date)} ${SPORT[a.sport]} „${a.name}“ ${fmtNum(a.distKm,2)} km (ID ${a.id}; Rückmeldung: ${fbLine(a)})`).join('; ');
+    askClaude('Strava-Abgleich: '+desc+'. Die Rückmeldungen stehen jeweils dabei – frag nur nach Werten, die dort fehlen. Bitte einschätzen und den Plan bei Bedarf anpassen.',
+      {auto:true, display:`Strava-Abgleich: ${ready.length===1?'„'+ready[0].name+'“ bewerten':ready.length+' Aktivitäten bewerten'}`});
+    return;
+  }
+  const upd = [...fbQueue].map(id => acts().find(a=>a.id===id)).filter(a => a && (assess(a.id) || weekSummary(mondayOf(a.date))));
+  fbQueue.clear();
+  if(upd.length){
+    const one = upd.length===1 ? upd[0] : null;
+    askClaude(`Rückmeldung ergänzt: ${upd.map(a=>`„${a.name}“ vom ${fmtDay(a.date)} (ID ${a.id}): ${fbLine(a)}`).join('; ')}. Bitte aktualisiere die Einschätzung ${one?'dieser Einheit':'dieser Einheiten'} (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`,
+      {auto:true, display: one ? `Rückmeldung eingetragen: ${one.name}` : `Rückmeldungen eingetragen (${upd.length})`});
+  }
+}
 /* Einschätzung veraltet, wenn die Rückmeldung später kam */
 function staleAssess(a){ const f=fb(a.id), as=assess(a.id); return !!(f && as && f.ts && as.ts && f.ts > as.ts); }
 const painClass = p => p==null?'':(p<=2?'ok':p<=4?'warn':'crit');
@@ -1357,7 +1390,7 @@ function doneCard(a, planned, extra){
     ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
     ${!careMode() && !rp && !(f && f.note) ? `<div class="row"><span class="note">Noch keine Rückmeldung zum Befinden.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>` : ''}
-    ${as?`<div class="assess"><b>Einschätzung</b><div class="md">${md(as.text)}</div>${staleAssess(a)?`<div class="row" style="margin-top:6px"><span class="note">Vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:''}</div>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
+    ${as?`<details class="assess"><summary><b>Einschätzung</b><span class="ashort">${esc(as.short || String(as.text).split(/(?<=[.!?])\s/)[0])}</span><span class="amore">mehr ▼</span></summary><div class="md">${md(as.text)}</div></details>${staleAssess(a)?`<div class="row" style="margin-top:6px"><span class="note">Vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:''}`:isPending(a.id)?`<p class="note">Claude bewertet die Einheit, sobald RPE${careMode()?' und Schmerz':''} eingetragen sind.</p>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
     ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
   </article>`;
 }
@@ -1526,7 +1559,6 @@ function wkLogSet(entry){
   wkSave(); render();
 }
 function wkExerciseDone(){
-  if(painMode()){ workout.phase = 'pain'; workout.until = null; return; }
   wkNextExercise();
 }
 function wkNextExercise(){
@@ -2622,9 +2654,9 @@ async function syncStrava(){
     syncBusy=false; render();
     setTimeout(checkMissed, 1500);
     const recent = fresh.filter(a => a.sport!=='walk' && daysUntil(a.date) >= -10);
-    if(recent.length && sample && sampleState!=='denied' && !busy){
-      const desc = recent.map(a=>`${fmtDay(a.date)} ${SPORT[a.sport]} „${a.name}“ ${fmtNum(a.distKm,2)} km (ID ${a.id})`).join('; ');
-      askClaude('Strava-Abgleich: '+desc+'. Bitte einschätzen, nach Schmerz und RPE fragen und den Plan bei Bedarf anpassen.', {auto:true, display:`Strava-Abgleich: ${recent.length===1?'1 neue Aktivität':recent.length+' neue Aktivitäten'}`});
+    if(recent.length){
+      S.log.pendingAssess = Object.assign({}, S.log.pendingAssess||{}); recent.forEach(a => { if(!assess(a.id)) S.log.pendingAssess[a.id] = Date.now(); });
+      await save('log'); render(); setTimeout(maybeAssess, 300);
     }
   }catch(e){
     const c = e && e.code;
@@ -2875,7 +2907,7 @@ async function askClaude(text, opt={}){
     if(e && e.code==='cancelled') push({role:'assistant', text:'Abgebrochen.', ts:Date.now(), error:true});
     else push({role:'assistant', text:errText(e), ts:Date.now(), error:true});
   }finally{
-    busy=false; ctl=null; thinkStop(); await save('chat'); render(); setTimeout(answerNotice, 60);
+    busy=false; ctl=null; thinkStop(); await save('chat'); render(); setTimeout(answerNotice, 60); setTimeout(maybeAssess, 1500);
   }
 }
 function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; const msg = topicSel && !v.startsWith(topicSel) ? topicSel+': '+v : v; draft=''; topicHint=''; topicSel=''; askClaude(msg); }
@@ -3122,18 +3154,14 @@ document.addEventListener('click', async e => {
     log.feedback = log.feedback||{};
     log.feedback[b.dataset.id] = Object.assign({}, log.feedback[b.dataset.id], {[b.dataset.k]:Number(b.dataset.v), ts:new Date().toISOString()});
     render(); await save('log');
-    const act = acts().find(x=>x.id===b.dataset.id), f2 = fb(b.dataset.id) || {};
-    if(act && f2.painDuring!=null && f2.painAfter!=null && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
-      askClaude(`Rückmeldung ergänzt: Schmerz während ${f2.painDuring}/10, danach ${f2.painAfter}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit. Keine Rückfrage.`, {auto:true, display:`Schmerz eingetragen: ${act.name}`});
+    { const f2 = fb(b.dataset.id) || {}; if(isPending(b.dataset.id) || (f2.painDuring!=null && f2.painAfter!=null)) fbChanged(b.dataset.id); }
   }
   else if(a==='rpe-set'){
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     log.feedback = log.feedback||{};
     log.feedback[b.dataset.id] = Object.assign({}, log.feedback[b.dataset.id], {rpe:Number(b.dataset.v), ts:new Date().toISOString()});
     render(); await save('log');
-    const act = acts().find(x=>x.id===b.dataset.id);
-    if(act && sample && !busy && (assess(act.id) || weekSummary(mondayOf(act.date))))
-      askClaude(`Rückmeldung ergänzt: RPE ${b.dataset.v}/10 für „${act.name}“ vom ${fmtDay(act.date)} (ID ${act.id}). Bitte aktualisiere die Einschätzung dieser Einheit (text und short) und das Wochenfazit mit dem aktuellen Stand der Rückmeldungen. Keine Rückfrage.`, {auto:true, display:`RPE ${b.dataset.v} eingetragen: ${act.name}`});
+    fbChanged(b.dataset.id);
   }
   else if(a==='guide'){ e.preventDefault(); const st={label:b.dataset.label, detail:b.dataset.detail}; guideDlg={label:st.label, detail:st.detail, key:guideKey(st), loading:false, error:null}; renderMoveDialog(); loadGuide(false); }
   else if(a==='guide-close'){ guideDlg=null; renderMoveDialog(); }
@@ -3274,7 +3302,7 @@ render();
   const cl = window.claude;
   if(!cl || !cl.use){ mcpState='none'; sampleState='none'; S.loaded=true; render(); return; }
   cl.use('mcp').then(m => { mcp=m; mcpState=m?'ok':'none'; render(); setTimeout(autoSync, 800); });
-  cl.use('sample').then(s => { sample=wrapSample(s); sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); });
+  cl.use('sample').then(s => { sample=wrapSample(s); sampleState=s?'ok':'none'; render(); setTimeout(checkMissed, 500); setTimeout(autoExtend, 3000); setTimeout(maybeAssess, 6000); });
   const [user, dbx] = await Promise.all([cl.use('user'), cl.use('db')]);
   db = dbx; uid = user ? await user.id() : null;
   if(!db || !uid){ S.loaded=true; syncMsg={err:true, text:'Speichern ist in dieser Ansicht nicht möglich. Öffne die App angemeldet in claude.ai.'}; render(); return; }
