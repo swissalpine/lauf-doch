@@ -841,14 +841,25 @@ function powerLaps(a){
 /* Hauptteil eines Laufs: ohne Ein- und Auslaufen.
    Mit Runden der Uhr: erste und letzte Runde weg (ab 3 Runden; bei 2 Runden die kurze, wenn sie unter 35 % liegt).
    Sonst: erster Kilometer und ein kurzer Rest am Ende weg. Ergebnis als Distanz- und Zeitbereich. */
+/* Gehen erkennen: Schrittfrequenz unter 65 (Strava zählt je Fuß, Laufen ≈ 75–95) oder deutlich langsamer als der Hauptteil */
+const WALK_CAD = 65;
+function isWalkRound(l, ref){ const t = l.e||l.s||1; return (l.c!=null && l.c < WALK_CAD) || (ref && l.d/t < 0.75*ref); }
 function mainPart(a){
   const p = a.perf || {}, R = (p.rounds||[]).filter(l=>l.d>0);
-  const tot = R.reduce((x,l)=>x+l.d,0), totT = R.reduce((x,l)=>x+(l.e||l.s),0);
-  if(R.length>=3) return {d0:R[0].d, d1:tot-R[R.length-1].d, t0:R[0].e||R[0].s, t1:totT-(R[R.length-1].e||R[R.length-1].s), main:true};
-  if(R.length===2){
-    const [x,y] = R;
-    if(x.d < 0.35*tot) return {d0:x.d, d1:tot, t0:x.e||x.s, t1:totT, main:true};
-    if(y.d < 0.35*tot) return {d0:0, d1:x.d, t0:0, t1:x.e||x.s, main:true};
+  const T = l => l.e||l.s||0, totT = R.reduce((x,l)=>x+T(l),0);
+  if(R.length>=2){
+    const longest = R.reduce((b,l)=>T(l)>T(b)?l:b, R[0]), ref = longest.d/(T(longest)||1);
+    let i0 = 0, i1 = R.length-1;
+    // Einlaufen: erste Runde, wenn es mindestens drei gibt oder sie kurz ist; danach Gehrunden am Anfang
+    if(R.length>=3 || T(R[0]) < 0.35*totT) i0 = 1;
+    while(i0<i1 && isWalkRound(R[i0], ref)) i0++;
+    // Auslaufen: Gehrunden am Ende, dann eine kurze letzte Laufrunde
+    while(i1>i0 && isWalkRound(R[i1], ref)) i1--;
+    if(i1>i0 && R[i1]!==longest && T(R[i1]) < 0.25*totT) i1--;
+    if(i1>=i0 && (i0>0 || i1<R.length-1)){
+      const sumD = n => R.slice(0,n).reduce((x,l)=>x+l.d,0), sumT = n => R.slice(0,n).reduce((x,l)=>x+T(l),0);
+      return {d0:sumD(i0), d1:sumD(i1+1), t0:sumT(i0), t1:sumT(i1+1), main:true, ref};
+    }
   }
   const L = (p.laps||[]).filter(l=>l.d>0), dist = L.reduce((x,l)=>x+l.d,0);
   const last = L[L.length-1];
@@ -858,10 +869,12 @@ function mainPart(a){
 function decouple(a){
   const p = a.perf || {}, mp = mainPart(a);
   const st = getStreams(a.id);
-  if(!st && p.dec && p.dec.v!=null) return {value:p.dec.v, main:p.dec.main, src:'streams'};
+  if(!st && p.dec && p.dec.v!=null && p.dec.ver===2) return {value:p.dec.v, main:p.dec.main, src:'streams'};
   // genau: Streams im Hauptteil, nur Abschnitte in Bewegung
   if(st && st.t && st.hr && st.v && mp.t1!=null){
-    const pts = []; st.t.forEach((t,i)=>{ if(t>=mp.t0 && t<mp.t1 && st.hr[i]>0 && st.v[i]>1.2) pts.push([t, st.v[i], st.hr[i]]); });
+    const inMain = []; st.t.forEach((t,i)=>{ if(t>=mp.t0 && t<mp.t1 && st.hr[i]>0 && st.v[i]>1.2) inMain.push(i); });
+    const vs = inMain.map(i=>st.v[i]).sort((x,y)=>x-y), vMed = vs.length ? vs[Math.floor(vs.length/2)] : 0;
+    const pts = inMain.filter(i => st.v[i] >= 0.7*vMed && !(st.c && st.c[i]!=null && st.c[i] > 0 && st.c[i] < WALK_CAD)).map(i => [st.t[i], st.v[i], st.hr[i]]);
     if(pts.length>=60){
       const mid = (pts[0][0]+pts[pts.length-1][0])/2;
       const ef = arr => arr.reduce((x,q)=>x+q[1],0)/arr.reduce((x,q)=>x+q[2],0);
@@ -870,11 +883,13 @@ function decouple(a){
     }
   }
   // sonst: Kilometer-Splits, anteilig auf den Hauptteil zugeschnitten
-  const L = (p.laps||[]).filter(l=>l.hr && l.s && l.d>0);
-  if(L.length<3 || mp.d1-mp.d0 < 1500) return null;
+  const L0 = (p.laps||[]).filter(l=>l.hr && l.s && l.d>0);
+  const sp = L0.map(l=>l.d/l.s).sort((x,y)=>x-y), spMed = sp.length ? sp[Math.floor(sp.length/2)] : 0;
+  const L = L0.map(l => l.d/l.s < 0.7*spMed ? Object.assign({}, l, {hr:null}) : l);
+  if(L0.length<3 || mp.d1-mp.d0 < 1500) return null;
   const pieces = []; let acc = 0;
   L.forEach(l => { const a0=acc, a1=acc+l.d; acc=a1; const lo=Math.max(a0,mp.d0), hi=Math.min(a1,mp.d1);
-    if(hi>lo){ const f=(hi-lo)/l.d; pieces.push({from:lo, to:hi, d:l.d*f, s:l.s*f, hr:l.hr}); } });
+    if(hi>lo && l.hr){ const f=(hi-lo)/l.d; pieces.push({from:lo, to:hi, d:l.d*f, s:l.s*f, hr:l.hr}); } });
   const half = (mp.d0+mp.d1)/2, A=[], B=[];
   pieces.forEach(q => { if(q.to<=half) A.push(q); else if(q.from>=half) B.push(q);
     else { const f=(half-q.from)/(q.to-q.from); A.push({d:q.d*f, s:q.s*f, hr:q.hr}); B.push({d:q.d*(1-f), s:q.s*(1-f), hr:q.hr}); } });
@@ -1882,7 +1897,7 @@ async function fetchStreams(id){
 function persistDec(a){
   if(!a || a.sport!=='run' || !a.perf) return false;
   const dc = decouple(a);
-  if(dc && dc.src==='streams'){ a.perf.dec = {v: Math.round(dc.value*100)/100, main: dc.main}; return true; }
+  if(dc && dc.src==='streams'){ a.perf.dec = {v: Math.round(dc.value*100)/100, main: dc.main, ver:2}; return true; }
   return false;
 }
 async function loadStreams(id){
@@ -2639,7 +2654,7 @@ async function syncStrava(){
       a.perf = perf;
     }
     // Verlaufsdaten neuer Läufe und Fahrten gleich mitholen (genaue Entkopplung, Analyse sofort verfügbar)
-    const wantSt = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !isManual(a) && a.perf && daysUntil(a.date)>=-14 && !getStreams(a.id) && !(a.perf.dec)).slice(0,6);
+    const wantSt = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !isManual(a) && a.perf && daysUntil(a.date)>=-14 && !getStreams(a.id) && !(a.perf.dec && a.perf.dec.ver===2)).slice(0,6);
     for(let i=0;i<wantSt.length;i++){
       syncMsg = {text:`Verlaufsdaten ${i+1} von ${wantSt.length} …`}; render();
       try{ await fetchStreams(wantSt[i].id); persistDec(wantSt[i]); }
