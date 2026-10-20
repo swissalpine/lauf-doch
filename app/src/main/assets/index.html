@@ -1352,6 +1352,7 @@ function plannedCard(s, label){
   </article>`;
 }
 
+let delAsk = null; // Eintrag, dessen Löschen bestätigt werden soll
 function manualCard(a, planned){
   const f = fb(a.id), rp = rpeOf(a);
   const chips = [];
@@ -1375,8 +1376,10 @@ function manualCard(a, planned){
     ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">${a.workout?'In der App aufgezeichnet':'Selbst eingetragen'} · ✓ an Strava gesendet${a.workout?'':'. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.'}${a.workout&&a.stravaId&&((a.perf&&a.perf.hr)||a.re!=null)?' und verknüpft':''}</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
     ${!a.push && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
     ${a.workout && a.stravaId && !a.push ? `<p class="note">In der App aufgezeichnet · ✓ mit Strava verknüpft</p>` : ''}
-    <div class="row"><span class="note">${a.push?'':a.workout?(a.stravaId?'':'In der App aufgezeichnet. Kommt die Einheit auch über Strava (z. B. von der Uhr), bleibt dieses Protokoll erhalten; Puls und Relative Effort werden übernommen.'):'Selbst eingetragen. Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
+    <div class="row"><span class="note">${a.push?'':a.workout?(a.stravaId?'':'In der App aufgezeichnet. Kommt die Einheit auch über Strava (z. B. von der Uhr), bleibt dieses Protokoll erhalten; Puls und Relative Effort werden übernommen.'):'Selbst eingetragen. Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Eintrag löschen</button></div>
     ${planned && (planned.title||'')!==a.name ? `<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b></p>` : ''}
+    ${delAsk===a.id ? `<div class="rsbox"><p><b>Eintrag löschen?</b> ${a.workout?'Übungsprotokoll und ':''}Rückmeldung gehen verloren, die geplante Einheit ist danach wieder offen.${a.push==='ok'?' In Strava bleibt die Aktivität bestehen – dort bitte selbst löschen.':''}</p>
+      <div class="row" style="justify-content:flex-start"><button class="btn danger primary" data-action="done-undo-yes" data-id="${esc(a.id)}">Löschen</button><button class="btn" data-action="done-undo-no">Abbrechen</button></div></div>` : ''}
   </article>`;
 }
 
@@ -3169,7 +3172,9 @@ document.addEventListener('click', async e => {
     render(); save('profile');
   }
   else if(a==='done-mark'){ const s0 = active().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(s0) markDone(s0); }
-  else if(a==='done-undo'){ unmarkDone(b.dataset.id); }
+  else if(a==='done-undo'){ delAsk = b.dataset.id; render(); }
+  else if(a==='done-undo-no'){ delAsk = null; render(); }
+  else if(a==='done-undo-yes'){ delAsk = null; unmarkDone(b.dataset.id); }
   else if(a==='pain-set'){
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     log.feedback = log.feedback||{};
