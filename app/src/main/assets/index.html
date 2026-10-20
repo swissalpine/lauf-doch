@@ -2612,6 +2612,16 @@ async function syncStrava(){
     const fresh = incoming.filter(a=>!known.has(a.id) && !log.activities.some(m=>m.workout && m.date===a.date && m.sport===a.sport));
     const byId = new Map(log.activities.map(a=>[a.id,a])); incoming.forEach(a=>byId.set(a.id, Object.assign({}, byId.get(a.id)||{}, a)));
     let merged = [...byId.values()];
+    // In Strava gelöschte Aktivitäten entfernen (nur im geladenen Zeitraum; bei leerer Antwort nichts löschen)
+    let removed = 0;
+    if(incoming.length){
+      const ids = new Set(incoming.map(a=>a.id));
+      const from = list.length >= 100 ? incoming.reduce((m,a)=>a.date<m?a.date:m, incoming[0].date) : start.slice(0,10);
+      const gone = merged.filter(x => !isManual(x) && x.date >= from && !ids.has(x.id));
+      gone.forEach(x => { delete log.feedback[x.id]; delete log.assessments[x.id]; try{ localStorage.removeItem(streamsKey(x.id)); delete STREAMS[x.id]; }catch(_){}
+        if(log.pendingAssess) delete log.pendingAssess[x.id]; });
+      removed = gone.length; merged = merged.filter(x => !gone.includes(x));
+    }
     merged.filter(isManual).forEach(m => {
       if(m.workout){
         // In der App aufgezeichnet: Protokoll bleibt, Strava-Aktivitäten desselben Tags (gesendet und/oder von der Uhr) werden verknüpft
@@ -2672,9 +2682,10 @@ async function syncStrava(){
     // in den aktuellen Stand übernehmen (Rückmeldungen/Fazits können sich währenddessen geändert haben)
     const cur = S.log || {};
     S.log = Object.assign({}, cur, {activities: log.activities, feedback: Object.assign({}, cur.feedback||{}, log.feedback), zones: log.zones || cur.zones, lastSync: log.lastSync});
+    if(removed){ const keep = new Set(log.activities.map(x=>x.id)); Object.keys(S.log.feedback).forEach(k => { if(!keep.has(k) && !/^m-/.test(k)) delete S.log.feedback[k]; }); S.log.assessments = Object.fromEntries(Object.entries(S.log.assessments||{}).filter(([k])=>keep.has(k))); }
     Object.keys(S.log.feedback).forEach(k => { if(k.startsWith('m-') && !log.activities.some(a=>a.id===k)) delete S.log.feedback[k]; });
     await save('log');
-    syncMsg = {text: fresh.length ? fresh.length+(fresh.length===1?' neue Aktivität':' neue Aktivitäten')+' übernommen.' : 'Keine neuen Aktivitäten.'};
+    syncMsg = {text: (fresh.length ? fresh.length+(fresh.length===1?' neue Aktivität':' neue Aktivitäten')+' übernommen.' : 'Keine neuen Aktivitäten.') + (removed ? ' '+removed+(removed===1?' in Strava gelöschte Aktivität entfernt.':' in Strava gelöschte Aktivitäten entfernt.') : '')};
     syncBusy=false; render();
     setTimeout(checkMissed, 1500);
     const recent = fresh.filter(a => a.sport!=='walk' && daysUntil(a.date) >= -10);
