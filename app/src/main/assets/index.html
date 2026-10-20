@@ -1360,17 +1360,23 @@ function manualCard(a, planned){
   if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
   if(noteText(f)) chips.push(`<span class="chip">${esc(f.note)}</span>`);
   return `<article class="card">
-    <div class="card-head"><span class="tag done">Erledigt</span><span class="sport">${esc(SPORT[a.sport]||'')} · ${a.workout?'in der App aufgezeichnet':'selbst eingetragen'}</span></div>
+    <div class="card-head"><span class="tag done">Absolviert</span><span class="sport">${esc(SPORT[a.sport]||'')}${a.time?' · '+esc(a.time)+' Uhr':''}</span></div>
     <h3 class="hic">${sic(a.sport, a.name).replace('class="sic"', 'class="sic done"')}<span>${esc(a.name)}</span></h3>
-    ${a.movingS?`<div class="target">${a.workout?'':'ca. '}${Math.round(a.movingS/60)} min${a.workout&&a.time?' · ab '+esc(a.time)+' Uhr':''}</div>`:''}
+    ${(() => { const m = [];
+      if(a.movingS) m.push([a.workout?'Dauer':'Dauer (ca.)', a.workout ? fmtDur(a.movingS) : Math.round(a.movingS/60)+' min']);
+      if(a.workout) m.push(['Übungen', a.workout.filter(x=>(x.log||[]).some(l=>!l.skip)).length+' von '+a.workout.length]);
+      if(a.perf && a.perf.hr) m.push(['Ø HF', Math.round(a.perf.hr)+(a.perf.hrMax?' / '+a.perf.hrMax:'')+' bpm']);
+      if(a.re!=null) m.push(['Relative Effort', a.re]);
+      return m.length ? `<div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>` : ''; })()}
     ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${(x.log||[]).length ? x.log.map(l=>wkSetText(x,l)).join(' · ')+(x.reps?' Wdh.':'') : 'ausgelassen'}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-    ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">✓ An Strava gesendet.${a.workout?'':' Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.'}</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
+    ${a.push==='busy'?`<p class="note">Wird an Strava gesendet …</p>`:a.push==='ok'?`<p class="note">${a.workout?'In der App aufgezeichnet':'Selbst eingetragen'} · ✓ an Strava gesendet${a.workout?'':'. Beim nächsten Abgleich ersetzt die Strava-Aktivität diesen Eintrag.'}${a.workout&&a.stravaId&&((a.perf&&a.perf.hr)||a.re!=null)?' und verknüpft':''}</p>`:a.push==='err'?`<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>`:''}
     ${!a.push && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
-    ${a.workout && a.stravaId && (!a.push || (a.perf&&a.perf.hr) || a.re!=null) ? `<p class="note">✓ Mit Strava verknüpft${a.perf&&a.perf.hr?' · Ø '+Math.round(a.perf.hr)+(a.perf.hrMax?' / max. '+a.perf.hrMax:'')+' bpm':''}${a.re!=null?' · Relative Effort '+a.re:''}</p>` : ''}
-    <div class="row"><span class="note">${a.push?'':a.workout?(a.stravaId?'':'Kommt die Einheit auch über Strava (z. B. von der Uhr), bleibt dieses Protokoll erhalten; Puls und Relative Effort werden übernommen.'):'Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
+    ${a.workout && a.stravaId && !a.push ? `<p class="note">In der App aufgezeichnet · ✓ mit Strava verknüpft</p>` : ''}
+    <div class="row"><span class="note">${a.push?'':a.workout?(a.stravaId?'':'In der App aufgezeichnet. Kommt die Einheit auch über Strava (z. B. von der Uhr), bleibt dieses Protokoll erhalten; Puls und Relative Effort werden übernommen.'):'Selbst eingetragen. Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Rückgängig</button></div>
+    ${planned && (planned.title||'')!==a.name ? `<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b></p>` : ''}
   </article>`;
 }
 
