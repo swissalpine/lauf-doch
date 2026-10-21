@@ -159,7 +159,7 @@ body.cbusy header.bar::after{opacity:1;animation:cbar 1.3s linear infinite}
 @keyframes cdin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (prefers-reduced-motion:reduce){.msg.think .tdots i,body.cbusy header.bar::after{animation:none}body.cbusy header.bar::after{background-size:100% 100%;opacity:.6}}
 .compose{display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line)}
-.compose textarea{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.compose textarea{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
 .compose .row{flex-wrap:nowrap}
 .suggest{display:flex;gap:6px;flex-wrap:wrap}
 .suggest button{font-size:13px;border:1px dashed var(--line);background:none;border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--muted)}
@@ -204,7 +204,7 @@ body.cbusy header.bar::after{opacity:1;animation:cbar 1.3s linear infinite}
 .banner b{color:var(--warn)}
 .fld{display:flex;flex-direction:column;gap:4px}
 .fld > span{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.fld input,.fld textarea,.addrow input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--bg);resize:vertical}
+.fld input,.fld textarea,.addrow input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--surface);resize:vertical}
 .addrow{display:flex;gap:8px}
 .addrow input{flex:1;min-width:0}
 .chip.cmp{display:inline-flex;align-items:center;gap:6px;background:var(--warn-soft);color:var(--warn);font-weight:500;padding:4px 6px 4px 11px}
@@ -256,7 +256,7 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .cancelled .ct{font-weight:600;text-decoration:line-through;color:var(--muted)}
 .day .cx .t{text-decoration:line-through;color:var(--muted)}
 .day .cx .x{font-size:13px;color:var(--warn)}
-.sel{width:100%;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg)}
+.sel{width:100%;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--surface)}
 .brand h1{display:block;margin:0;line-height:30px;white-space:nowrap}
 .brand .date{line-height:1}
 .brand .logo{display:inline-block;width:30px;height:30px;border-radius:8px;vertical-align:middle;margin:-4px 9px 0 0}
@@ -376,7 +376,7 @@ nav.tabs button{padding:4px 2px}
 .abs-row .an{color:var(--muted);font-size:14px}
 .abs-row button{border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:2px 6px;cursor:pointer}
 .absform{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.absform input,.absform select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+.absform input,.absform select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px}
 .absform .full{grid-column:1/-1}
 .absform label span{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
 .day .restline.away{color:var(--warn)}
@@ -389,7 +389,7 @@ nav.tabs button{padding:4px 2px}
 .absform input{min-width:0}
 .remrow{display:grid;grid-template-columns:110px 110px 1fr;gap:10px;align-items:center}
 .remrow .toggle{padding:9px 0}
-.remrow input[type=time]{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;min-width:0}
+.remrow input[type=time]{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px;min-width:0}
 .remrow input:disabled{opacity:.45}
 .remrow .note{margin:0}
 .usage{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
@@ -630,7 +630,7 @@ table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400
 .gcaution{background:var(--warn-soft);color:var(--ink);border-radius:8px;padding:7px 10px}
 .move{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:8px}
 .move label{font-size:13px;color:var(--muted)}
-.move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--bg);min-width:0;flex:1}
+.move select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--surface);min-width:0;flex:1}
 .weekdays{gap:4px}
 .toggle{font-size:14px;padding:9px 0}
 .msgs{max-height:340px}
