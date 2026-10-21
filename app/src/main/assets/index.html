@@ -53,6 +53,16 @@ p{margin:0}
 .card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tag{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
 .tag.plan{background:var(--accent-soft);color:var(--accent)}
+.nextc{gap:10px}
+.nextc .nx>summary{list-style:none;cursor:pointer;display:flex;align-items:flex-start;gap:2px}
+.nextc .nx>summary::-webkit-details-marker{display:none}
+.nextc .nx>summary::after{content:'▼';margin-left:auto;color:var(--muted);font-size:13px;transition:transform .15s;align-self:center}
+.nextc .nx[open]>summary::after{transform:rotate(180deg)}
+.nextc .nx>summary .sic{margin-top:2px}
+.nextc .nx .purpose,.nextc .nx .steps{margin-top:8px}
+.nextc .nx summary div{display:flex;flex-direction:column}
+.nextc .nx b{font-weight:600}
+.nextc .nx summary div span{color:var(--muted);font-size:15px}
 .tag.done{background:var(--ok-soft);color:var(--ok)}
 .tag.extra{background:var(--warn-soft);color:var(--warn)}
 .sport{font-size:13px;color:var(--muted);margin-left:auto}
@@ -120,6 +130,9 @@ details.miss>summary .t{color:var(--muted)}
 .day details summary .sic,.entry .facts .sic{width:19px;height:19px;border-radius:5px;margin-right:6px;vertical-align:-3px}
 .day details summary .sic svg,.entry .facts .sic svg{width:16px;height:16px}
 .day details summary::-webkit-details-marker{display:none}
+.day details summary{position:relative;padding-right:24px}
+.day details summary::after{content:'▼';position:absolute;right:0;top:50%;transform:translateY(-50%);color:var(--muted);font-size:10px;transition:transform .15s}
+.day details[open] summary::after{transform:translateY(-50%) rotate(180deg)}
 .day details summary .t{font-weight:600}
 .day details summary .x{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
 .day details[open] summary{margin-bottom:6px}
@@ -1721,6 +1734,21 @@ function wkAction(a, b){
 }
 document.addEventListener('visibilitychange', () => { if(!document.hidden && workout){ render(); } });
 if(workout) setTimeout(wkTick, 0);
+/* Kompakte Vorschau auf den nächsten Trainingstag, wenn heute alles erledigt ist */
+function nextCompact(){
+  const t = today();
+  const nd = active().filter(s => s.date>t && normSport(s.sport)!=='rest').map(s=>s.date).sort()[0];
+  if(!nd) return '';
+  const ss = active().filter(s => s.date===nd && normSport(s.sport)!=='rest');
+  const when = (nd===addDays(t,1) ? 'Morgen · ' : '') + fmtDay(nd);
+  return `<div class="card nextc"><div class="card-head"><span class="tag plan">Als Nächstes · ${esc(when)}</span></div>
+    ${ss.map(s => { const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
+      const steps = Array.isArray(s.steps) ? s.steps : [];
+      return `<details class="nx" data-k="${esc('nx|'+s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport), s.title)}<div><b>${esc(s.title||'Training')}</b><span>${esc(x)}</span></div></summary>
+        ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
+        ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
+      </details>`; }).join('')}</div>`;
+}
 function renderToday(){
   if(!S.loaded) return syncBlock()+`<div class="empty">Trainingsdaten werden geladen …</div>`;
   const t = today();
@@ -1734,6 +1762,8 @@ function renderToday(){
   });
   done.filter(a=>!used.has(a.id)).forEach(a => out.push(doneCard(a,null,planned.length>0 || true)));
   cancelledToday.forEach(s => out.push(cancelledCard(s)));
+  // alles für heute erledigt: nächsten Trainingstag kompakt ankündigen
+  if((planned.length || done.length) && planned.every(p => done.some(a => a.sport===normSport(p.sport)))) out.push(nextCompact());
   if(!planned.length && !done.length){
     const next = active().filter(s => s.date>t).sort((a,b)=>a.date<b.date?-1:1)[0];
     const abT = absenceAt(t);
