@@ -14,7 +14,7 @@ img{max-width:100%}
 html{height:100%}
 /* Layout: schmale App-Spalte in Telefonbreite, Kopf mit Name, Tab-Inhalt, Dialog mit Claude, Navigationsleiste unten. Farbe: kräftiges Kobaltblau */
 :root{
-  --bg:#DCE8E2; --surface:#FFFFFF; --sunk:#E8F0EC; --ink:#121826; --muted:#586379; --line:#C6D2CC;
+  --bg:#E8E0D2; --surface:#FFFFFF; --sunk:#F0EBE2; --ink:#121826; --muted:#586379; --line:#D2CABC;
   --accent:#0053FA; --accent-ink:#FFFFFF; --accent-soft:#DFE9FF;
   --ok:#2B7A4B; --ok-soft:#DFF0E5; --warn:#9A6312; --warn-soft:#F6EAD3; --crit:#B3261E; --crit-soft:#F7DEDB;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
@@ -2374,7 +2374,8 @@ function updAbout(st){
   return `<div class="svcrow"><b>Update</b><span class="st ${av?'':'ok'}">${upd.checking ? 'wird geprüft …' : av ? 'Version '+esc(upd.info.version)+' verfügbar' : upd.info ? '✓ aktuell' : 'noch nicht geprüft'}</span></div>
     <div class="row" style="justify-content:flex-start">${av?`<button class="btn primary" data-action="upd-install">Herunterladen und installieren</button>`:''}<button class="btn" data-action="upd-check" ${upd.checking?'disabled':''}>Nach Updates suchen</button></div>
     ${upd.err?`<div class="status err">${esc(upd.err)}</div>`:''}
-    ${upd.done?`<p class="note">Android zeigt jetzt den Installationsdialog. Nach der Installation startet die App neu.</p>`:''}`;
+    ${upd.done?`<p class="note">Android zeigt jetzt den Installationsdialog. Nach der Installation erscheint eine Benachrichtigung zum Öffnen der App.</p>`:''}
+    ${notifPerm()!=='granted' ? `<div class="row"><span class="note">Mitteilungen sind nicht erlaubt – nach einem Update erscheint daher kein Hinweis zum Öffnen.${notifPerm()==='denied'?' Erlauben in den Android-Einstellungen unter Apps › Lauf doch! › Benachrichtigungen.':''}</span>${notifPerm()==='ask'?`<button class="btn ghost" data-action="notif-ask">Erlauben</button>`:''}</div>` : ''}`;
 }
 function connCard(){
   const st = appStatus();
@@ -3169,6 +3170,7 @@ document.addEventListener('click', async e => {
   else if(a==='replan-changes') replanFromChanges();
   else if(a==='wk-start'){ const s0 = active().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(s0) wkStart(s0); }
   else if(a.startsWith('wk-')){ wkAction(a, b); }
+  else if(a==='notif-ask'){ try{ window.Android.requestNotifPermission(); }catch(_){} setTimeout(render, 1500); }
   else if(a==='rem-toggle'){ const c=remindCfg(), k=b.dataset.k; c[k+'On']=!c[k+'On']; if(c[k+'On'] && notifPerm()==='ask'){ try{ window.Android.requestNotifPermission(); }catch(_){} } setRemindCfg(c); render(); }
   else if(a==='abs-add' || a==='abs-rm'){
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
