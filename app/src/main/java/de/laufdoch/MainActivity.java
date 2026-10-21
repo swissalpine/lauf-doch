@@ -58,6 +58,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Smartphones immer hochkant; Tablets (ab 600 dp kleinster Breite) dürfen drehen
+        if (getResources().getConfiguration().smallestScreenWidthDp < 600) {
+            setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
 
         web = new WebView(this);
