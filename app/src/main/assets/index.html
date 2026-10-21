@@ -102,6 +102,10 @@ details.assess .md{margin-top:4px}
 .day{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
 .day:first-child{border-top:0}
 .day.today{background:var(--accent-soft)}
+.day.past .dl{opacity:.55}
+details.miss>summary .sic{opacity:.45}
+details.miss>summary .t{color:var(--muted)}
+.ms{color:var(--warn)}
 .day .dl{font-variant-numeric:tabular-nums;line-height:1.2}
 .day .dl b{display:block;font-family:var(--f-display);font-size:20px;font-weight:600}
 .day .dl span{font-size:13px;color:var(--muted)}
@@ -2066,8 +2070,10 @@ function renderPlan(){
       ${g.date?`<div class="gdate"><span>Zieldatum: <b>${esc(parseYmd(g.date).toLocaleDateString('de-DE'))}</b></span><span>noch ${daysUntil(g.date)} Tage</span></div>`:(macro()&&macro().end?`<div class="gdate"><span>Zieldatum (geschätzt): <b>${esc(dmyy(macro().end))}</b></span><span>noch ${daysUntil(macro().end)} Tage</span></div>`:'')}</div>`
     : `<div class="empty">Noch kein Ziel festgelegt. <button class="btn goal-add" data-action="goal-open">${IC.edit} Ziel festlegen</button></div>`;
   const t = today(); const rows = [];
-  for(let i=0;i<planDays();i++){
-    const d = addDays(t,i);
+  // ab Montag der laufenden Woche: Erledigtes und Kommendes auf einen Blick
+  const start = mondayOf(t), nDays = Math.round((parseYmd(planEnd()) - parseYmd(start))/864e5) + 1;
+  for(let i=0;i<nDays;i++){
+    const d = addDays(start,i), past = d < t;
     const ss = sessions().filter(s=>s.date===d);
     const dn = acts().filter(a=>a.date===d && a.sport!=='walk');
     // Absolvierte Aktivitäten den geplanten Einheiten zuordnen (gleiche Sportart), Rest als zusätzliche Aktivität
@@ -2080,11 +2086,11 @@ function renderPlan(){
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
-      const ma = matchA.get(s);
-      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : sic(normSport(s.sport), s.title)}<span class="t">${esc(s.title||'Training')}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
+      const ma = matchA.get(s), miss = past && !ma;
+      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"${miss?' class="miss"':''}><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : sic(normSport(s.sport), s.title)}<span class="t">${esc(s.title||'Training')}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : miss ? `${esc(SPORT[normSport(s.sport)])} · <span class="ms">nicht absolviert</span>` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
-        ${moveControl(s)}
+        ${past ? '' : moveControl(s)}
       </details>`;
     }).join('');
     const doneLine = dn.filter(a => !usedA.has(a.id)).map(a => { const det = (a.sport==='run'||a.sport==='ride') && a.perf;
@@ -2092,7 +2098,7 @@ function renderPlan(){
     const ab = absenceAt(d);
     if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
     const isRest = !items && !doneLine;
-    rows.push(`<div class="day ${i===0?'today':''} ${isRest?'restd':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+    rows.push(`<div class="day ${d===t?'today':''} ${past?'past':''} ${isRest?'restd':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="items">${items || (doneLine?'':ab?`<span class="restline away">Abwesend · ${esc(absText(ab))}</span>`:'<span class="restline">Ruhe</span>')}${items&&ab?`<span class="restline away">${esc(absText(ab))}</span>`:''}${doneLine}</div></div>`);
   }
   const plan = S.plan;
