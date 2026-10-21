@@ -34,11 +34,40 @@ public class ReminderReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (Intent.ACTION_BOOT_COMPLETED.equals(action) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             schedule(c);
+            if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) showUpdated(c);
             return;
         }
         String kind = intent.getStringExtra("kind");
         if (kind != null) show(c, kind);
         schedule(c);
+    }
+
+    /** Nach einem Update: Android erlaubt keinen automatischen Neustart, daher ein Tipp zum Öffnen. */
+    static void showUpdated(Context c) {
+        try {
+            NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            if (nm.getNotificationChannel("updates") == null) {
+                NotificationChannel ch = new NotificationChannel("updates", "App-Updates", NotificationManager.IMPORTANCE_HIGH);
+                ch.setDescription("Hinweis nach der Installation einer neuen Version");
+                nm.createNotificationChannel(ch);
+            }
+            Intent open = new Intent(c, MainActivity.class);
+            open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            open.putExtra("open_tab", "heute");
+            PendingIntent pi = PendingIntent.getActivity(c, 4711, open,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            Notification n = new Notification.Builder(c, "updates")
+                    .setSmallIcon(R.drawable.ic_notif)
+                    .setColor(0xFF0053FA)
+                    .setContentTitle("Lauf doch! " + BuildConfig.VERSION_NAME + " ist installiert")
+                    .setContentText("Tippen zum Öffnen")
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .setTimeoutAfter(30 * 60 * 1000L)
+                    .build();
+            nm.notify(4711, n);
+        } catch (Exception ignored) { }
     }
 
     private static JSONObject cfg(Context c) {

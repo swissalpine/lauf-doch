@@ -107,6 +107,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        try { ((android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(4711); } catch (Exception ignored) { }
         web.evaluateJavascript("window.dispatchEvent(new Event('appresume'))", null);
     }
 
