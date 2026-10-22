@@ -715,7 +715,7 @@ const IN_APP = !!window.IN_APP;
 const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 const WD_LONG = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 /* Schwerpunkte unter den gewählten Sportarten; ohne Angabe (alte Profile) gilt Laufen als Schwerpunkt */
-const SP_LABEL = s => s==='strength' ? 'Kraft & Mobilität' : SPORT[s];
+const SP_LABEL = s => s==='strength' ? 'Kraft & Mobilität' : s==='ride' ? 'Radfahren' : SPORT[s];
 const SP_ORDER = ['run','ride','swim','strength','mountain','other'];
 function sportsOf(pr){ return (pr.sports||[]).filter(s=>s!=='walk').sort((a,b)=>SP_ORDER.indexOf(a)-SP_ORDER.indexOf(b)); }
 function focusOf(pr){ const sp = sportsOf(pr); if(Array.isArray(pr.focus)) return pr.focus.filter(f=>sp.includes(f)); return sp.includes('run') && sp.length>1 ? ['run'] : []; }
