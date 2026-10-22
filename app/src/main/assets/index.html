@@ -2509,7 +2509,7 @@ function renderSettings(){
   const cs = complaints();
   return `<div class="card"><h2>Profil</h2>
       <label class="fld" for="pfName"><span>Name</span><input id="pfName" type="text" value="${esc(pr.name||'')}" placeholder="Vorname" autocomplete="given-name"></label>
-      <div class="fld"><span>Sportarten</span><div class="sports">${['run','ride','strength','walk'].map(s=>`<button class="toggle" data-action="sport" data-sport="${s}" aria-pressed="${sp.has(s)}">${SPORT[s]}</button>`).join('')}</div>
+      <div class="fld"><span>Sportarten</span><div class="sports">${['run','ride','swim','strength'].map(s=>`<button class="toggle" data-action="sport" data-sport="${s}" aria-pressed="${sp.has(s)}">${s==='strength'?'Kraft &amp; Mobilität':SPORT[s]}</button>`).join('')}</div>
         <p class="note">Laufen ist der Schwerpunkt, weitere Sportarten plant Claude ergänzend ein.</p></div>
       <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label>
       <div class="fld"><span>Trainingstage</span>
@@ -2835,7 +2835,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
 `ERKENNTNISSE: ${(pr.insights||[]).length ? (pr.insights||[]).map(x=>'- '+x).join('\n') : 'noch keine'}`,
 `TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}`,
-`SPORTARTEN: ${(pr.sports||[]).map(s=>SPORT[s]).join(', ')}`,
+`SPORTARTEN (planbar): ${(pr.sports||[]).filter(s=>s!=='walk').map(s=>s==='strength'?'Kraft und Mobilität':SPORT[s]).join(', ')}. Gehen und Wandern sind freie Ergänzungen: nicht planen, aber als Belastung berücksichtigen.`,
 `HINTERGRUND: ${pr.background||'–'}`,
 `AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
 `BEGRÜNDUNG DES PLANS: ${S.plan&&S.plan.rationale||'–'}`,
@@ -3328,7 +3328,7 @@ document.addEventListener('click', async e => {
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
     if(a==='day'){ const d=Number(b.dataset.day); const s=new Set(pr.trainingDays||[]); s.has(d)?s.delete(d):s.add(d); pr.trainingDays=[...s].sort();
       markChange('days', 'Trainingstage: '+([1,2,3,4,5,6,0].filter(x=>s.has(x)).map(x=>WD[x]).join(', ')||'keine')); }
-    else { const k=b.dataset.sport; const s=new Set(pr.sports||[]); s.has(k)?s.delete(k):s.add(k); pr.sports=[...s];
+    else { const k=b.dataset.sport; const s=new Set((pr.sports||[]).filter(x=>x!=='walk')); s.has(k)?s.delete(k):s.add(k); pr.sports=[...s];
       markChange('sports', 'Sportarten: '+(pr.sports.map(x=>SPORT[x]).join(', ')||'keine')); }
     render(); save('profile');
   }
