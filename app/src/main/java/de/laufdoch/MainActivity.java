@@ -105,9 +105,43 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        visible = false;
+        super.onPause();
+    }
+
+    private volatile boolean visible = true;
+
+    /** Antwort fertig, während die App nicht sichtbar war. */
+    private void notifyReply() {
+        try {
+            android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (nm.getNotificationChannel("claude_reply") == null) {
+                android.app.NotificationChannel ch = new android.app.NotificationChannel("claude_reply", "Antworten von Claude", android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                ch.setDescription("Hinweis, wenn Claude im Hintergrund fertig geworden ist");
+                nm.createNotificationChannel(ch);
+            }
+            Intent open = new Intent(this, MainActivity.class);
+            open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            android.app.PendingIntent pi = android.app.PendingIntent.getActivity(this, 4714, open,
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+            android.app.Notification n = new android.app.Notification.Builder(this, "claude_reply")
+                    .setSmallIcon(R.drawable.ic_notif)
+                    .setColor(0xFF0053FA)
+                    .setContentTitle("Claude hat geantwortet")
+                    .setContentText("Tippen zum Öffnen")
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .build();
+            nm.notify(4714, n);
+        } catch (Exception ignored) { }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
-        try { ((android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(4711); } catch (Exception ignored) { }
+        visible = true;
+        try { android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE); nm.cancel(4711); nm.cancel(4714); } catch (Exception ignored) { }
         web.evaluateJavascript("window.dispatchEvent(new Event('appresume'))", null);
     }
 
@@ -479,7 +513,11 @@ public class MainActivity extends Activity {
                 String result;
                 try {
                     JSONObject p = new JSONObject(payload);
-                    if ("claude".equals(kind)) result = claude(p);
+                    if ("claude".equals(kind)) {
+                        ClaudeService.begin(MainActivity.this);
+                        try { result = claude(p); } finally { ClaudeService.end(MainActivity.this); }
+                        if (!visible) notifyReply();
+                    }
                     else if ("strava".equals(kind)) result = strava(p);
                     else if ("intervals".equals(kind)) result = intervals(p);
                     else if ("update".equals(kind)) result = latestRelease();
