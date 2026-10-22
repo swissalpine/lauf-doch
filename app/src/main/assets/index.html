@@ -1028,7 +1028,7 @@ function noteText(f){
 /* Abwesenheiten: {from,to,type:'off'|'limited',note} */
 const absences = () => (profile().absences||[]).filter(a=>a && isDate(a.from) && isDate(a.to));
 const absenceAt = d => absences().find(a => d>=a.from && d<=a.to) || null;
-const absText = a => (a.type==='off'?'kein Training':'eingeschränkt') + (a.note?' – '+a.note:'');
+const absText = a => (a.type==='off'?'kein Training':a.type==='daily'?'jeden Tag Training':'eingeschränkt') + (a.note?' – '+a.note:'');
 const dmRange = a => { const f=parseYmd(a.from), t=parseYmd(a.to); return f.getDate()+'.'+(f.getMonth()+1)+'.' + (a.from===a.to?'':'–'+t.getDate()+'.'+(t.getMonth()+1)+'.'); };
 /* Selbst eingetragene Einheiten (Kraft, Mobilität …) */
 const MANUAL_SPORTS = ['strength','other'];
@@ -1779,7 +1779,7 @@ function renderToday(){
   if(!planned.length && !done.length){
     const next = active().filter(s => s.date>t).sort((a,b)=>a.date<b.date?-1:1)[0];
     const abT = absenceAt(t);
-    if(!cancelledToday.length) out.push(`<div class="restday-line"><span class="tag">Heute</span><span>${abT?'Abwesend – '+esc(absText(abT)):'Ruhetag – kein Training geplant'}</span></div>`);
+    if(!cancelledToday.length) out.push(`<div class="restday-line"><span class="tag">Heute</span><span>${abT&&abT.type!=='daily'?'Abwesend – '+esc(absText(abT)):'Ruhetag – kein Training geplant'}</span></div>`);
     if(next) out.push(plannedCard(next, 'Nächstes Training · '+fmtDay(next.date)));
     else out.push(`<div class="empty">Es gibt noch keinen Plan. Bitte Claude unten im Dialog, einen Plan für die nächsten zwei Wochen zu erstellen.</div>`);
   }
@@ -2141,7 +2141,7 @@ function renderPlan(){
     if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
     const isRest = !items && !doneLine;
     rows.push(`<div class="day ${d===t?'today':''} ${past?'past':''} ${isRest?'restd':''}"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="items">${items || (doneLine?'':ab?`<span class="restline away">Abwesend · ${esc(absText(ab))}</span>`:'<span class="restline">Ruhe</span>')}${items&&ab?`<span class="restline away">${esc(absText(ab))}</span>`:''}${doneLine}</div></div>`);
+      <div class="items">${items || (doneLine?'':ab&&ab.type!=='daily'?`<span class="restline away">Abwesend · ${esc(absText(ab))}</span>`:'<span class="restline">Ruhe</span>')}${items&&ab&&ab.type!=='daily'?`<span class="restline away">${esc(absText(ab))}</span>`:''}${doneLine}</div></div>`);
   }
   const plan = S.plan;
   const rat = plan && plan.rationale ? `<details class="why" data-k="why14"><summary>Warum dieser Plan?${plan.updatedAt?`<span class="note">Stand ${esc(new Date(plan.updatedAt).toLocaleDateString('de-DE'))}${plan.revision?' · V'+plan.revision:''}</span>`:''}</summary><div class="rationale md">${md(plan.rationale)}</div></details>` : '';
@@ -2531,14 +2531,14 @@ function renderSettings(){
       <div class="fld"><span>Trainingstage</span>
       <div class="weekdays">${order.map(d=>`<button class="toggle" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}">${WD[d]}</button>`).join('')}</div>
       <p class="note">An diesen Tagen kann Claude Einheiten planen. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p></div></div>
-    <details class="card macro" data-k="abs"><summary><div class="mhead"><h2>Abwesenheiten</h2><span class="note">${(() => { const n = absences().filter(a=>a.to>=today()).length; return n ? n+' eingetragen' : 'keine'; })()}</span><span class="chev">▼</span></div></summary><div class="mbody">
-      <p class="muted">Urlaub oder Reisen: Claude plant diese Zeiträume im Wochen- und Gesamtplan ein.</p>
+    <details class="card macro" data-k="abs"><summary><div class="mhead"><h2>Besondere Zeiträume</h2><span class="note">${(() => { const n = absences().filter(a=>a.to>=today()).length; return n ? n+' eingetragen' : 'keine'; })()}</span><span class="chev">▼</span></div></summary><div class="mbody">
+      <p class="muted">Urlaub, Reisen oder Zeiten, in denen du jeden Tag trainieren willst: Claude plant diese Zeiträume im Wochen- und Gesamtplan ein.</p>
       ${(() => { const list = absences().filter(a=>a.to>=today()).sort((a,b)=>a.from.localeCompare(b.from));
         return list.length ? `<div class="abs-list">${list.map(a=>`<div class="abs-row"><span class="ab"><span class="ad">${esc(dmRange(a))}</span><span class="an">${esc(absText(a))}</span></span><button data-action="abs-rm" data-from="${esc(a.from)}" data-to="${esc(a.to)}" aria-label="Abwesenheit entfernen">×</button></div>`).join('')}</div>` : ''; })()}
       <div class="absform">
         <label><span>Von</span><input id="absFrom" type="date" min="${today()}"></label>
         <label><span>Bis</span><input id="absTo" type="date" min="${today()}"></label>
-        <label class="full"><span>Art</span><select id="absType"><option value="off">Kein Training möglich</option><option value="limited">Eingeschränkt (Notiz beachten)</option></select></label>
+        <label class="full"><span>Art</span><select id="absType"><option value="off">Kein Training möglich</option><option value="limited">Eingeschränkt (Notiz beachten)</option><option value="daily">Jeden Tag Training</option></select></label>
         <label class="full"><span>Notiz</span><input id="absNote" type="text" maxlength="80" placeholder="z. B. Urlaub, nur Wandern möglich"></label>
         <div class="full"><button class="btn" data-action="abs-add">Hinzufügen</button></div>
       </div></div></details>
@@ -2832,22 +2832,22 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "sports":["run","ride","strength"],
    "focus":["run"],
    "background":"aktualisierter Hintergrundtext",
-   "absences":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","type":"off|limited","note":"Urlaub, nur Wandern"}],
+   "absences":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","type":"off|limited|daily","note":"Urlaub, nur Wandern"}],
    "plan":{"sessions":[{"date":"YYYY-MM-DD","sport":"run|ride|strength|walk|other|rest","title":"…","goal":"Ziel der Einheit","distanceKm":6.3,"durationMin":40,"steps":[{"label":"Einlaufen","detail":"10 min locker","rpe":"2–3","hr":"Z1–Z2"},{"label":"4 × 3 min zügig","detail":"je 2 min Trabpause","rpe":"6–7","hr":"Z3","pace":"5:20–5:35"}]},{"date":"YYYY-MM-DD","sport":"strength","title":"Kraft Rumpf und Beine","goal":"…","durationMin":20,"steps":[{"label":"Unterarmstütz","detail":"Körper gerade, Bauch fest","sets":3,"holdS":40,"restS":45},{"label":"Ausfallschritt","detail":"langsam, Knie über dem Fuß","sets":3,"reps":10,"restS":60,"perSide":true}]}],"rationale":"Warum dieser Plan: 2–4 Stichpunkte"},
    "macro":{"goal":"Ziel","start":"YYYY-MM-DD","end":"YYYY-MM-DD","endEstimated":true,"phases":[{"name":"Stabilisierung","from":"YYYY-MM-DD","to":"YYYY-MM-DD","focus":["Sehnenbelastbarkeit","Grundlage Z2"],"weeklyKm":[10,14],"longRunKm":[6,8],"keySessions":["2 lockere Läufe flach","Kraft 2×"],"advance":"3 Wochen schmerzfrei","weeklyHm":[300,500],"longRunHm":[200,400]}],"raceProfile":"nur bei Trail/Ultra/Berglauf: z. B. 42 km, 2400 hm","terrainGap":"…","terrainBlocks":["…"],"weeks":[{"week":"YYYY-MM-DD","km":12,"type":"build"}],"rationale":"Aufbau in Stichpunkten","note":"nur bei Anpassung: was und warum"},
    "feedback":[{"activityId":"…","painDuring":1,"painAfter":0,"rpe":4,"note":"…"}],
    "assessments":[{"activityId":"…","text":"Einschätzung der Einheit in 3–5 Sätzen: ${care?'Beschwerden, ':''}RPE, Trainingslast, Trainingseffekt, Effizienz${care?'':', Bezug zum Ziel'}","short":"Bewertung in einer Zeile, ohne Zahlen, die die App schon anzeigt"}],
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
  }}
-Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" und "absences" sind immer die vollständige Liste (nur liefern, wenn ${nm} eine Abwesenheit nennt oder ändert). An Tagen mit Abwesenheit "kein Training" planst du nichts; bei "eingeschränkt" richtest du dich nach der Notiz. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein; "note" nur für Beobachtungen, die nicht schon in painDuring, painAfter oder rpe stehen (z. B. „Beine schwer“), sonst weglassen.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
+Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" und "absences" sind immer die vollständige Liste (nur liefern, wenn ${nm} eine Abwesenheit nennt oder ändert). An Tagen mit Abwesenheit "kein Training" planst du nichts. Ein Zeitraum "jeden Tag Training" (type "daily") macht jeden Tag darin zum Trainingstag: Ohne Beschwerdesignale und bei Belastung im Rahmen (7/28 nicht erhöht, Morgen-Checks frisch oder normal) planst du den ganzen Zeitraum neu und frei. Die Kerneinheiten (langer Lauf, Intervalle, Tempo) bleiben in Zahl und Qualität erhalten, dürfen aber auf beliebige Tage gelegt werden; die übrigen Tage füllst du mit leichten, ergänzenden Einheiten aus den gewählten Sportarten; vor jeder Kerneinheit ein lockerer Tag, keine zwei harten Tage hintereinander; der Wochenumfang darf moderat steigen. Bei Beschwerdesignalen oder Müdigkeit bleiben die Kerneinheiten an ihren Trainingstagen, die Zusatztage sind sehr leicht (Mobilität, lockeres Rad oder Schwimmen). Die Notiz hat Vorrang, z. B. „2× täglich möglich“ oder „Trainingslager, Umfang darf deutlich steigen“ (dann Entlastungswoche danach). Sagt ${nm} im Dialog, in einem Zeitraum jeden Tag trainieren zu wollen, trägst du ihn als "daily" unter "absences" ein. Bei "eingeschränkt" bei "eingeschränkt" richtest du dich nach der Notiz. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein; "note" nur für Beobachtungen, die nicht schon in painDuring, painAfter oder rpe stehen (z. B. „Beine schwer“), sonst weglassen.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
 `HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}. Aktiver Tab in der App: ${tab}.`,
 `KALENDER (heute bis ${planEnd()}): ${Array.from({length:planDays()},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
   const ab = absenceAt(d);
-  if(ab) return `${d} ${WD_LONG[wd]} (${ab.type==='off'?'abwesend, kein Training':'eingeschränkt: '+(ab.note||'siehe Notiz')}${ab.type==='off'&&ab.note?' – '+ab.note:''})`;
+  if(ab) return `${d} ${WD_LONG[wd]} (${ab.type==='off'?'abwesend, kein Training':ab.type==='daily'?'jeden Tag Training'+(ab.note?': '+ab.note:''):'eingeschränkt: '+(ab.note||'siehe Notiz')}${ab.type==='off'&&ab.note?' – '+ab.note:''})`;
   return `${d} ${WD_LONG[wd]}${bl.includes(d)?' (gesperrt, Nutzer kann nicht)':al.includes(d)?' (Trainingstag, Einheit dorthin verschoben)':(pr.trainingDays||[]).includes(wd)?' (Trainingstag)':''}`; }).join('; ')}`,
 `ZIEL: ${pr.goal&&pr.goal.text ? pr.goal.text+(pr.goal.date?' (Zieldatum '+pr.goal.date+')':'') : 'noch nicht festgelegt'}`,
 `BESCHWERDEN: ${cl||'keine'}`,
-`ABWESENHEITEN: ${absences().filter(a=>a.to>=t).map(a=>a.from+' bis '+a.to+' '+(a.type==='off'?'kein Training':'eingeschränkt')+(a.note?' ('+a.note+')':'')).join('; ')||'keine'}`,
+`BESONDERE ZEITRÄUME (Abwesenheiten, jeden Tag Training): ${absences().filter(a=>a.to>=t).map(a=>a.from+' bis '+a.to+' '+(a.type==='off'?'kein Training':a.type==='daily'?'jeden Tag Training':'eingeschränkt')+(a.note?' ('+a.note+')':'')).join('; ')||'keine'}`,
 `MORGEN-CHECKS (Zustand am Tag nach einer Einheit, letzte 4 Wochen): ${Object.entries(checks()).filter(([d,c])=>d>=addDays(t,-28) && c && !c.skipped).sort().map(([d,c])=>d+' '+checkText(c)).join('; ')||'keine'}`,
 `LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
 `ERKENNTNISSE: ${(pr.insights||[]).length ? (pr.insights||[]).map(x=>'- '+x).join('\n') : 'noch keine'}`,
@@ -2912,13 +2912,13 @@ async function applyUpdates(u){
   if(Array.isArray(u.sports)){ pr.sports = [...new Set(u.sports.map(normSport))]; pc=true; }
   if(Array.isArray(u.focus)){ pr.focus = [...new Set(u.focus.map(normSport))].filter(x=>(pr.sports||[]).includes(x)); pc=true; }
   if(typeof u.background==='string' && u.background.trim()){ pr.background = u.background.slice(0,2000); pc=true; }
-  if(Array.isArray(u.absences)){ pr.absences = u.absences.filter(x=>x && isDate(x.from)).map(x=>({from:x.from, to:isDate(x.to)&&x.to>=x.from?x.to:x.from, type:x.type==='limited'?'limited':'off', note:x.note?String(x.note).slice(0,80):undefined})).slice(0,20).sort((x,y)=>x.from.localeCompare(y.from)); pc=true; }
+  if(Array.isArray(u.absences)){ pr.absences = u.absences.filter(x=>x && isDate(x.from)).map(x=>({from:x.from, to:isDate(x.to)&&x.to>=x.from?x.to:x.from, type:x.type==='limited'||x.type==='daily'?x.type:'off', note:x.note?String(x.note).slice(0,80):undefined})).slice(0,20).sort((x,y)=>x.from.localeCompare(y.from)); pc=true; }
   if(u.plan && Array.isArray(u.plan.sessions)){
     // Einheiten an Nicht-Trainingstagen nur, wenn ausdrücklich als Zusatz markiert
     const td = new Set(pr.trainingDays||[]);
     const allow = new Set(((S.plan&&S.plan.allowDates)||[]).filter(d=>d>=t));
     const blocked = new Set(((S.plan&&S.plan.blockedDates)||[]).filter(d=>d>=t));
-    const ok = s => { if(blocked.has(s.date) && !s.extra) return false; const ab = absenceAt(s.date); if(ab && ab.type==='off') return false; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
+    const ok = s => { if(blocked.has(s.date) && !s.extra) return false; const ab = absenceAt(s.date); if(ab && ab.type==='off') return false; if(ab && ab.type==='daily') return true; return !td.size || td.has(parseYmd(s.date).getDay()) || s.extra || allow.has(s.date); };
     let fresh = u.plan.sessions.map(cleanSession).filter(s=>s && s.date>=t && s.date<=planEnd() && ok(s));
     fresh = splitStrength(fresh) || fresh;
     const past = sessions().filter(s=>s.date<t && s.date>=addDays(t,-60));
@@ -3226,7 +3226,7 @@ document.addEventListener('click', async e => {
     let txt;
     if(a==='abs-add'){
       const g = id => (document.getElementById(id)||{}).value||'';
-      let from = g('absFrom'), to = g('absTo') || from; const type = g('absType')==='limited'?'limited':'off', note = g('absNote').trim().slice(0,80);
+      let from = g('absFrom'), to = g('absTo') || from; const type = ['limited','daily'].includes(g('absType'))?g('absType'):'off', note = g('absNote').trim().slice(0,80);
       if(!isDate(from)) return; if(!isDate(to) || to<from) to = from;
       const item = {from, to, type, note: note||undefined};
       list.push(item); txt = 'Abwesenheit '+dmRange(item)+': '+absText(item);
