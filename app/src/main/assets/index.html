@@ -585,6 +585,7 @@ table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400
 .mtl .now{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;background:var(--ink);border-radius:2px}
 .mtl-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:-4px}
 .mcur{font-size:14px}
+details[data-k="abs"][open] .mcur{display:none}
 .mbody{padding:0 16px 16px;display:flex;flex-direction:column;gap:14px}
 .mchart{display:flex;align-items:flex-end;gap:2px;height:84px;border-bottom:1px solid var(--line);padding-top:4px}
 .mchart .w{flex:1;min-width:0;height:100%;position:relative;display:flex;align-items:flex-end}
@@ -1028,7 +1029,7 @@ function noteText(f){
 /* Abwesenheiten: {from,to,type:'off'|'limited',note} */
 const absences = () => (profile().absences||[]).filter(a=>a && isDate(a.from) && isDate(a.to));
 const absenceAt = d => absences().find(a => d>=a.from && d<=a.to) || null;
-const absText = a => (a.type==='off'?'kein Training':a.type==='daily'?'jeden Tag Training':'eingeschränkt') + (a.note?' – '+a.note:'');
+const absText = a => { const l = a.type==='off'?'kein Training':a.type==='daily'?'jeden Tag Training':'eingeschränkt'; const n = (a.note||'').trim(); return l + (n && !l.toLowerCase().includes(n.toLowerCase().replace(/[.!]+$/,'')) ? ' – '+n : ''); };
 const dmRange = a => { const f=parseYmd(a.from), t=parseYmd(a.to); return f.getDate()+'.'+(f.getMonth()+1)+'.' + (a.from===a.to?'':'–'+t.getDate()+'.'+(t.getMonth()+1)+'.'); };
 /* Selbst eingetragene Einheiten (Kraft, Mobilität …) */
 const MANUAL_SPORTS = ['strength','other'];
