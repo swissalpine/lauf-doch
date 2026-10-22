@@ -93,20 +93,58 @@
     if(!key) throw new BridgeError('not_configured', 'Kein Claude-API-Schlüssel hinterlegt.');
     const req = {model: get('claude_model', DEFAULT_MODEL), max_tokens: 20000, messages: p.messages};
     if(p.system) req.system = p.system;
+    req.stream = true;
+    // Streaming hält die Verbindung aktiv (lange Planantworten); ein zweiter Versuch bei Netz- oder Serverfehlern
+    let last;
+    for(let attempt = 0; attempt < 2; attempt++){
+      if(attempt) await new Promise(r => setTimeout(r, 4000));
+      try { return await claudeOnce(req, key); }
+      catch(e){ last = e; if(!['network','overloaded','server_error'].includes(e.code)) throw e; }
+    }
+    throw last;
+  }
+
+  async function claudeOnce(req, key){
     let r;
     try {
-      r = await fetch('https://api.anthropic.com/v1/messages', {method:'POST', headers:{'content-type':'application/json', 'x-api-key': key,
+      r = await fetch('https://api.anthropic.com/v1/messages', {method:'POST', headers:{'content-type':'application/json', 'accept':'text/event-stream', 'x-api-key': key,
         'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true'}, body: JSON.stringify(req)});
-    } catch(e){ throw new BridgeError('upstream_error', 'Keine Verbindung zu Claude.'); }
-    const text = await r.text();
-    if(r.status === 401 || r.status === 403) throw new BridgeError('bad_key', 'API-Schlüssel ungültig.');
-    if(r.status === 429) throw new BridgeError('rate_limited', 'Abruflimit erreicht.');
-    if(r.status === 400){ let msg = 'Anfrage abgelehnt.'; try { msg = JSON.parse(text).error.message; } catch(e) {}
-      throw new BridgeError(/credit/i.test(msg) ? 'no_credit' : 'invalid_request', msg); }
-    if(!r.ok) throw new BridgeError('upstream_error', 'Claude antwortet nicht (HTTP ' + r.status + ').');
-    const res = JSON.parse(text);
-    return JSON.stringify({text: (res.content||[]).filter(b => b.type === 'text').map(b => b.text).join(''),
-      truncated: res.stop_reason === 'max_tokens', usage: res.usage});
+    } catch(e){ throw new BridgeError('network', 'Netzwerkverbindung abgebrochen.'); }
+    if(r.status !== 200){
+      const text = await r.text().catch(() => '');
+      if(r.status === 401 || r.status === 403) throw new BridgeError('bad_key', 'API-Schlüssel ungültig.');
+      if(r.status === 429) throw new BridgeError('rate_limited', 'Abruflimit erreicht.');
+      if(r.status === 400){ let msg = 'Anfrage abgelehnt.'; try { msg = JSON.parse(text).error.message; } catch(e) {}
+        throw new BridgeError(/credit/i.test(msg) ? 'no_credit' : 'invalid_request', msg); }
+      if(r.status === 529) throw new BridgeError('overloaded', 'Claude ist gerade überlastet (HTTP 529).');
+      throw new BridgeError('server_error', 'Claude antwortet nicht (HTTP ' + r.status + ').');
+    }
+    let out = '', usage = {}, stop = '', done = false, buf = '';
+    const dec = new TextDecoder();
+    const handle = line => {
+      if(!line.startsWith('data:')) return;
+      let ev; try { ev = JSON.parse(line.slice(5).trim()); } catch(e) { return; }
+      if(ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') out += ev.delta.text;
+      else if(ev.type === 'message_start' && ev.message && ev.message.usage) usage = Object.assign({}, ev.message.usage);
+      else if(ev.type === 'message_delta'){ if(ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason; if(ev.usage) Object.assign(usage, ev.usage); }
+      else if(ev.type === 'message_stop') done = true;
+      else if(ev.type === 'error'){ const er = ev.error || {};
+        if(er.type === 'overloaded_error') throw new BridgeError('overloaded', 'Claude ist gerade überlastet.');
+        throw new BridgeError('server_error', 'Claude hat die Antwort abgebrochen' + (er.message ? ': ' + er.message : '.')); }
+    };
+    try {
+      const rd = r.body.getReader();
+      for(;;){
+        const {value, done: end} = await rd.read();
+        if(end) break;
+        buf += dec.decode(value, {stream:true});
+        let k; while((k = buf.indexOf('\n')) >= 0){ handle(buf.slice(0, k).replace(/\r$/, '')); buf = buf.slice(k + 1); }
+        if(done) break;
+      }
+      if(buf) handle(buf);
+    } catch(e){ if(e instanceof BridgeError) throw e; throw new BridgeError('network', 'Netzwerkverbindung während der Antwort abgebrochen.'); }
+    if(!done) throw new BridgeError('network', 'Netzwerkverbindung während der Antwort abgebrochen.');
+    return JSON.stringify({text: out, truncated: stop === 'max_tokens', usage});
   }
 
   // ---------- Strava-Anmeldung: Rücksprung mit ?code=… ----------

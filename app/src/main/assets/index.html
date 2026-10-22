@@ -2170,10 +2170,11 @@ const pendingList = () => Object.values(profile().pendingChanges||{}).filter(Boo
 function replanFromChanges(){
   const ch = pendingList(); if(!ch.length || !sample || busy) return;
   // Sportarten/Schwerpunkte und Trainingstage verändern die ganze Periodisierung: dann auch den Gesamtplan überarbeiten
-  const pc = profile().pendingChanges || {}, big = !!(pc.sports || pc.days) && !!macro();
+  const pc = profile().pendingChanges || {}, daily = absences().some(a=>a.type==='daily' && a.to>=today()) && Object.keys(pc).some(k=>k.startsWith('abs-')), big = !!(pc.sports || pc.days) && !!macro();
   askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan bis Ende nächster Woche daran an.'
+    + (daily ? ' Für Zeiträume „jeden Tag Training“ plane den betroffenen Teil vollständig neu nach der Regel dafür, nicht nur ergänzend'+(macro()?', und passe im Gesamtplan ("macro", vollständig liefern) die Wochen-Soll der betroffenen Wochen an':'')+'.' : '')
     + (big ? ' Da sich Sportarten, Schwerpunkte oder Trainingstage geändert haben, überarbeite auch den Gesamtplan vollständig unter "macro": Phasen, Schwerpunkte und Wochenumfänge bis zum Ziel. Ziel und Zieldatum bleiben, der bisherige Trainingsfortschritt wird übernommen.' : ''),
-    {auto:true, display: big ? 'Einstellungen geändert – Plan und Gesamtplan anpassen' : 'Einstellungen geändert – Plan anpassen'});
+    {auto:true, display: big||(daily&&macro()) ? 'Einstellungen geändert – Plan und Gesamtplan anpassen' : 'Einstellungen geändert – Plan anpassen'});
 }
 function changeBanner(){
   const ch = pendingList(); if(!ch.length) return '';
@@ -2966,7 +2967,10 @@ function errText(e){
   if(c==='invalid_json') return 'Die Antwort war nicht lesbar. Bitte die Nachricht erneut senden.';
   if(c==='prompt_too_large') return 'Zu viele Daten für eine Anfrage. Lösche ältere Dialognachrichten in den Einstellungen.';
   if(c==='refused') return 'Claude hat diese Anfrage abgelehnt. Formuliere sie bitte anders.';
-  return 'Verbindung unterbrochen. Bitte erneut senden.';
+  if(c==='overloaded') return 'Claude ist gerade überlastet, auch ein zweiter Versuch kam nicht durch. Bitte in ein paar Minuten erneut senden.';
+  if(c==='network') return 'Die Netzwerkverbindung ist während der Anfrage abgebrochen, auch ein zweiter Versuch kam nicht durch. Bitte erneut senden.';
+  if(c==='server_error') return (e.message||'Claude antwortet nicht.')+' Bitte erneut senden.';
+  return 'Verbindung unterbrochen'+(e&&e.message?' ('+String(e.message).slice(0,120)+')':'')+'. Bitte erneut senden.';
 }
 
 async function askClaude(text, opt={}){

@@ -290,45 +290,93 @@ public class MainActivity extends Activity {
         if (p.has("system")) req.put("system", p.getString("system"));
         req.put("messages", p.getJSONArray("messages"));
 
+        req.put("stream", true);
+        // Streaming hält die Verbindung aktiv (lange Planantworten); ein zweiter Versuch bei Netz- oder Serverfehlern
+        BridgeError last = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            if (attempt > 0) { try { Thread.sleep(4000); } catch (InterruptedException ignored) { } }
+            try {
+                return claudeOnce(req, key);
+            } catch (BridgeError e) {
+                last = e;
+                if (!("network".equals(e.code) || "overloaded".equals(e.code) || "server_error".equals(e.code))) throw e;
+            }
+        }
+        throw last;
+    }
+
+    private String claudeOnce(JSONObject req, String key) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL("https://api.anthropic.com/v1/messages").openConnection();
         c.setRequestMethod("POST");
         c.setConnectTimeout(20000);
-        c.setReadTimeout(420000);
+        c.setReadTimeout(120000);
         c.setDoOutput(true);
         c.setRequestProperty("content-type", "application/json");
+        c.setRequestProperty("accept", "text/event-stream");
         c.setRequestProperty("x-api-key", key);
         c.setRequestProperty("anthropic-version", "2023-06-01");
-        Resp r;
+        StringBuilder text = new StringBuilder();
+        JSONObject usage = new JSONObject();
+        String stop = "";
         try {
             try (OutputStream os = c.getOutputStream()) {
                 os.write(req.toString().getBytes(StandardCharsets.UTF_8));
             }
-            r = read(c);
+            int status = c.getResponseCode();
+            if (status != 200) {
+                InputStream es = c.getErrorStream();
+                String body = es == null ? "" : new String(readAll(es), StandardCharsets.UTF_8);
+                if (status == 401 || status == 403) throw new BridgeError("bad_key", "API-Schlüssel ungültig.");
+                if (status == 429) throw new BridgeError("rate_limited", "Abruflimit erreicht.");
+                if (status == 400) {
+                    String msg = "Anfrage abgelehnt.";
+                    try { msg = new JSONObject(body).getJSONObject("error").getString("message"); } catch (Exception ignored) { }
+                    if (msg.toLowerCase().contains("credit")) throw new BridgeError("no_credit", msg);
+                    throw new BridgeError("invalid_request", msg);
+                }
+                if (status == 529) throw new BridgeError("overloaded", "Claude ist gerade überlastet (HTTP 529).");
+                throw new BridgeError("server_error", "Claude antwortet nicht (HTTP " + status + ").");
+            }
+            java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            boolean done = false;
+            while ((line = br.readLine()) != null) {
+                if (!line.startsWith("data:")) continue;
+                JSONObject ev;
+                try { ev = new JSONObject(line.substring(5).trim()); } catch (Exception e) { continue; }
+                String type = ev.optString("type");
+                if ("content_block_delta".equals(type)) {
+                    JSONObject d = ev.optJSONObject("delta");
+                    if (d != null && "text_delta".equals(d.optString("type"))) text.append(d.optString("text"));
+                } else if ("message_start".equals(type)) {
+                    JSONObject m = ev.optJSONObject("message");
+                    JSONObject u = m == null ? null : m.optJSONObject("usage");
+                    if (u != null) usage = new JSONObject(u.toString());
+                } else if ("message_delta".equals(type)) {
+                    JSONObject d = ev.optJSONObject("delta");
+                    if (d != null && !d.isNull("stop_reason")) stop = d.optString("stop_reason");
+                    JSONObject u = ev.optJSONObject("usage");
+                    if (u != null) { java.util.Iterator<String> it = u.keys(); while (it.hasNext()) { String k = it.next(); usage.put(k, u.get(k)); } }
+                } else if ("message_stop".equals(type)) {
+                    done = true;
+                    break;
+                } else if ("error".equals(type)) {
+                    JSONObject er = ev.optJSONObject("error");
+                    String et = er == null ? "" : er.optString("type");
+                    if ("overloaded_error".equals(et)) throw new BridgeError("overloaded", "Claude ist gerade überlastet.");
+                    throw new BridgeError("server_error", "Claude hat die Antwort abgebrochen" + (er == null ? "." : ": " + er.optString("message")));
+                }
+            }
+            if (!done) throw new BridgeError("network", "Netzwerkverbindung während der Antwort abgebrochen.");
         } catch (java.io.IOException e) {
-            throw new BridgeError("upstream_error", "Keine Verbindung zu Claude.");
+            throw new BridgeError("network", "Netzwerkverbindung abgebrochen.");
         } finally {
             c.disconnect();
         }
-        if (r.status == 401 || r.status == 403) throw new BridgeError("bad_key", "API-Schlüssel ungültig.");
-        if (r.status == 429) throw new BridgeError("rate_limited", "Abruflimit erreicht.");
-        if (r.status == 400) {
-            String msg = "Anfrage abgelehnt.";
-            try { msg = new JSONObject(r.body).getJSONObject("error").getString("message"); } catch (Exception ignored) { }
-            if (msg.toLowerCase().contains("credit")) throw new BridgeError("no_credit", msg);
-            throw new BridgeError("invalid_request", msg);
-        }
-        if (r.status != 200) throw new BridgeError("upstream_error", "Claude antwortet nicht (HTTP " + r.status + ").");
-        JSONObject res = new JSONObject(r.body);
-        JSONArray content = res.getJSONArray("content");
-        StringBuilder text = new StringBuilder();
-        for (int i = 0; i < content.length(); i++) {
-            JSONObject b = content.getJSONObject(i);
-            if ("text".equals(b.optString("type"))) text.append(b.optString("text"));
-        }
         JSONObject out = new JSONObject();
         out.put("text", text.toString());
-        out.put("truncated", "max_tokens".equals(res.optString("stop_reason")));
-        if (res.has("usage")) out.put("usage", res.getJSONObject("usage"));
+        out.put("truncated", "max_tokens".equals(stop));
+        out.put("usage", usage);
         return out.toString();
     }
 
