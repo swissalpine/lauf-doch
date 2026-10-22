@@ -529,7 +529,8 @@ public class MainActivity extends Activity {
                     if ("claude".equals(kind)) {
                         ClaudeService.begin(MainActivity.this);
                         try { result = claude(p); } finally { ClaudeService.end(MainActivity.this); }
-                        if (!visible) notifyReply();
+                        // erst melden, wenn keine Folgeanfrage (z. B. Einschätzung neuer Einheiten) mehr startet
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> { if (!visible && ClaudeService.idle()) notifyReply(); }, 4000);
                     }
                     else if ("strava".equals(kind)) result = strava(p);
                     else if ("intervals".equals(kind)) result = intervals(p);

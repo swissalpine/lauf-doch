@@ -2628,7 +2628,7 @@ function thinkStart(){ thinkMode='think'; thinkIdx=0; clearInterval(thinkTimer);
 function thinkStop(){ clearInterval(thinkTimer); thinkTimer=null; }
 /* Fortschritt beim Streaming (Android-App und Web-App) */
 window.onClaudeProgress = (n, st) => { if(!busy || !n) return;
-  setThink('retry', 'Claude schreibt '+(st==='macro'?'den Gesamtplan':st==='plan'?'den Wochenplan':'die Antwort')+' … '+Number(n).toLocaleString('de-DE')+' Zeichen'); };
+  setThink('retry', 'Claude schreibt '+(st==='macro'?'den Gesamtplan':st==='plan'?'den Wochenplan':'die Antwort')+' …'); };
 function claudeBusy(d){ claudeCount = Math.max(0, claudeCount+d); document.body.classList.toggle('cbusy', claudeCount>0); }
 function wrapSample(s){ if(!s || !s.json) return s; const w = Object.create(s); const orig = s.json.bind(s);
   w.json = async (...a) => { claudeBusy(1); try{ return await orig(...a); } finally{ claudeBusy(-1); } }; return w; }
@@ -3039,7 +3039,7 @@ async function askClaude(text, opt={}){
     if(e && e.code==='cancelled') push({role:'assistant', text:'Abgebrochen.', ts:Date.now(), error:true});
     else push({role:'assistant', text:errText(e), ts:Date.now(), error:true});
   }finally{
-    busy=false; ctl=null; thinkStop(); await save('chat'); render(); setTimeout(answerNotice, 60); setTimeout(maybeAssess, 1500);
+    busy=false; ctl=null; thinkStop(); await save('chat'); render(); setTimeout(maybeAssess, 1500); setTimeout(()=>{ if(!busy) answerNotice(); }, 2200);
   }
 }
 function send(){ const ta=document.getElementById('msgInput'); const v=(ta?ta.value:draft).trim(); if(!v) return; const msg = topicSel && !v.startsWith(topicSel) ? topicSel+': '+v : v; draft=''; topicHint=''; topicSel=''; askClaude(msg); }

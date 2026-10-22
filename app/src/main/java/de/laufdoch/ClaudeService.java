@@ -23,10 +23,13 @@ public class ClaudeService extends Service {
 
     static synchronized void begin(Context c) {
         running++;
+        try { ((NotificationManager) c.getSystemService(NOTIFICATION_SERVICE)).cancel(4714); } catch (Exception ignored) { }
         if (running == 1) {
             try { c.startForegroundService(new Intent(c, ClaudeService.class)); } catch (Exception ignored) { }
         }
     }
+
+    static synchronized boolean idle() { return running == 0; }
 
     static synchronized void end(Context c) {
         running = Math.max(0, running - 1);
