@@ -3229,10 +3229,10 @@ document.addEventListener('click', async e => {
       let from = g('absFrom'), to = g('absTo') || from; const type = ['limited','daily'].includes(g('absType'))?g('absType'):'off', note = g('absNote').trim().slice(0,80);
       if(!isDate(from)) return; if(!isDate(to) || to<from) to = from;
       const item = {from, to, type, note: note||undefined};
-      list.push(item); txt = 'Abwesenheit '+dmRange(item)+': '+absText(item);
+      list.push(item); txt = (type==='daily'?'Zeitraum ':'Abwesenheit ')+dmRange(item)+': '+absText(item);
     } else {
       const item = list.find(x=>x.from===b.dataset.from && x.to===b.dataset.to);
-      list = list.filter(x=>x!==item); if(item) txt = 'Abwesenheit entfernt: '+dmRange(item);
+      list = list.filter(x=>x!==item); if(item) txt = (item.type==='daily'?'Zeitraum':'Abwesenheit')+' entfernt: '+dmRange(item)+' ('+absText(item)+')';
     }
     pr.absences = list.sort((x,y)=>x.from.localeCompare(y.from));
     if(txt) markChange('abs-'+Date.now(), txt);
