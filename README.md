@@ -93,7 +93,7 @@ Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt
 ### Einstellungen
 - **Profil:** Name, Sportarten, Leistungsstand, Trainingstage.
 - **Sportarten:** Laufen, Radfahren, Schwimmen, Kraft & Mobilität. Antippen schaltet durch: dabei → ★ Schwerpunkt → aus. Ohne Schwerpunkt sind alle gewählten Sportarten gleichwertig.
-- **Abwesenheiten:** Urlaub oder Reisen, entweder „kein Training“ oder „eingeschränkt“ mit Notiz.
+- **Besondere Zeiträume:** Urlaub oder Reisen („kein Training“ oder „eingeschränkt“ mit Notiz) sowie Zeiträume mit „jeden Tag Training“. In einem solchen Zeitraum ist jeder Tag ein Trainingstag: Bist du beschwerdefrei und erholt, plant Claude ihn frei neu, die Kerneinheiten bleiben erhalten, die übrigen Tage werden mit leichten Einheiten gefüllt.
 - **Fitness und Beschwerden:** Sind Beschwerden eingetragen, plant Claude vorsichtiger und fragt gezielt nach Schmerz.
 - **Was Claude weiß:** Erkenntnisse, Hintergrund und Dialogverlauf ansehen und bearbeiten.
 - **Erinnerungen**, **Verbindungen** (Claude, Strava, Garmin, mit Verbrauchsanzeige für Claude) und **Datensicherung**.
@@ -113,7 +113,7 @@ Claude bekommt bei jeder Anfrage einen festen Regelteil und den aktuellen Stand 
 
 | Bereich | Inhalt |
 |---|---|
-| Profil | Ziel und Zieldatum, Leistungsstand, Trainingstage, Sportarten, Beschwerden, Abwesenheiten, Hintergrund, gespeicherte Erkenntnisse |
+| Profil | Ziel und Zieldatum, Leistungsstand, Trainingstage, Sportarten, Beschwerden, besondere Zeiträume, Hintergrund, gespeicherte Erkenntnisse |
 | Aktivitäten | Strava-Aktivitäten der letzten 6 Wochen mit Pace, HF, Zonen, Effizienz, Entkopplung (nur im Hauptteil ohne Ein- und Auslaufen), Watt und %FTP, Runden der Uhr |
 | Rückmeldungen | Schmerz während und danach, RPE, Morgen-Checks, Krafttraining-Protokolle |
 | Belastung | Wochenwerte, Relative Effort, Verhältnis der Belastung 7 zu 28 Tagen, Wochenfazits |
@@ -122,8 +122,8 @@ Claude bekommt bei jeder Anfrage einen festen Regelteil und den aktuellen Stand 
 **Regeln, nach denen Claude plant**
 - Beim Neuaufsetzen eines Plans berücksichtigt Claude den Trainingsstand aus Strava: Umfang, Tempo, Zahl der Einheiten und Profil der Läufe. Hügelige Läufe werden über steigungsbereinigtes Tempo (GAP) vergleichbar gemacht. Eine Höhenmeter-Progression gibt es nur bei Zielen wie Trail- oder Ultralauf.
 - Sportarten mit ★ sind der Schwerpunkt, die übrigen ergänzen ihn. Koppeleinheiten plant Claude nur bei einem Triathlon- oder Duathlon-Ziel. Ändern sich Sportarten oder Trainingstage, passt Claude Detailplan und Gesamtplan an.
-- Geplant wird immer von heute bis Sonntag der nächsten Woche, nur an Trainingstagen und nicht an Tagen mit Abwesenheit „kein Training“. Zu Wochenbeginn verlängert die App den Plan automatisch.
-- Der Detailplan leitet sich aus der aktuellen Phase und dem Wochen-Soll des Gesamtplans ab. Den Gesamtplan passt Claude nur bei klarem Anlass an: geändertes Ziel, geänderte Trainingstage oder Abwesenheiten, eine Woche mit deutlich weniger als 70 % des Solls, wiederholte Beschwerdesignale oder vorzeitig erfüllte Übergangskriterien.
+- Geplant wird immer von heute bis Sonntag der nächsten Woche, nur an Trainingstagen (in Zeiträumen „jeden Tag Training“ an jedem Tag) und nicht an Tagen mit „kein Training“. Zu Wochenbeginn verlängert die App den Plan automatisch.
+- Der Detailplan leitet sich aus der aktuellen Phase und dem Wochen-Soll des Gesamtplans ab. Den Gesamtplan passt Claude nur bei klarem Anlass an: geändertes Ziel, geänderte Trainingstage oder besondere Zeiträume, eine Woche mit deutlich weniger als 70 % des Solls, wiederholte Beschwerdesignale oder vorzeitig erfüllte Übergangskriterien.
 - Bei eingetragenen Beschwerden gilt Schmerz bis 2/10 während der Belastung als akzeptabel, wenn er am Folgetag abgeklungen ist. Darüber wird nicht gesteigert, sondern reduziert oder auf schonendere Belastung umgestellt.
 - Kraft, Mobilität und Dehnen sind immer eigene Einheiten mit Übungen, Sätzen, Wiederholungen oder Haltezeit und Pause.
 - Wattbereiche sind eng (etwa ±5 % um den Zielwert) und beginnen nie bei 0, damit auch eine Rolle im ERG-Modus sinnvolle Werte bekommt.
@@ -243,7 +243,7 @@ Beim ersten Einschalten fragt Android nach der Erlaubnis für Benachrichtigungen
 ### 6. Profil ausfüllen und ersten Plan erstellen
 
 1. **Einstellungen → Profil:** Name, Sportarten (bei Bedarf mit ★ Schwerpunkt), Leistungsstand (z. B. „10 km in 52 min“) und Trainingstage eintragen.
-2. Bei Bedarf **Beschwerden** und **Abwesenheiten** ergänzen.
+2. Bei Bedarf **Beschwerden** und **besondere Zeiträume** ergänzen.
 3. Auf **Heute** oder **Plan** im Dialog das Ziel nennen, z. B. „Halbmarathon im Frühjahr, schmerzfrei“, und um einen Plan bitten.
 4. Claude legt Ziel, Gesamtplan und den Plan bis Ende nächster Woche an.
 
