@@ -97,7 +97,7 @@ Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt
 - **Fitness und Beschwerden:** Sind Beschwerden eingetragen, plant Claude vorsichtiger und fragt gezielt nach Schmerz.
 - **Was Claude weiß:** Erkenntnisse, Hintergrund und Dialogverlauf ansehen und bearbeiten.
 - **Erinnerungen**, **Verbindungen** (Claude, Strava, Garmin, mit Verbrauchsanzeige für Claude) und **Datensicherung**.
-- **Neu beginnen:** Plan, Aktivitäten und Dialog zurücksetzen, Verbindungen bleiben erhalten.
+- **Neu beginnen:** „Plan neu aufsetzen“ löscht Plan, Wochenfazits und Dialog, Profil und Aktivitäten bleiben. „Alles zurücksetzen“ löscht zusätzlich Profil und Aktivitäten. Zugangsdaten bleiben in beiden Fällen erhalten.
 
 <p align="center">
   <img src="docs/screenshots/einstellungen.png" width="260" alt="Einstellungen mit Sportarten und Schwerpunkt">
