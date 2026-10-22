@@ -27,7 +27,7 @@ Strava rein, Plan raus – und der Plan passt sich an dich an.</p>
   <img src="docs/screenshots/rueckblick.png" width="260" alt="Rückblick">
 </p>
 
-**Lauf doch!** ist eine App für adaptives Lauftraining mit Claude als Trainingsbegleiter – als **Android-App** und als **Web-App** für iPhone, iPad und Computer. Die App holt deine Aktivitäten aus Strava, wertet sie aus und lässt Claude daraus einen Trainingsplan erstellen. Diesen Plan passt Claude laufend an deine Rückmeldungen, deine Belastung und eventuelle Beschwerden an. Rad, Kraft und Mobilität werden ergänzend geplant. Geplante Einheiten können über intervals.icu auf eine Garmin-Uhr übertragen werden.
+**Lauf doch!** ist eine App für adaptives Lauftraining mit Claude als Trainingsbegleiter – als **Android-App** und als **Web-App** für iPhone, iPad und Computer. Die App holt deine Aktivitäten aus Strava, wertet sie aus und lässt Claude daraus einen Trainingsplan erstellen. Diesen Plan passt Claude laufend an deine Rückmeldungen, deine Belastung und eventuelle Beschwerden an. Neben dem Laufen plant Claude auch Radfahren, Schwimmen sowie Kraft und Mobilität – ergänzend oder mit eigenem Schwerpunkt. Geplante Einheiten können über intervals.icu auf eine Garmin-Uhr übertragen werden.
 
 > Die App ersetzt keine ärztliche oder physiotherapeutische Beratung. Bei neuen, anhaltenden oder zunehmenden Schmerzen bitte abklären lassen.
 
@@ -61,16 +61,18 @@ Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt
 ### Heute
 - **Strava-Abgleich:** Beim Öffnen automatisch, wenn der letzte Abgleich länger als 15 Minuten zurückliegt, sonst per Knopf. Für neue Läufe und Radfahrten holt die App auch die Verlaufsdaten (Puls, Tempo, Leistung, Höhe).
 - **Morgen-Check:** Am Tag nach einer Einheit fragt die App kurz nach dem Zustand. Bei eingetragenen Beschwerden ist das der Schmerz von 0 bis 10, sonst das Befinden (frisch, normal, müde, Muskelkater, Schmerzen).
+- **Als Nächstes:** Ist die heutige Einheit erledigt oder ist heute Ruhetag, kündigt eine kompakte Karte die nächste geplante Einheit an; sie lässt sich aufklappen.
 - **Einheit des Tages:** Ziel, Ablauf Schritt für Schritt mit Zielwerten (RPE, HF-Zone, Pace, Watt), dazu Verschieben, Umplanen und Absagen.
-- **Absolvierte Einheit:** Kennzahlen, Leistungsauswertung, RPE und Schmerz (während und danach) zum Antippen sowie die Einschätzung von Claude. Die Analyseseite zeigt Runden, Verlaufskurven und die Zeit in den Zonen.
-- **Trainingsmodus für Kraft und Mobilität:** Führt Satz für Satz durch die Übungen, mit Countdown für Halteübungen, Wiederholungszähler, automatischer Satzpause (Ton und Vibration), Schmerzabfrage je Übung und Pause-Funktion. Das Protokoll wird gespeichert und kann an Strava gesendet werden. Alternativ lässt sich eine Einheit auch einfach als erledigt markieren.
+- **Absolvierte Einheit:** Kennzahlen, Leistungsauswertung, RPE und Schmerz (während und danach) zum Antippen sowie die Einschätzung von Claude (aufklappbar). Die Analyseseite zeigt Runden, Verlaufskurven und die Zeit in den Zonen.
+- **Trainingsmodus für Kraft und Mobilität:** Führt Satz für Satz durch die Übungen, mit Countdown für Halteübungen, Wiederholungszähler, automatischer Satzpause (Ton und Vibration), Schmerzabfrage je Übung und Pause-Funktion. Bei Halteübungen startet nach der Pause automatisch der nächste Satz. Das Protokoll wird gespeichert und kann an Strava gesendet werden. Alternativ lässt sich eine Einheit auch einfach als erledigt markieren.
 
 ### Plan
 - **Gesamtplan:** Phasen vom Start bis zum Ziel mit Wochenumfang, längstem Lauf, Schwerpunkten und Kriterien für den Übergang zur nächsten Phase. Gibt es kein festes Zieldatum, schätzt Claude ein realistisches Enddatum.
-- **Detailplan** für die laufende und die nächste Woche:
+- **Detailplan** für die laufende Woche ab Montag und die nächste Woche. Jede Einheit lässt sich mit ▼ aufklappen.
   - Blau: geplant
   - Grün: geplant und erledigt, mit den tatsächlichen Werten
   - Orange: zusätzliche, nicht geplante Aktivität
+  - Grau: verpasst
 - **Senden an die Uhr** (mit intervals.icu) und **Neu planen**.
 
 <p align="center">
@@ -90,10 +92,16 @@ Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt
 
 ### Einstellungen
 - **Profil:** Name, Sportarten, Leistungsstand, Trainingstage.
+- **Sportarten:** Laufen, Radfahren, Schwimmen, Kraft & Mobilität. Antippen schaltet durch: dabei → ★ Schwerpunkt → aus. Ohne Schwerpunkt sind alle gewählten Sportarten gleichwertig.
 - **Abwesenheiten:** Urlaub oder Reisen, entweder „kein Training“ oder „eingeschränkt“ mit Notiz.
 - **Fitness und Beschwerden:** Sind Beschwerden eingetragen, plant Claude vorsichtiger und fragt gezielt nach Schmerz.
 - **Was Claude weiß:** Erkenntnisse, Hintergrund und Dialogverlauf ansehen und bearbeiten.
 - **Erinnerungen**, **Verbindungen** (Claude, Strava, Garmin, mit Verbrauchsanzeige für Claude) und **Datensicherung**.
+- **Neu beginnen:** Plan, Aktivitäten und Dialog zurücksetzen, Verbindungen bleiben erhalten.
+
+<p align="center">
+  <img src="docs/screenshots/einstellungen.png" width="260" alt="Einstellungen mit Sportarten und Schwerpunkt">
+</p>
 
 ---
 
@@ -112,6 +120,8 @@ Claude bekommt bei jeder Anfrage einen festen Regelteil und den aktuellen Stand 
 | Plan | aktueller Detailplan, Gesamtplan mit Phasen und Wochen-Soll, Kalender mit Trainingstagen |
 
 **Regeln, nach denen Claude plant**
+- Beim Neuaufsetzen eines Plans berücksichtigt Claude den Trainingsstand aus Strava: Umfang, Tempo, Zahl der Einheiten und Profil der Läufe. Hügelige Läufe werden über steigungsbereinigtes Tempo (GAP) vergleichbar gemacht. Eine Höhenmeter-Progression gibt es nur bei Zielen wie Trail- oder Ultralauf.
+- Sportarten mit ★ sind der Schwerpunkt, die übrigen ergänzen ihn. Koppeleinheiten plant Claude nur bei einem Triathlon- oder Duathlon-Ziel. Ändern sich Sportarten oder Trainingstage, passt Claude Detailplan und Gesamtplan an.
 - Geplant wird immer von heute bis Sonntag der nächsten Woche, nur an Trainingstagen und nicht an Tagen mit Abwesenheit „kein Training“. Zu Wochenbeginn verlängert die App den Plan automatisch.
 - Der Detailplan leitet sich aus der aktuellen Phase und dem Wochen-Soll des Gesamtplans ab. Den Gesamtplan passt Claude nur bei klarem Anlass an: geändertes Ziel, geänderte Trainingstage oder Abwesenheiten, eine Woche mit deutlich weniger als 70 % des Solls, wiederholte Beschwerdesignale oder vorzeitig erfüllte Übergangskriterien.
 - Bei eingetragenen Beschwerden gilt Schmerz bis 2/10 während der Belastung als akzeptabel, wenn er am Folgetag abgeklungen ist. Darüber wird nicht gesteigert, sondern reduziert oder auf schonendere Belastung umgestellt.
@@ -122,6 +132,7 @@ Claude bekommt bei jeder Anfrage einen festen Regelteil und den aktuellen Stand 
 Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Training des Modells, z. B. zu Periodisierung, Grundlagen- und Intensitätsverteilung, Belastungssteuerung über HF, RPE und Leistung sowie Kraft- und Reha-Übungen. Während der Planung wird nichts live nachgeschlagen. Das Ergebnis ist eine plausible, an die eigenen Daten angepasste Ableitung, kein geprüftes medizinisches Protokoll. Vorgaben von Physiotherapie oder Arzt trägt man am besten unter **Hintergrund** oder **Erkenntnisse** ein, dann richtet sich Claude danach.
 
 **Wann Claude von sich aus tätig wird**
+- Beim Strava-Abgleich werden auch Aktivitäten entfernt, die in Strava gelöscht wurden (letzte 60 Tage).
 - Neue Aktivitäten nach dem Strava-Abgleich werden eingeschätzt, danach fragt Claude nach der Anstrengung (RPE) und – bei eingetragenen Beschwerden – nach Schmerz.
 - Ausgelassene Einheiten der letzten Tage werden neu verteilt, gekürzt oder gestrichen.
 - Nach Änderungen in den Einstellungen wird neu geplant, sobald man die Einstellungen verlässt.
@@ -146,7 +157,7 @@ Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Trai
 2. Auf dem Handy öffnen. Android fragt beim ersten Mal, ob die Installation aus dieser Quelle erlaubt werden soll.
 3. Voraussetzung ist Android 10 oder neuer.
 
-**Updates:** Die App prüft einmal am Tag, ob es eine neue Version gibt, und bietet sie zum Installieren an (auch unter Einstellungen → Über Lauf doch! → „Nach Updates suchen“). Android fragt dabei einmalig, ob die App Updates installieren darf. Die Daten bleiben erhalten.
+**Updates:** Die App prüft einmal am Tag, ob es eine neue Version gibt, und bietet sie zum Installieren an (auch unter Einstellungen → Über Lauf doch! → „Nach Updates suchen“). Android fragt dabei einmalig, ob die App Updates installieren darf. Die Daten bleiben erhalten. Nach dem Update erscheint eine Benachrichtigung, über die sich die App direkt wieder öffnen lässt (dafür muss die Erlaubnis für Benachrichtigungen erteilt sein).
 
 #### iPhone, iPad und Computer (Web-App)
 
@@ -195,7 +206,7 @@ Strava erlaubt den Datenzugriff nur über eine eigene API-Anwendung. Diese legt 
 Die Callback-Domain ist für Android-App und Web-App dieselbe; eine Strava-Anwendung reicht also auch, wenn man beide Versionen nutzt.
 
 **Krafteinheiten an Strava senden (optional)**
-Unter Verbindungen → Strava gibt es den Schalter **„Kraft an Strava senden“**. Ist er an, legt die App für erledigte oder aufgezeichnete Krafteinheiten eine manuelle Strava-Aktivität an. Sie enthält Dauer, Startzeit und die Übungen als Beschreibung. Beim nächsten Abgleich ersetzt diese Strava-Aktivität den Eintrag in der App.
+Unter Verbindungen → Strava gibt es den Schalter **„Kraft an Strava senden“**. Ist er an, legt die App für erledigte oder aufgezeichnete Krafteinheiten eine manuelle Strava-Aktivität an. Sie enthält Dauer, Startzeit und die Übungen als Beschreibung. Beim nächsten Abgleich wird sie mit dem Eintrag in der App verknüpft; das Protokoll der App bleibt erhalten.
 - Dafür braucht die App die Schreibberechtigung. Nach dem Einschalten einmal **„Strava neu verbinden“** tippen und zustimmen.
 - Die Strava-Schnittstelle erlaubt kein Löschen. Wird eine Einheit in der App rückgängig gemacht, muss sie in Strava selbst gelöscht werden.
 - Wer Kraft schon mit der Uhr aufzeichnet, lässt den Schalter aus, sonst steht die Einheit doppelt in Strava.
@@ -218,7 +229,7 @@ Geplante Lauf- und Radeinheiten lassen sich als strukturierte Workouts auf eine 
 - Senden: Im Plan einzeln oder alles auf einmal. Mit „automatisch senden“ werden Änderungen selbstständig übertragen.
 - Verschobene oder gestrichene Einheiten löscht die App auch bei intervals.icu.
 - intervals.icu überträgt jeweils die **nächsten 7 Tage** an Garmin. Was weiter in der Zukunft liegt, kommt automatisch nach.
-- Kraft und Mobilität bleiben in der App und gehen nicht an die Uhr.
+- Kraft, Mobilität und Schwimmen bleiben in der App und gehen nicht an die Uhr.
 - Für Watt-Vorgaben muss in Strava eine FTP hinterlegt sein.
 
 ### 5. Erinnerungen (optional, nur Android)
@@ -231,7 +242,7 @@ Beim ersten Einschalten fragt Android nach der Erlaubnis für Benachrichtigungen
 
 ### 6. Profil ausfüllen und ersten Plan erstellen
 
-1. **Einstellungen → Profil:** Name, Sportarten, Leistungsstand (z. B. „10 km in 52 min“) und Trainingstage eintragen.
+1. **Einstellungen → Profil:** Name, Sportarten (bei Bedarf mit ★ Schwerpunkt), Leistungsstand (z. B. „10 km in 52 min“) und Trainingstage eintragen.
 2. Bei Bedarf **Beschwerden** und **Abwesenheiten** ergänzen.
 3. Auf **Heute** oder **Plan** im Dialog das Ziel nennen, z. B. „Halbmarathon im Frühjahr, schmerzfrei“, und um einen Plan bitten.
 4. Claude legt Ziel, Gesamtplan und den Plan bis Ende nächster Woche an.
