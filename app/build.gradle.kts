@@ -16,8 +16,8 @@ android {
         applicationId = "de.laufdoch"
         minSdk = 29
         targetSdk = 34
-        versionCode = 107
-        versionName = "2.06"
+        versionCode = 108
+        versionName = "2.07"
         // Erscheinungsdatum = Tag des Builds
         buildConfigField("String", "BUILD_DATE", "\"" + LocalDate.now().toString() + "\"")
     }
