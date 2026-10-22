@@ -2994,8 +2994,8 @@ function errText(e){
   if(c==='invalid_json') return 'Die Antwort war nicht lesbar. Bitte die Nachricht erneut senden.';
   if(c==='prompt_too_large') return 'Zu viele Daten für eine Anfrage. Lösche ältere Dialognachrichten in den Einstellungen.';
   if(c==='refused') return 'Claude hat diese Anfrage abgelehnt. Formuliere sie bitte anders.';
-  if(c==='overloaded') return 'Claude ist gerade überlastet, auch ein zweiter Versuch kam nicht durch. Bitte in ein paar Minuten erneut senden.';
-  if(c==='network') return 'Die Netzwerkverbindung ist während der Anfrage abgebrochen, auch ein zweiter Versuch kam nicht durch. Bitte erneut senden.';
+  if(c==='overloaded') return 'Claude ist gerade überlastet, auch drei Versuche kamen nicht durch. Bitte in ein paar Minuten erneut senden.';
+  if(c==='network') return 'Die Netzwerkverbindung ist während der Anfrage abgebrochen, auch drei Versuche kamen nicht durch. Bitte erneut senden.'+(e.message?' (Details: '+String(e.message).slice(0,160)+')':'');
   if(c==='server_error') return (e.message||'Claude antwortet nicht.')+' Bitte erneut senden.';
   return 'Verbindung unterbrochen'+(e&&e.message?' ('+String(e.message).slice(0,120)+')':'')+'. Bitte erneut senden.';
 }

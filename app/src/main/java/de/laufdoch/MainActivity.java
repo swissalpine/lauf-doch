@@ -293,8 +293,8 @@ public class MainActivity extends Activity {
         req.put("stream", true);
         // Streaming hält die Verbindung aktiv (lange Planantworten); ein zweiter Versuch bei Netz- oder Serverfehlern
         BridgeError last = null;
-        for (int attempt = 0; attempt < 2; attempt++) {
-            if (attempt > 0) { try { Thread.sleep(4000); } catch (InterruptedException ignored) { } }
+        for (int attempt = 0; attempt < 3; attempt++) {
+            if (attempt > 0) { try { Thread.sleep(attempt == 1 ? 4000 : 12000); } catch (InterruptedException ignored) { } }
             try {
                 return claudeOnce(req, key);
             } catch (BridgeError e) {
@@ -318,6 +318,8 @@ public class MainActivity extends Activity {
         StringBuilder text = new StringBuilder();
         JSONObject usage = new JSONObject();
         String stop = "";
+        long t0 = System.currentTimeMillis();
+        int events = 0;
         try {
             try (OutputStream os = c.getOutputStream()) {
                 os.write(req.toString().getBytes(StandardCharsets.UTF_8));
@@ -342,6 +344,7 @@ public class MainActivity extends Activity {
             boolean done = false;
             while ((line = br.readLine()) != null) {
                 if (!line.startsWith("data:")) continue;
+                events++;
                 JSONObject ev;
                 try { ev = new JSONObject(line.substring(5).trim()); } catch (Exception e) { continue; }
                 String type = ev.optString("type");
@@ -367,9 +370,9 @@ public class MainActivity extends Activity {
                     throw new BridgeError("server_error", "Claude hat die Antwort abgebrochen" + (er == null ? "." : ": " + er.optString("message")));
                 }
             }
-            if (!done) throw new BridgeError("network", "Netzwerkverbindung während der Antwort abgebrochen.");
+            if (!done) throw new BridgeError("network", "Antwort unvollständig (Stream endete nach " + (System.currentTimeMillis() - t0) / 1000 + " s, " + events + " Ereignisse, " + text.length() + " Zeichen).");
         } catch (java.io.IOException e) {
-            throw new BridgeError("network", "Netzwerkverbindung abgebrochen.");
+            throw new BridgeError("network", e.getClass().getSimpleName() + (e.getMessage() != null ? ": " + e.getMessage() : "") + " nach " + (System.currentTimeMillis() - t0) / 1000 + " s, " + events + " Ereignisse, " + text.length() + " Zeichen.");
         } finally {
             c.disconnect();
         }

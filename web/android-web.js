@@ -96,8 +96,8 @@
     req.stream = true;
     // Streaming hält die Verbindung aktiv (lange Planantworten); ein zweiter Versuch bei Netz- oder Serverfehlern
     let last;
-    for(let attempt = 0; attempt < 2; attempt++){
-      if(attempt) await new Promise(r => setTimeout(r, 4000));
+    for(let attempt = 0; attempt < 3; attempt++){
+      if(attempt) await new Promise(r => setTimeout(r, attempt === 1 ? 4000 : 12000));
       try { return await claudeOnce(req, key); }
       catch(e){ last = e; if(!['network','overloaded','server_error'].includes(e.code)) throw e; }
     }
@@ -142,8 +142,8 @@
         if(done) break;
       }
       if(buf) handle(buf);
-    } catch(e){ if(e instanceof BridgeError) throw e; throw new BridgeError('network', 'Netzwerkverbindung während der Antwort abgebrochen.'); }
-    if(!done) throw new BridgeError('network', 'Netzwerkverbindung während der Antwort abgebrochen.');
+    } catch(e){ if(e instanceof BridgeError) throw e; throw new BridgeError('network', (e && e.name || 'Fehler') + (e && e.message ? ': ' + e.message : '') + ' (' + out.length + ' Zeichen empfangen).'); }
+    if(!done) throw new BridgeError('network', 'Antwort unvollständig (' + out.length + ' Zeichen empfangen).');
     return JSON.stringify({text: out, truncated: stop === 'max_tokens', usage});
   }
 
