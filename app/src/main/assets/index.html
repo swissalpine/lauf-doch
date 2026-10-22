@@ -537,6 +537,7 @@ body.typing nav.tabs{display:none}
 .stepsd .steps{margin-top:4px}
 .dhead{display:flex;gap:10px;align-items:center}
 .dhead h2{line-height:1.15}
+.dcard .dhead{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--line)}
 .dback{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--sunk);font-size:22px;cursor:pointer}
 .dchart{width:100%;height:auto;display:block;overflow:visible}
 .dchart .bl{font-size:10px;fill:var(--ink);font-weight:600}
@@ -2091,9 +2092,9 @@ function renderDetail(){
   const hShare = zoneTimes(st,'hr',hrZone,5) || (()=>{ const r=analyze(a); return r&&r.tiz?r.tiz.map(x=>x/100):null; })();
   const as = assess(a.id);
   const stops = rows.filter(r => r.wNZ && r.w && r.wNZ - r.w >= 5);
-  return `<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
+  return `<div class="card dcard"><div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
       <div><h2>${esc(a.name)}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
-    <div class="card"><div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
+    <div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
     ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':isRide&&(p.laps||[]).length>15?'Je 5 km':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
       ${lapBars(a, rows, byPower, isRide)}
       <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':`<th>km</th><th>${isRide?'km/h':'Pace'}</th>`}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
