@@ -2785,7 +2785,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Einen Plan erstellst oder änderst du immer für den Zeitraum von heute (${t}) bis einschließlich Sonntag der nächsten Woche (${planEnd()}), also für ganze Wochen. Nutze für Wochentage ausschließlich den mitgelieferten KALENDER, rechne sie nie selbst aus. Plane nur an Tagen, die dort als Trainingstag markiert sind. Trainingstage sind verfügbare Tage, keine Pflicht: Lass einen Trainingstag frei oder setze ausdrücklich einen Ruhetag ("sport":"rest", Titel z. B. „Ruhetag“, im Ziel kurz warum), wenn Erholung, Beschwerden, Trainingslast (z. B. Verhältnis 7/28 hoch) oder eine anstehende längere Einheit das sinnvoll machen. Weniger Einheiten mit guter Qualität sind besser als volle Wochen. Nur wenn ${nm} ausdrücklich eine Einheit an einem anderen Tag wünscht, plane sie dort und setze "extra":true. Will ${nm} im Dialog eine Einheit verschieben, setze sie mit "extra":true auf den neuen Tag und plane am alten Tag nichts; passe angrenzende Einheiten an (Abstand, Umfang, ggf. kürzen und dafür andere verlängern). Gilt eine Verhinderung dauerhaft (z. B. „donnerstags nie“), schlage vor, die Trainingstage zu ändern. Jede Einheit hat Titel, Sportart, Ziel der Einheit und konkrete Schritte (Einlaufen, Intervalle, Pausen, Auslaufen, Kraftübungen). Kraft-, Mobilitäts- und Dehnübungen planst du immer als eigene Einheit ("sport":"strength", auch am selben Tag wie ein Lauf), nie als Schritt einer Lauf- oder Radeinheit – so kann ${nm} sie getrennt abhaken. In Krafteinheiten ist jeder Schritt genau eine Übung mit "sets", "reps" (Wiederholungen) oder "holdS" (Haltezeit in Sekunden), "restS" (Pause zwischen den Sätzen in Sekunden) und bei einseitigen Übungen "perSide":true; "detail" enthält nur Ausführungshinweise (Winkel, Tempo, worauf achten). Dehnen oder Mobilisation ebenfalls je Übung mit "holdS". Die App führt ${nm} damit Satz für Satz durch das Training.
 - Ausgelassene Einheiten: Holst du sie nicht stur nach. Entscheide, ob der Inhalt wichtig genug ist, um ihn (ggf. gekürzt) auf einen späteren Trainingstag zu legen, oder ob er entfällt. Erhöhe dafür nicht die Trainingslast der Folgetage über das sinnvolle Maß. Wurde stattdessen eine andere Sportart trainiert, rechne diese an.
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
-- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" als enger Bereich um den Zielwert (etwa ±5 %, z. B. "160–176 W (Z3)"), nie bei 0 beginnend; Einrollen, Erholung und Pausen z. B. "95–110 W" (45–55 % FTP), damit die Mitte des Bereichs auch im ERG-Modus der Rolle sinnvoll ist. Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
+- Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" als enger Bereich um den Zielwert (etwa ±5 %, z. B. "160–176 W (Z3)"), nie bei 0 beginnend; Einrollen, Erholung und Pausen z. B. "95–110 W" (45–55 % FTP), damit die Mitte des Bereichs auch im ERG-Modus der Rolle sinnvoll ist. Jede Intensitätsstufe ist ein eigener Schritt mit eigenem Zielwert: Pyramiden, Stufen und Intervalle als einzelne Schritte bzw. als Wiederholung (z. B. „Pyramide 1: 2 min“, „Pause 2 min“, „Pyramide 2: 3 min“ …), nie mehrere Wattzahlen in einem Detailtext. „Ansteigend“ (z. B. Einrollen) beim Rad als 2–4 kurze Stufen mit steigender Wattzahl. "detail" knapp halten (höchstens etwa 200 Zeichen), Technikhinweise kurz. Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
 - Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Trainingslast und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
@@ -2874,7 +2874,7 @@ function cleanSession(s){
   return {date:s.date, sport:normSport(s.sport), extra: s.extra===true || undefined, title:String(s.title||'Training').slice(0,120), goal:s.goal?String(s.goal).slice(0,600):'',
     distanceKm: Number(s.distanceKm)>0 ? Math.round(Number(s.distanceKm)*10)/10 : null,
     durationMin: Number(s.durationMin)>0 ? Math.round(Number(s.durationMin)) : null,
-    steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,300),
+    steps: Array.isArray(s.steps) ? s.steps.slice(0,15).map(x=>({label:String(x&&x.label||'').slice(0,80), detail:String(x&&x.detail||'').slice(0,600),
       rpe:x&&x.rpe!=null?String(x.rpe).slice(0,12):undefined, hr:x&&x.hr?String(x.hr).slice(0,20):undefined, pace:x&&x.pace?String(x.pace).slice(0,24):undefined, watt:x&&x.watt?String(x.watt).slice(0,30):undefined,
       sets: x&&Number(x.sets)>0 ? Math.min(10,Math.round(Number(x.sets))) : undefined, reps: x&&Number(x.reps)>0 ? Math.min(200,Math.round(Number(x.reps))) : undefined,
       holdS: x&&Number(x.holdS)>0 ? Math.min(1800,Math.round(Number(x.holdS))) : undefined, restS: x&&Number(x.restS)>=0&&x.restS!=null ? Math.min(600,Math.round(Number(x.restS))) : undefined,
@@ -3012,7 +3012,7 @@ function icuState(s0){
   if(!IN_APP || !appStatus().icuKey) return null;
   const e = icuEntry(s0); if(!e) return null;
   const h = (S.plan && S.plan.icuSent || {})[e.ext];
-  return !h ? 'new' : h===icuHash(['v4',e.s,icuModeFor(e)]) ? 'ok' : 'changed';
+  return !h ? 'new' : h===icuHash(['v5',e.s,icuModeFor(e)]) ? 'ok' : 'changed';
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
 async function icuTexts(items){
@@ -3025,7 +3025,7 @@ Regeln:
 - Abschnitte als Überschriftzeilen ohne Bindestrich, z. B. „Einlaufen“, „Hauptteil 4x“, „Auslaufen“. Wiederholungen nur als „… 4x“ in der Überschrift, keine verschachtelten Wiederholungen, je eine Leerzeile vor und nach einem Wiederholungsblock.
 - Jeder Schritt: „- <Hinweis> <Dauer> <Ziel>“. Dauer als Zeit (10m, 30s, 1m30) oder Strecke mit Dezimalpunkt (1.5km). „m“ heißt Minuten. Keine weiteren Zahlen mit Einheit im Hinweis.
 - Hinweis kurz auf Deutsch, immer mit der RPE, z. B. „Locker, RPE 2–3“ (Bereich mit Halbgeviertstrich).
-- Ziel je nach "zielvorgabe": hr → „Z2 HR“ oder „Z1-Z2 HR“; pace → „5:35-5:20/km Pace“ (langsamere Pace zuerst), ohne bekannte Pace stattdessen HF-Zone; watt (nur Rad) → enger Bereich in Prozent der FTP, etwa ±5 % um den Zielwert, nie bei 0 beginnend, z. B. „62-70%“, Einrollen, Erholung und Pausen „45-55%“; erg (Rolle im ERG-Modus, die Rolle fährt genau diesen Wert) → genau ein Prozentwert der FTP wie „66%“, nämlich die Mitte des gewünschten Bereichs, Einrollen, Erholung und Pausen 50–55 %, nie unter 45 %; rpe → kein Ziel, die Zeile endet nach der Dauer.
+- Ziel je nach "zielvorgabe": hr → „Z2 HR“ oder „Z1-Z2 HR“; pace → „5:35-5:20/km Pace“ (langsamere Pace zuerst), ohne bekannte Pace stattdessen HF-Zone; watt (nur Rad) → enger Bereich in Prozent der FTP, etwa ±5 % um den Zielwert, nie bei 0 beginnend, z. B. „62-70%“, Einrollen, Erholung und Pausen „45-55%“; erg (Rolle im ERG-Modus, die Rolle fährt genau diesen Wert) → genau ein Prozentwert der FTP wie „66%“, nämlich die Mitte des gewünschten Bereichs, Einrollen, Erholung und Pausen 50–55 %, nie unter 45 %; „ansteigend“ oder mehrere Wattzahlen in einem Schritt (Pyramide, Stufen) im ERG-Modus immer in einzelne Schritte mit je einem festen Prozentwert aufteilen, z. B. Einrollen 8 min ansteigend → „- Einrollen, RPE 1–2 3m 50%“, „- 3m 55%“, „- 2m 60%“; rpe → kein Ziel, die Zeile endet nach der Dauer.
 - Nur echte zeitliche Abschnitte werden Schritte (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen). Verhaltenshinweise ohne eigene Dauer, z. B. „Bergab: steilere Abstiege gehen“, „Kadenz hoch halten“ oder „flache Strecke wählen“, sind kein eigener Schritt und keine eigene Überschrift; nimm sie kurz in den Hinweis des Laufschritts auf, zu dem sie gehören (z. B. „Locker, bergab gehen, RPE 3–4“).
 - Fehlen Dauern, schätze sie sinnvoll aus Distanz, Pace und Beschreibung; die Summe soll zur geplanten Dauer bzw. Distanz passen.
 - Nur der Lauf- bzw. Radteil. Lass Kraftübungen, Gymnastik, Dehnen und Mobilisation komplett weg, auch nicht als Text- oder Überschriftzeile; sie würden auf der Uhr als Laufabschnitt erscheinen.
@@ -3067,7 +3067,7 @@ async function icuSync(manual, onlyExt, forceMode){
     if(onlyExt && forceMode){ S.plan.icuModes = Object.assign({}, S.plan.icuModes||{}, {[onlyExt]:forceMode}); }
     const items = (onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions()).map(x => Object.assign(x, {mode:icuModeFor(x)}));
     const sent = Object.assign({}, S.plan.icuSent||{});
-    const changed = items.filter(({s,ext,mode}) => onlyExt || sent[ext] !== icuHash(['v4',s,mode]));
+    const changed = items.filter(({s,ext,mode}) => onlyExt || sent[ext] !== icuHash(['v5',s,mode]));
     let created = 0, deleted = 0;
     if(changed.length){
       const texts = await icuTexts(changed);
@@ -3078,7 +3078,7 @@ async function icuSync(manual, onlyExt, forceMode){
       if(events.length){
         icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
         await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
-        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v4',it.s,it.mode]); });
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v5',it.s,it.mode]); });
         created = events.length;
       }
     }
