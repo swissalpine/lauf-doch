@@ -229,7 +229,7 @@ Geplante Lauf- und Radeinheiten lassen sich als strukturierte Workouts auf eine 
 - Senden: Im Plan einzeln oder alles auf einmal. Mit „automatisch senden“ werden Änderungen selbstständig übertragen.
 - Verschobene oder gestrichene Einheiten löscht die App auch bei intervals.icu.
 - intervals.icu überträgt jeweils die **nächsten 7 Tage** an Garmin. Was weiter in der Zukunft liegt, kommt automatisch nach.
-- Kraft, Mobilität und Schwimmen bleiben in der App und gehen nicht an die Uhr.
+- Kraft und Mobilität bleiben in der App und gehen nicht an die Uhr. Schwimmen geht noch nicht an die Uhr.
 - Für Watt-Vorgaben muss in Strava eine FTP hinterlegt sein.
 
 ### 5. Erinnerungen (optional, nur Android)
