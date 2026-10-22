@@ -3344,7 +3344,7 @@ document.addEventListener('click', async e => {
     else { const k=b.dataset.sport; const s=new Set(sportsOf(pr)); const f=new Set(focusOf(pr));
       if(!s.has(k)) s.add(k); else if(!f.has(k)) f.add(k); else { f.delete(k); s.delete(k); }
       pr.sports=[...s]; pr.focus=[...f].filter(x=>s.has(x));
-      markChange('sports', 'Sportarten: '+focusText(pr)); }
+      markChange('sports', 'Sportarten: '+focusText(pr).replace(/\.$/,'')); }
     render(); save('profile');
   }
   else if(a==='cf-claude'){ const k=document.getElementById('cfKey'), m=document.getElementById('cfModel'); window.Android.setClaude(k?k.value:'', m?m.value:''); render(); }
