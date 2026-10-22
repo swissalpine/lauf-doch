@@ -142,7 +142,8 @@ details.miss>summary .t{color:var(--muted)}
 .weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .toggle{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 0;font-weight:600;cursor:pointer;text-align:center}
 .toggle[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.toggle.focus{background:#0041C4;border-color:#0041C4;box-shadow:0 0 0 2px var(--surface),0 0 0 4px #0041C4}
+.sports .toggle[aria-pressed="true"]:not(.focus){background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft)}
+.toggle.focus{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .sports{display:flex;flex-wrap:wrap;gap:8px}
 .sports .toggle{padding:8px 14px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
