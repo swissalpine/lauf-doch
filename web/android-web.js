@@ -119,12 +119,15 @@
       if(r.status === 529) throw new BridgeError('overloaded', 'Claude ist gerade überlastet (HTTP 529).');
       throw new BridgeError('server_error', 'Claude antwortet nicht (HTTP ' + r.status + ').');
     }
-    let out = '', usage = {}, stop = '', done = false, buf = '';
+    let out = '', usage = {}, stop = '', done = false, buf = '', lastProg = 0;
     const dec = new TextDecoder();
     const handle = line => {
       if(!line.startsWith('data:')) return;
       let ev; try { ev = JSON.parse(line.slice(5).trim()); } catch(e) { return; }
-      if(ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') out += ev.delta.text;
+      if(ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta'){ out += ev.delta.text;
+        const now = Date.now(); if(now - lastProg > 800){ lastProg = now;
+          const m = Math.max(out.lastIndexOf('"macro"'), out.lastIndexOf('"macroWeeks"')), pl = out.lastIndexOf('"sessions"');
+          try { window.onClaudeProgress && window.onClaudeProgress(out.length, m > pl ? 'macro' : pl >= 0 ? 'plan' : 'text'); } catch(e) {} } }
       else if(ev.type === 'message_start' && ev.message && ev.message.usage) usage = Object.assign({}, ev.message.usage);
       else if(ev.type === 'message_delta'){ if(ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason; if(ev.usage) Object.assign(usage, ev.usage); }
       else if(ev.type === 'message_stop') done = true;

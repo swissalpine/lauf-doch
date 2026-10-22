@@ -339,6 +339,16 @@ public class MainActivity extends Activity {
         throw last;
     }
 
+    /** Fortschritt an die Oberfläche: Zeichenzahl und welcher Teil gerade geschrieben wird. */
+    private void progress(CharSequence t) {
+        String s = t.toString();
+        int m = Math.max(s.lastIndexOf("\"macro\""), s.lastIndexOf("\"macroWeeks\""));
+        int p = s.lastIndexOf("\"sessions\"");
+        String st = m > p ? "macro" : p >= 0 ? "plan" : "text";
+        final String js = "window.onClaudeProgress&&window.onClaudeProgress(" + s.length() + ",'" + st + "')";
+        try { runOnUiThread(() -> web.evaluateJavascript(js, null)); } catch (Exception ignored) { }
+    }
+
     private String claudeOnce(JSONObject req, String key) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL("https://api.anthropic.com/v1/messages").openConnection();
         c.setRequestMethod("POST");
@@ -353,6 +363,7 @@ public class MainActivity extends Activity {
         JSONObject usage = new JSONObject();
         String stop = "";
         long t0 = System.currentTimeMillis();
+        long lastProg = 0;
         int events = 0;
         try {
             try (OutputStream os = c.getOutputStream()) {
@@ -385,6 +396,8 @@ public class MainActivity extends Activity {
                 if ("content_block_delta".equals(type)) {
                     JSONObject d = ev.optJSONObject("delta");
                     if (d != null && "text_delta".equals(d.optString("type"))) text.append(d.optString("text"));
+                    long now = System.currentTimeMillis();
+                    if (now - lastProg > 800) { lastProg = now; progress(text); }
                 } else if ("message_start".equals(type)) {
                     JSONObject m = ev.optJSONObject("message");
                     JSONObject u = m == null ? null : m.optJSONObject("usage");
