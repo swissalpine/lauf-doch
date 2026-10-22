@@ -2168,7 +2168,11 @@ function markChange(key, text){
 const pendingList = () => Object.values(profile().pendingChanges||{}).filter(Boolean);
 function replanFromChanges(){
   const ch = pendingList(); if(!ch.length || !sample || busy) return;
-  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan bis Ende nächster Woche daran an.', {auto:true, display:'Einstellungen geändert – Plan anpassen'});
+  // Sportarten/Schwerpunkte und Trainingstage verändern die ganze Periodisierung: dann auch den Gesamtplan überarbeiten
+  const pc = profile().pendingChanges || {}, big = !!(pc.sports || pc.days) && !!macro();
+  askClaude('Einstellungen geändert: '+ch.join('; ')+'. Bitte passe den Plan bis Ende nächster Woche daran an.'
+    + (big ? ' Da sich Sportarten, Schwerpunkte oder Trainingstage geändert haben, überarbeite auch den Gesamtplan vollständig unter "macro": Phasen, Schwerpunkte und Wochenumfänge bis zum Ziel. Ziel und Zieldatum bleiben, der bisherige Trainingsfortschritt wird übernommen.' : ''),
+    {auto:true, display: big ? 'Einstellungen geändert – Plan und Gesamtplan anpassen' : 'Einstellungen geändert – Plan anpassen'});
 }
 function changeBanner(){
   const ch = pendingList(); if(!ch.length) return '';
