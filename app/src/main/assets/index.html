@@ -455,7 +455,7 @@ nav.tabs button{padding:4px 2px}
 .wk .exlist .er b{font-weight:600;flex:1;min-width:0}
 .wk .exlist .er span{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .wk .exlist .er.now b{color:var(--accent)}
-.wk .exlist .er.ok b::before{content:'✓ ';color:var(--ok)}
+.wk .exlist .er.ok b::before{content:none}
 .wk .wknav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .wk .wkb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 4px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:600;line-height:1.2;text-align:center;cursor:pointer}
 .wk .wkb svg{width:22px;height:22px;flex:none;color:var(--accent)}
@@ -688,6 +688,30 @@ ol.steps .d,.day details summary .x,.day .restline,.gloss dd,.entry .short,.plan
 .dialog .compose textarea{background:var(--surface);border-color:var(--accent)}
 .dialog .msg.assistant{background:var(--surface)}
 .dialog .suggest button{background:var(--surface);border-style:solid;border-color:var(--accent);color:var(--accent)}
+
+/* Trainingsmodus: Kopf als Karte, Steuerung in der Uhr-Karte, Übungsliste mit Status */
+.wk .wkhead{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px 8px 10px 14px;flex-wrap:wrap;row-gap:6px;color:var(--ink)}
+.wk .wkhead h2{font-size:20px;color:var(--ink)}
+.wk .wkhead .wkx{width:34px;height:34px;font-size:18px}
+.wk .wkhead .dots{flex-basis:100%}
+.wk .wkhead .dots span{height:4px;border-radius:2px;background:#B4BED0}
+.wk .wkhead .dots span.d{background:var(--ok)}
+.wk .wkhead .dots span.c{background:linear-gradient(90deg,var(--accent) var(--p,0%),#B4BED0 var(--p,0%))}
+.wk .cur.rest .setl{color:var(--accent)}
+.wk .cur.rest .ring .fg{stroke:var(--accent)}
+.wk .cur.rest .exd{order:3}
+.wk .cur.rest .sub{order:2;margin-top:-4px}
+.wk .cur.rest .sub .btn{min-height:0;height:30px;padding:0 14px;border-radius:999px;border:0;background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:600}
+.wk .curbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.wk .curbox .cur{border:0;border-radius:0;background:none}
+.wk .curbox .wknav{padding:0 12px 14px}
+.wk .exlist .er{align-items:center}
+.wk .exlist .er.now{margin:0 -14px;padding-left:11px;padding-right:14px;border-left:3px solid var(--accent);background:var(--accent-soft)}
+.wk .exlist .er.now+.er{border-top-color:transparent}
+.wk .exlist .er.ok b,.wk .exlist .er.ok span{color:var(--muted)}
+.wk .exlist .er .ck{display:inline-flex;width:20px;height:20px;border-radius:999px;background:var(--ok);color:#fff !important;font-size:13px;font-weight:700;line-height:1;align-items:center;justify-content:center;flex:none}
+.wk .exlist .er .ck.o{background:none;border:1.5px solid #B4BED0}
+.wk .exlist .er .ck.s{background:#B4BED0}
 </style>
 </head>
 <body>
@@ -1671,11 +1695,13 @@ function wkNav(w){
 function renderWorkout(){
   const w = workout, e = wkCur();
   const el = mmss(wkElapsed(w));
-  const dots = w.ex.map((x,k) => `<span class="${k<w.i||w.phase==='done'?'d':k===w.i?'c':''}"></span>`).join('');
-  const head = `<div class="wkhead"><h2>${esc(w.title)}</h2><span class="el" id="wkEl">${el}</span><button class="wkx" data-action="wk-quit" aria-label="Training beenden">×</button></div><div class="dots">${dots}</div>`;
+  const dots = w.ex.map((x,k) => `<span class="${k<w.i||w.phase==='done'?'d':k===w.i?'c':''}" ${k===w.i?`style="--p:${Math.round(100*x.log.length/x.sets)}%"`:''}></span>`).join('');
+  const head = `<div class="wkhead"><h2>${esc(w.title)}</h2><span class="el" id="wkEl">${el}</span><button class="wkx" data-action="wk-quit" aria-label="Training beenden">×</button><div class="dots">${dots}</div></div>`;
   const quit = w.confirmQuit ? `<div class="card"><p><b>Training abbrechen?</b> Bisher erledigte Sätze kannst du speichern oder verwerfen.</p>
     <div class="row"><button class="btn primary" data-action="wk-save-now">Bisheriges speichern</button><button class="btn" data-action="wk-discard">Verwerfen</button><button class="btn ghost" data-action="wk-resume">Weiter trainieren</button></div></div>` : '';
-  const list = `<div class="exlist">${w.ex.map((x,k) => `<div class="er ${k===w.i&&w.phase!=='done'?'now':''} ${x.log.length>=x.sets||k<w.i?'ok':''}"><b>${esc(x.name)}</b><span>${x.log.length ? x.log.map(l=>wkSetText(x,l)).join(' · ') : x.sets+' × '+(x.reps||(x.holdS?fmtHold(x.holdS):'–'))}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`;
+  const list = `<div class="exlist">${w.ex.map((x,k) => `${(()=>{ const now=k===w.i&&w.phase!=='done', ok=x.log.length>=x.sets||k<w.i||w.phase==='done', plan=x.sets+' × '+(x.reps||(x.holdS?fmtHold(x.holdS):'–'));
+  const val = now ? 'Satz '+Math.min(x.log.length+1,x.sets)+'/'+x.sets+(x.log.length?' · '+x.log.map(l=>wkSetText(x,l)).join(', '):'') : ok && x.log.length ? x.log.length+' × '+(x.reps?x.log.map(l=>wkSetText(x,l)).filter((v,i,a)=>a.indexOf(v)===i).join('/'):x.holdS?fmtHold(x.holdS):'✓') : ok ? 'ausgelassen' : plan;
+  return `<div class="er ${now?'now':''} ${ok&&!now?'ok':''}"><span class="ck ${ok&&!now?(x.log.length?'':'s'):'o'}">${ok&&!now?(x.log.length?'✓':'–'):''}</span><b>${esc(x.name)}</b><span>${val}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`; })()}`).join('')}</div>`;
   if(w.phase==='done'){
     return `<div class="wk">${head}${quit}<div class="cur"><span class="setl">Geschafft</span><div class="big">${mmss(wkElapsed(w))}<small>min</small></div>
       <p class="exd">Wie anstrengend war das Training insgesamt (RPE)?</p>
@@ -1683,9 +1709,9 @@ function renderWorkout(){
       <button class="go ok" data-action="wk-finish">Speichern</button></div>${list}</div>`;
   }
   if(w.paused){
-    return `<div class="wk">${head}${quit}<div class="cur paused"><span class="setl">Pausiert</span><div class="big">${mmss(wkElapsed(w))}</div>
+    return `<div class="wk">${head}${quit}<div class="curbox"><div class="cur paused"><span class="setl">Pausiert</span><div class="big">${mmss(wkElapsed(w))}</div>
       <p class="exd">Weiter mit: ${w.phase==='rest'?'Pause, dann ':''}${esc(e.name)} · Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${w.left!=null?' · noch '+mmss(Math.ceil(w.left/1000)):''}</p>
-      </div>${wkNav(w)}${list}</div>`;
+      </div>${wkNav(w)}</div>${list}</div>`;
   }
   const q = `<button class="qhelp" data-action="guide" data-label="${esc(e.name)}" data-detail="${esc(e.detail||'')}" aria-label="Übung erklären">?</button>`;
   const setl = `Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${e.perSide?' · je Seite':''}`;
@@ -1695,7 +1721,7 @@ function renderWorkout(){
       <div class="pains">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="wk-pain" data-v="${n}">${n}</button>`).join('')}<button data-action="wk-pain" data-v="">–</button></div></div>`;
   } else if(w.phase==='rest'){
     const left = Math.max(0, Math.ceil((w.until - Date.now())/1000)), L = 2*Math.PI*90;
-    body = `<div class="cur rest"><span class="setl">Pause</span>
+    body = `<div class="cur rest"><span class="setl">Erholung</span>
       <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${L*(1-Math.min(1,(w.dur-left)/w.dur))}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
       <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}${e.holdS?' · startet automatisch':''}</p>
       <div class="sub"><button class="btn" data-action="wk-rest-add">+15 s</button></div></div>`;
@@ -1715,7 +1741,7 @@ function renderWorkout(){
     body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
       <button class="go" data-action="wk-set-done">Erledigt</button></div>`;
   }
-  return `<div class="wk">${head}${quit}${body}${wkNav(w)}${list}</div>`;
+  return `<div class="wk">${head}${quit}<div class="curbox">${body}${wkNav(w)}</div>${list}</div>`;
 }
 function wkAction(a, b){
   const w = workout; if(!w) return false;
