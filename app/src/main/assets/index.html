@@ -1737,10 +1737,10 @@ function renderWorkout(){
   } else if(e.reps){
     body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
       <div class="adj"><button data-action="wk-adj" data-d="-1" aria-label="Eine Wiederholung weniger">−</button><div class="big">${w.val}<small>Wdh.</small></div><button data-action="wk-adj" data-d="1" aria-label="Eine Wiederholung mehr">+</button></div>
-      <button class="go" data-action="wk-set-done">Satz fertig</button></div>`;
+      ${w.started===false?'<button class="go" data-action="wk-go">Start</button>':'<button class="go" data-action="wk-set-done">Satz fertig</button>'}</div>`;
   } else {
     body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
-      <button class="go" data-action="wk-set-done">Erledigt</button></div>`;
+      ${w.started===false?'<button class="go" data-action="wk-go">Start</button>':'<button class="go" data-action="wk-set-done">Erledigt</button>'}</div>`;
   }
   return `<div class="wk">${head}${quit}<div class="curbox">${body}${wkNav(w)}</div>${list}</div>`;
 }
@@ -1748,7 +1748,7 @@ function wkAction(a, b){
   const w = workout; if(!w) return false;
   const e = wkCur();
   // Trainingszeit läuft erst ab dem ersten Start bzw. dem ersten erledigten Satz
-  if(w.started===false && ['wk-hold-start','wk-set-done','wk-next','wk-skip'].includes(a)){ w.started = true; w.start = Date.now(); w.pausedMs = 0; }
+  if(w.started===false && ['wk-go','wk-hold-start','wk-set-done','wk-next','wk-skip'].includes(a)){ w.started = true; w.start = Date.now(); w.pausedMs = 0; }
   if(a==='wk-quit'){ w.confirmQuit = true; render(); }
   else if(a==='wk-pause'){ wkPause(); }
   else if(a==='wk-resume-p'){ wkResume(); }
@@ -1756,6 +1756,7 @@ function wkAction(a, b){
   else if(a==='wk-discard'){ workout = null; wkSave(); clearInterval(wkTimer); render(); }
   else if(a==='wk-save-now'){ w.confirmQuit = false; w.end = Date.now(); w.phase = 'done'; w.until = null; wkSave(); render(); }
   else if(a==='wk-adj'){ const d = Number(b.dataset.d); w.val = Math.max(e.holdS ? 5 : 1, (w.val||0) + d); wkSave(); render(); }
+  else if(a==='wk-go'){ wkSave(); render(); wkBeep(1); }
   else if(a==='wk-set-done'){ wkLogSet(e.reps ? {reps:w.val} : {}); }
   else if(a==='wk-hold-start'){ w.lastHold = w.val; w.dur = w.val; w.until = Date.now() + w.val*1000; wkSave(); render(); wkBeep(1); }
   else if(a==='wk-hold-stop'){ const done = Math.max(1, Math.round(w.dur - (w.until - Date.now())/1000)); wkLogSet({holdS: Math.min(done, w.dur)}); }
