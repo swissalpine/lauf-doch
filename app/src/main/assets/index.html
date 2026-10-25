@@ -2562,9 +2562,9 @@ function renderSettings(){
         <p class="note"><b>${esc(focusText(pr))}</b><br>Antippen: dabei → ★ Schwerpunkt → aus.</p></div>
       <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label>
       <div class="fld"><span>Trainingstage</span>
-      ${(() => { const ld = new Set(longDaysOf(pr)); return `<div class="weekdays${ld.size?' haslong':''}">${order.map(d=>`<button class="toggle${ld.has(d)?' focus':''}" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}${ld.has(d)?', langer Lauf möglich':''}">${ld.has(d)?'★ ':''}${WD[d]}</button>`).join('')}</div>
-      ${ld.size?`<p class="note"><b>Langer Lauf möglich: ${[1,2,3,4,5,6,0].filter(x=>ld.has(x)).map(x=>WD[x]).join(', ')}.</b></p>`:''}`; })()}
-      <p class="note">An diesen Tagen kann Claude Einheiten planen. Antippen: Training → ★ langer Lauf möglich → aus. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p></div></div>
+      ${(() => { const ld = new Set(longDaysOf(pr)); return `<div class="weekdays${ld.size?' haslong':''}">${order.map(d=>`<button class="toggle${ld.has(d)?' focus':''}" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}${ld.has(d)?', lange Einheit möglich':''}">${ld.has(d)?'★ ':''}${WD[d]}</button>`).join('')}</div>
+      ${ld.size?`<p class="note"><b>Lange Einheit möglich: ${[1,2,3,4,5,6,0].filter(x=>ld.has(x)).map(x=>WD[x]).join(', ')}.</b></p>`:''}`; })()}
+      <p class="note">An diesen Tagen kann Claude Einheiten planen. Antippen: Training → ★ lange Einheit möglich → aus. Nach Änderungen passt Claude den Plan an, sobald du die Einstellungen verlässt.</p></div></div>
     <details class="card macro" data-k="abs"><summary><div class="mhead"><h2>Besondere Zeiträume</h2><span class="note">${absences().some(a=>a.to>=today()) ? '' : 'keine'}</span><span class="chev">▼</span></div>${(() => { const l = absences().filter(a=>a.to>=today()).sort((x,y)=>x.from.localeCompare(y.from)); return l.length ? `<span class="mcur muted">${l.map(a=>esc(dmRange(a)+' · '+absText(a))).join('<br>')}</span>` : ''; })()}</summary><div class="mbody">
       <p class="muted">Urlaub, Reisen oder Zeiten, in denen du jeden Tag trainieren willst: Claude plant diese Zeiträume im Wochen- und Gesamtplan ein.</p>
       ${(() => { const list = absences().filter(a=>a.to>=today()).sort((a,b)=>a.from.localeCompare(b.from));
@@ -2881,14 +2881,14 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `KALENDER (heute bis ${planEnd()}): ${Array.from({length:planDays()},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
   const ab = absenceAt(d);
   if(ab) return `${d} ${WD_LONG[wd]} (${ab.type==='off'?'abwesend, kein Training':ab.type==='daily'?'jeden Tag Training'+(ab.note?': '+ab.note:''):'eingeschränkt: '+(ab.note||'siehe Notiz')}${ab.type==='off'&&ab.note?' – '+ab.note:''})`;
-  return `${d} ${WD_LONG[wd]}${bl.includes(d)?' (gesperrt, Nutzer kann nicht)':al.includes(d)?' (Trainingstag, Einheit dorthin verschoben)':(pr.trainingDays||[]).includes(wd)?(longDaysOf(pr).includes(wd)?' (Trainingstag, langer Lauf möglich)':' (Trainingstag)'):''}`; }).join('; ')}`,
+  return `${d} ${WD_LONG[wd]}${bl.includes(d)?' (gesperrt, Nutzer kann nicht)':al.includes(d)?' (Trainingstag, Einheit dorthin verschoben)':(pr.trainingDays||[]).includes(wd)?(longDaysOf(pr).includes(wd)?' (Trainingstag, lange Einheit möglich)':' (Trainingstag)'):''}`; }).join('; ')}`,
 `ZIEL: ${pr.goal&&pr.goal.text ? pr.goal.text+(pr.goal.date?' (Zieldatum '+pr.goal.date+')':'') : 'noch nicht festgelegt'}`,
 `BESCHWERDEN: ${cl||'keine'}`,
 `BESONDERE ZEITRÄUME (Abwesenheiten, jeden Tag Training): ${absences().filter(a=>a.to>=t).map(a=>a.from+' bis '+a.to+' '+(a.type==='off'?'kein Training':a.type==='daily'?'jeden Tag Training':'eingeschränkt')+(a.note?' ('+a.note+')':'')).join('; ')||'keine'}`,
 `MORGEN-CHECKS (Zustand am Tag nach einer Einheit, letzte 4 Wochen): ${Object.entries(checks()).filter(([d,c])=>d>=addDays(t,-28) && c && !c.skipped).sort().map(([d,c])=>d+' '+checkText(c)).join('; ')||'keine'}`,
 `LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
 `ERKENNTNISSE: ${(pr.insights||[]).length ? (pr.insights||[]).map(x=>'- '+x).join('\n') : 'noch keine'}`,
-`TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}${longDaysOf(pr).length?' – langer Lauf (bzw. längste Ausdauereinheit der Woche) nur an: '+[1,2,3,4,5,6,0].filter(x=>longDaysOf(pr).includes(x)).map(x=>WD[x]).join(', '):''}`,
+`TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}${longDaysOf(pr).length?' – die lange Einheit der Woche in der Schwerpunkt-Sportart (z. B. langer Lauf, lange Radausfahrt) nur an: '+[1,2,3,4,5,6,0].filter(x=>longDaysOf(pr).includes(x)).map(x=>WD[x]).join(', '):''}`,
 `SPORTARTEN (planbar): ${focusText(pr)} Gehen und Wandern sind freie Ergänzungen: nicht planen, aber als Belastung berücksichtigen.`,
 `HINTERGRUND: ${pr.background||'–'}`,
 `AKTUELLER PLAN (ab ${addDays(t,-7)}): ${JSON.stringify(plan)}`,
@@ -3397,8 +3397,8 @@ document.addEventListener('click', async e => {
       let onlyLong = false;
       if(!s.has(d)) s.add(d); else if(!l.has(d)){ l.add(d); onlyLong = true; } else { l.delete(d); s.delete(d); }
       pr.trainingDays=[...s].sort(); pr.longRunDays=[...l].filter(x=>s.has(x)).sort();
-      // nur die Markierung „langer Lauf“ geändert: Wochenplan anpassen, Gesamtplan bleibt
-      markChange(onlyLong && !(pr.pendingChanges||{}).days ? 'longdays' : 'days', 'Trainingstage: '+([1,2,3,4,5,6,0].filter(x=>s.has(x)).map(x=>WD[x]+(l.has(x)?' (langer Lauf möglich)':'')).join(', ')||'keine')); if(pr.pendingChanges && pr.pendingChanges.days) delete pr.pendingChanges.longdays; }
+      // nur die Markierung „lange Einheit“ geändert: Wochenplan anpassen, Gesamtplan bleibt
+      markChange(onlyLong && !(pr.pendingChanges||{}).days ? 'longdays' : 'days', 'Trainingstage: '+([1,2,3,4,5,6,0].filter(x=>s.has(x)).map(x=>WD[x]+(l.has(x)?' (lange Einheit möglich)':'')).join(', ')||'keine')); if(pr.pendingChanges && pr.pendingChanges.days) delete pr.pendingChanges.longdays; }
     else { const k=b.dataset.sport; const s=new Set(sportsOf(pr)); const f=new Set(focusOf(pr));
       if(!s.has(k)) s.add(k); else if(!f.has(k)) f.add(k); else { f.delete(k); s.delete(k); }
       pr.sports=[...s]; pr.focus=[...f].filter(x=>s.has(x));
