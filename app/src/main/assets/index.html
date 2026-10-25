@@ -1613,12 +1613,12 @@ try{ const w = JSON.parse(localStorage.getItem('ld-workout')||'null'); if(w && w
 function wkSave(){ try{ workout ? localStorage.setItem('ld-workout', JSON.stringify(workout)) : localStorage.removeItem('ld-workout'); }catch(_){} }
 function wkStart(s){
   const ex = parseExercises(s);
-  workout = {date:s.date, title:s.title||'Kraft', sport:normSport(s.sport), goal:s.goal||'', start:Date.now(), ex, i:0, set:0, phase:'work', until:null, dur:null, val:null, rpe:null, confirmQuit:false};
+  workout = {date:s.date, title:s.title||'Kraft', sport:normSport(s.sport), goal:s.goal||'', start:Date.now(), started:false, ex, i:0, set:0, phase:'work', until:null, dur:null, val:null, rpe:null, confirmQuit:false};
   wkPrep(); wkSave(); wkTick(); render(); window.scrollTo({top:0});
 }
 function wkCur(){ return workout && workout.ex[workout.i]; }
 /* Trainingszeit ohne Unterbrechungen */
-function wkElapsed(w){ const now = w.end || Date.now(); return Math.max(0, (now - w.start - (w.pausedMs||0) - (w.paused && !w.end ? now - w.paused : 0))/1000); }
+function wkElapsed(w){ if(w.started===false) return 0; const now = w.end || Date.now(); return Math.max(0, (now - w.start - (w.pausedMs||0) - (w.paused && !w.end ? now - w.paused : 0))/1000); }
 function wkPause(){ const w = workout; if(!w || w.paused) return; w.paused = Date.now(); if(w.until){ w.left = w.until - Date.now(); w.until = null; } wkSave(); render(); }
 function wkResume(){ const w = workout; if(!w || !w.paused) return; w.pausedMs = (w.pausedMs||0) + (Date.now() - w.paused); w.paused = null; if(w.left!=null){ w.until = Date.now() + w.left; w.left = null; } wkSave(); render(); }
 function wkPrep(){ const e = wkCur(); if(!e) return; workout.val = e.reps || e.holdS || null; workout.until = null; workout.dur = null; }
@@ -1747,6 +1747,8 @@ function renderWorkout(){
 function wkAction(a, b){
   const w = workout; if(!w) return false;
   const e = wkCur();
+  // Trainingszeit läuft erst ab dem ersten Start bzw. dem ersten erledigten Satz
+  if(w.started===false && ['wk-hold-start','wk-set-done','wk-next','wk-skip'].includes(a)){ w.started = true; w.start = Date.now(); w.pausedMs = 0; }
   if(a==='wk-quit'){ w.confirmQuit = true; render(); }
   else if(a==='wk-pause'){ wkPause(); }
   else if(a==='wk-resume-p'){ wkResume(); }
