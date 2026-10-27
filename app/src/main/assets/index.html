@@ -2033,6 +2033,13 @@ function lapRanges(a){
   return lapSrc(a).map(l => { const e = l.e || l.s; const r = {from:t0, to:t0+e}; t0 += e; return r; });
 }
 /* Mittel eines Streams in [from,to), optional ohne Nullwerte */
+/* Stillstand in [from,to) in Sekunden (Geschwindigkeit unter 0,3 m/s) */
+function streamStopped(st, from, to){
+  if(!st || !st.v || !st.t) return 0; let s = 0;
+  for(let i=0;i<st.t.length;i++){ const t = st.t[i], dt = (st.t[i+1]!=null ? st.t[i+1] : t+1) - t;
+    if(t>=from && t<to && (st.v[i]||0) < 0.3) s += Math.min(dt, to - t); }
+  return s;
+}
 function streamAvg(st, key, from, to, noZero){
   if(!st || !st[key]) return null; let sum=0, n=0;
   st.t.forEach((t,i) => { const x = st[key][i]; if(t>=from && t<to && x!=null && (!noZero || x>0)){ sum+=x; n++; } });
@@ -2100,7 +2107,7 @@ function renderDetail(){
     const r = ranges[i], dur = l.e || l.s;
     const w = l.w || null, wNZ = byPower ? streamAvg(st,'w',r.from,r.to,true) : null;
     return {n:i+1, dur, d:l.d, w, wNZ, pct: w&&ftp ? Math.round(w/ftp*100) : null, z: byPower ? powerZone(w, ftp) : null,
-      hr:l.hr, hz:hrZone(l.hr), c:l.c || (st ? streamAvg(st,'c',r.from,r.to,true) : null), speed: l.s ? l.d/l.s : null, g:l.g};
+      hr:l.hr, hz:hrZone(l.hr), c:l.c || (st ? streamAvg(st,'c',r.from,r.to,true) : null), speed: l.s ? l.d/l.s : null, g:l.g, stop: !byPower && st && r ? streamStopped(st, r.from, r.to) : 0};
   });
   const hz = (S.log && S.log.zones && S.log.zones.hrMins) || null;
   const np = byPower ? npApprox(st) : null;
@@ -2123,7 +2130,9 @@ function renderDetail(){
       <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':`<th>km</th><th>${isRide?'km/h':'Pace'}</th>`}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
       ${rows.map(r => `<tr class="${byPower&&r.z>=3?'work':''}"><td>${r.n}</td><td>${mmss(r.dur)}</td>
         ${byPower?`<td><b>${r.w||'–'}</b>${r.wNZ && r.w && r.wNZ-r.w>=5?`<small>ohne Stopp ${Math.round(r.wNZ)}</small>`:''}</td><td>${r.pct!=null?r.pct+' %':'–'}</td><td><span class="zc" style="background:${PZ_COL[(r.z||1)-1]};color:${r.z>=4?'#fff':'#0b1530'}">Z${r.z||'–'}</span></td>`
-          :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?(isRide?fmtNum(r.speed*3.6,1):fmtPace(r.d/1000,r.d/r.speed)):'–'}</b></td>`}
+          :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?(isRide?fmtNum(r.speed*3.6,1):fmtPace(r.d/1000,r.d/r.speed)):'–'}</b>${(() => { if(!r.speed || !r.stop || !r.d) return ''; const sec = r.d/r.speed, mv = sec - r.stop;
+            if(mv <= 0 || sec/(r.d/1000) - mv/(r.d/1000) < 3) return '';
+            return `<small>${isRide ? fmtNum(r.d/mv*3.6,1) : fmtPace(r.d/1000, mv)} in Bew.</small>`; })()}</td>`}
         <td>${r.hr?Math.round(r.hr):'–'}${r.hz?`<small>Z${r.hz}</small>`:''}</td><td>${byPower?(r.c?Math.round(r.c):'–'):(r.g!=null?fmtNum(r.g,1)+' %':'–')}</td></tr>`).join('')}
       </tbody></table>
       ${stops.length?`<p class="note">Runde ${stops.map(r=>r.n).join(', ')}: kurze Unterbrechung, ohne Stopp ${stops.map(r=>Math.round(r.wNZ)+' W').join(', ')}.</p>`:''}</div>`:''}
