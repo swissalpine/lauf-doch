@@ -549,6 +549,7 @@ body.typing nav.tabs{display:none}
 table.laps{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 table.laps th{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 4px;border-bottom:1px solid var(--line)}
 table.laps td{text-align:right;padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+table.laps td small.mvp{font-size:13px}
 table.laps th:first-child,table.laps td:first-child{text-align:left;color:var(--muted)}
 table.laps tr.work td{background:var(--accent-soft)}
 table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400}
@@ -2132,7 +2133,7 @@ function renderDetail(){
         ${byPower?`<td><b>${r.w||'–'}</b>${r.wNZ && r.w && r.wNZ-r.w>=5?`<small>ohne Stopp ${Math.round(r.wNZ)}</small>`:''}</td><td>${r.pct!=null?r.pct+' %':'–'}</td><td><span class="zc" style="background:${PZ_COL[(r.z||1)-1]};color:${r.z>=4?'#fff':'#0b1530'}">Z${r.z||'–'}</span></td>`
           :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?(isRide?fmtNum(r.speed*3.6,1):fmtPace(r.d/1000,r.d/r.speed)):'–'}</b>${(() => { if(!r.speed || !r.stop || !r.d) return ''; const sec = r.d/r.speed, mv = sec - r.stop;
             if(mv <= 0 || sec/(r.d/1000) - mv/(r.d/1000) < 3) return '';
-            return `<small>${isRide ? fmtNum(r.d/mv*3.6,1) : fmtPace(r.d/1000, mv)} in Bew.</small>`; })()}</td>`}
+            return `<small class="mvp">${isRide ? fmtNum(r.d/mv*3.6,1) : fmtPace(r.d/1000, mv)} in Bew.</small>`; })()}</td>`}
         <td>${r.hr?Math.round(r.hr):'–'}${r.hz?`<small>Z${r.hz}</small>`:''}</td><td>${byPower?(r.c?Math.round(r.c):'–'):(r.g!=null?fmtNum(r.g,1)+' %':'–')}</td></tr>`).join('')}
       </tbody></table>
       ${stops.length?`<p class="note">Runde ${stops.map(r=>r.n).join(', ')}: kurze Unterbrechung, ohne Stopp ${stops.map(r=>Math.round(r.wNZ)+' W').join(', ')}.</p>`:''}</div>`:''}
