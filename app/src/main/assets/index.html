@@ -586,7 +586,8 @@ table.laps small{display:block;font-size:11px;color:var(--muted);font-weight:400
 .macro[open] .chev{transform:rotate(180deg)}
 .mtl{position:relative;display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;background:var(--surface)}
 .mtl span{display:block;height:100%;min-width:3px}
-.mtl .now{position:absolute;top:1px;bottom:1px;width:4px;margin-left:-2px;background:#fff;border-radius:2px;box-shadow:0 0 0 1.5px var(--ink)}
+.mtlw{position:relative;padding-top:10px}
+.mtlw .now{position:absolute;top:0;width:0;height:0;margin-left:-6px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid var(--ink)}
 .mtl-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:-4px}
 .mcur{font-size:14px}
 details[data-k="abs"][open] .mcur{display:none}
@@ -1926,7 +1927,7 @@ function renderMacro(){
   const endTxt = (m.endEstimated ? 'bis ca. ' : 'bis ') + dmyy(m.end||ph[ph.length-1].to);
   return `<details class="card macro" data-k="macro"><summary>
       <div class="mhead"><h2>Gesamtplan</h2><span class="note">${esc(endTxt)}</span><span class="chev">▼</span></div>
-      <div class="mtl">${bars}<i class="now" style="left:${nowPct}%"></i></div>
+      <div class="mtlw"><i class="now" style="left:${nowPct}%" aria-hidden="true"></i><div class="mtl">${bars}</div></div>
       <div class="mtl-lbl"><span>${dmy(m.start||ph[0].from)}</span>${nowPct>14&&nowPct<86?`<span class="today" style="left:${nowPct}%">heute</span>`:''}<span>${m.endEstimated?'ca. ':''}${dmy(m.end||ph[ph.length-1].to)}</span></div>
       ${cur}</summary>
     <div class="mbody">
