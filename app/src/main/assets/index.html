@@ -744,14 +744,15 @@ ol.steps .d,.day details summary .x,.day .restline,.gloss dd,.entry .short,.plan
 .mphase .phnow .badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 10px;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
 .mphase .phbar{height:4px;border-radius:2px;background:var(--surface)}
 .mphase .phbar i{display:block;height:100%;border-radius:2px;background:var(--accent)}
-details.mphase.past > summary{list-style:none;cursor:pointer}
-details.mphase.past > summary::-webkit-details-marker{display:none}
-.mphase.past .ph b{color:var(--muted);font-size:16px}
-.mphase.past .ph .note{margin-left:auto}
+details.mphase.fold > summary{list-style:none;cursor:pointer}
+details.mphase.fold > summary::-webkit-details-marker{display:none}
+.mphase.past .ph b{color:var(--muted)}
+.mphase.fold .ph .note{margin-left:auto}
+.mphase.cur .ph b{font-size:24px;font-weight:700;color:var(--ink);line-height:1.15}
+.mphase.cur .ph{align-items:center}
 .mphase.past .ck{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center;align-self:center;flex:none}
-.mphase.past .pchev{font-size:10px;color:var(--muted);align-self:center;transition:transform .2s}
-.mphase.past[open] .pchev{transform:rotate(180deg)}
-.mphase.past[open]{gap:6px}
+.mphase.fold .pchev{font-size:10px;color:var(--muted);align-self:center;transition:transform .2s}
+.mphase.fold[open] .pchev{transform:rotate(180deg)}
 </style>
 </head>
 <body>
@@ -1916,8 +1917,8 @@ function renderMacro(){
       ${kv?`<div class="kv">${esc(kv)}</div>`:''}
       ${(p.keySessions||[]).length?`<ul>${p.keySessions.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
       ${p.advance && k<ph.length-1?`<div class="madv"><b>Weiter, wenn:</b> ${esc(p.advance)}</div>`:''}`;
-    // abgeschlossene Phasen zugeklappt, aufklappbar
-    if(isPast) return `<details class="mphase past" data-k="ph-${esc(p.from)}"><summary class="ph"><span class="ck" aria-hidden="true">✓</span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span><span class="pchev" aria-hidden="true">▼</span></summary>${body}</details>`;
+    // abgeschlossene und kommende Phasen zugeklappt, aufklappbar
+    if(!isCur) return `<details class="mphase fold ${isPast?'past':''}" data-k="ph-${esc(p.from)}"><summary class="ph">${isPast?'<span class="ck" aria-hidden="true">✓</span>':`<span class="dot" style="background:${PH_COLORS[k%PH_COLORS.length]}"></span>`}<b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span><span class="pchev" aria-hidden="true">▼</span></summary>${body}</details>`;
     const prog = isCur ? `<div class="phnow"><span class="badge">Aktuelle Phase</span><span>Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</span></div><div class="phbar"><i style="width:${Math.round(100*Math.min(mi.wk,mi.wn)/mi.wn)}%"></i></div>` : '';
     return `<div class="mphase ${isCur?'cur':''}">${prog}<div class="ph"><span class="dot" style="background:${PH_COLORS[k%PH_COLORS.length]}"></span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span></div>
       ${body}</div>`;
