@@ -735,6 +735,23 @@ ol.steps .d,.day details summary .x,.day .restline,.gloss dd,.entry .short,.plan
 .cov .acts{display:flex;gap:8px;width:100%;margin-top:6px}
 .cov .acts .btn{flex:1}
 @media (prefers-reduced-motion:reduce){.cov .ic svg,.cov .ic img,.cov li.now i{animation:none}}
+
+/* Gesamtplan: aktuelle Phase hervorgehoben, abgeschlossene zugeklappt */
+.mphase.cur{background:var(--accent-soft);border-top:0;border-left:4px solid var(--accent);border-radius:12px;padding:12px;margin:4px -4px}
+.mphase.cur + .mphase{border-top:0}
+.mphase.cur .madv,.mphase.cur .tag.plan{background:var(--surface)}
+.mphase .phnow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--accent);font-weight:600}
+.mphase .phnow .badge{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 10px;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.mphase .phbar{height:4px;border-radius:2px;background:var(--surface)}
+.mphase .phbar i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+details.mphase.past > summary{list-style:none;cursor:pointer}
+details.mphase.past > summary::-webkit-details-marker{display:none}
+.mphase.past .ph b{color:var(--muted);font-size:16px}
+.mphase.past .ph .note{margin-left:auto}
+.mphase.past .ck{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center;align-self:center;flex:none}
+.mphase.past .pchev{font-size:10px;color:var(--muted);align-self:center;transition:transform .2s}
+.mphase.past[open] .pchev{transform:rotate(180deg)}
+.mphase.past[open]{gap:6px}
 </style>
 </head>
 <body>
@@ -1894,11 +1911,16 @@ function renderMacro(){
   const phases = ph.map((p,k) => {
     const isCur = mi && mi.i===k;
     const kv = [rng(p.weeklyKm,'km/Woche'), p.longRunKm?'längster Lauf '+rng(p.longRunKm,'km'):'', rng(p.weeklyHm,'hm/Woche'), p.longRunHm?'langer Lauf '+rng(p.longRunHm,'hm'):''].filter(Boolean).join(' · ');
-    return `<div class="mphase ${isCur?'cur':''}"><div class="ph"><span class="dot" style="background:${PH_COLORS[k%PH_COLORS.length]}"></span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span></div>
-      ${(p.focus||[]).length?`<div class="chips">${p.focus.map(f=>`<span class="tag plan">${esc(f)}</span>`).join('')}</div>`:''}
+    const isPast = !isCur && p.to < t;
+    const body = `${(p.focus||[]).length?`<div class="chips">${p.focus.map(f=>`<span class="tag plan">${esc(f)}</span>`).join('')}</div>`:''}
       ${kv?`<div class="kv">${esc(kv)}</div>`:''}
       ${(p.keySessions||[]).length?`<ul>${p.keySessions.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
-      ${p.advance && k<ph.length-1?`<div class="madv"><b>Weiter, wenn:</b> ${esc(p.advance)}</div>`:''}</div>`;
+      ${p.advance && k<ph.length-1?`<div class="madv"><b>Weiter, wenn:</b> ${esc(p.advance)}</div>`:''}`;
+    // abgeschlossene Phasen zugeklappt, aufklappbar
+    if(isPast) return `<details class="mphase past" data-k="ph-${esc(p.from)}"><summary class="ph"><span class="ck" aria-hidden="true">✓</span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span><span class="pchev" aria-hidden="true">▼</span></summary>${body}</details>`;
+    const prog = isCur ? `<div class="phnow"><span class="badge">Aktuelle Phase</span><span>Woche ${Math.min(mi.wk,mi.wn)} von ${mi.wn}</span></div><div class="phbar"><i style="width:${Math.round(100*Math.min(mi.wk,mi.wn)/mi.wn)}%"></i></div>` : '';
+    return `<div class="mphase ${isCur?'cur':''}">${prog}<div class="ph"><span class="dot" style="background:${PH_COLORS[k%PH_COLORS.length]}"></span><b>${esc(p.name)}</b><span class="note">${dmy(p.from)}–${dmy(p.to)}</span></div>
+      ${body}</div>`;
   }).join('');
   const endTxt = (m.endEstimated ? 'bis ca. ' : 'bis ') + dmyy(m.end||ph[ph.length-1].to);
   return `<details class="card macro" data-k="macro"><summary>
