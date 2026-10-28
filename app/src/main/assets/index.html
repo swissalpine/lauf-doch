@@ -1656,14 +1656,13 @@ function wkBeep(n){
 }
 function wkLogSet(entry){
   const e = wkCur();
-  // Übungen je Seite: erst rechts, dann links; der Satz zählt nach beiden Seiten
-  if(e.perSide && !workout.side){
+  // Halteübungen je Seite: erst rechts, dann links (mit Seitenwechsel); der Satz zählt nach beiden Seiten
+  if(e.perSide && e.holdS && !workout.side){
     workout.side = 1; workout.sideVal = entry;
-    if(e.holdS){ workout.phase = 'rest'; workout.switching = true; workout.dur = 5; workout.until = Date.now() + 5000; }
-    else { workout.phase = 'work'; wkPrep(); }
+    workout.phase = 'rest'; workout.switching = true; workout.dur = 5; workout.until = Date.now() + 5000;
     wkSave(); render(); return;
   }
-  if(e.perSide){ workout.side = 0; workout.sideVal = null; }
+  if(e.perSide && e.holdS){ workout.side = 0; workout.sideVal = null; }
   e.log.push(entry);
   if(workout.set + 1 < e.sets){ workout.set++; workout.phase = 'rest'; workout.dur = e.restS; workout.until = e.restS ? Date.now() + e.restS*1000 : null; if(!e.restS) wkAfterRest(); }
   else wkExerciseDone();
@@ -1747,7 +1746,7 @@ function renderWorkout(){
       </div>${wkNav(w)}</div>${list}</div>`;
   }
   const q = `<button class="qhelp" data-action="guide" data-label="${esc(e.name)}" data-detail="${esc(e.detail||'')}" aria-label="Übung erklären">?</button>`;
-  const setl = `Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${e.perSide?(w.side?' · linke Seite':' · rechte Seite'):''}`;
+  const setl = `Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${e.perSide?(e.holdS?(w.side?' · linke Seite':' · rechte Seite'):' · je Seite'):''}`;
   let body;
   if(w.phase==='pain'){
     body = `<div class="cur"><div class="exn">${esc(e.name)}</div><span class="setl">Übung fertig</span><p class="exd">Schmerz bei dieser Übung?${complaints().length?'<br>'+esc(complaints().join(', ')):''}</p>
@@ -1756,7 +1755,7 @@ function renderWorkout(){
     const left = Math.max(0, Math.ceil((w.until - Date.now())/1000)), L = 2*Math.PI*90;
     body = `<div class="cur rest"><span class="setl">${w.switching?'Seitenwechsel':'Erholung'}</span>
       <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${L*(1-Math.min(1,(w.dur-left)/w.dur))}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
-      <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}${e.perSide?(w.side?' · linke Seite':' · rechte Seite'):''}${e.holdS?' · startet automatisch':''}</p>
+      <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}${e.perSide?(e.holdS?(w.side?' · linke Seite':' · rechte Seite'):' · je Seite'):''}${e.holdS?' · startet automatisch':''}</p>
       <div class="sub"><button class="btn" data-action="wk-rest-add">+15 s</button></div></div>`;
   } else if(e.holdS){
     const running = !!w.until, L = 2*Math.PI*90;
