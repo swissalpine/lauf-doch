@@ -1231,7 +1231,26 @@ let swapDlg = null; // {date, title, text}
 let insightDlg = null; // {edit: index|null}
 let goalDlg = null; // {text,date}
 let bgDlg = null;   // {edit:bool}
-let icuDlg = null; // {ext, title, date, sport, mode}
+/* Abschnitte per Lap-Taste beenden: none | warmcool (Ein-/Auslaufen) | all */
+const ICU_LAPS = [['none','Nach Zeit bzw. Strecke'],['warmcool','Ein- und Auslaufen per Lap-Taste'],['all','Alle Abschnitte per Lap-Taste']];
+const icuLap = () => (profile().icu && profile().icu.lap) || 'none';
+function icuLapFor(e){ const o = S.plan && S.plan.icuLaps && S.plan.icuLaps[e.ext]; return o || icuLap(); }
+function icuSentHash(s, mode, lap){ return lap && lap!=='none' ? icuHash(['v5',s,mode,lap]) : icuHash(['v5',s,mode]); }
+/* Schritte als „Press lap“ markieren: endet erst mit der Lap-Taste, Dauer bleibt als Schätzung */
+function icuLapify(text, lap){
+  if(!lap || lap==='none') return text;
+  const lines = String(text).split('\n'), steps = lines.map((l,i)=>/^\s*-\s+/.test(l)?i:-1).filter(i=>i>=0);
+  let head = '', firstHead = null; const heads = [];
+  lines.forEach((l,i)=>{ if(l.trim() && !/^\s*-/.test(l)) head = l.trim(); heads[i] = head; });
+  const wc = /einlauf|einroll|einfahr|aufwärm|warm|auslauf|ausroll|ausfahr|cool/i;
+  const hasHeads = steps.some(i => heads[i]);
+  return lines.map((l,i) => {
+    if(!/^\s*-\s+/.test(l) || /press lap/i.test(l)) return l;
+    const isWc = hasHeads ? wc.test(heads[i]) || wc.test(l) : (steps.length>1 && (i===steps[0] || i===steps[steps.length-1])) || wc.test(l);
+    return lap==='all' || isWc ? l.replace(/^(\s*-\s+)/, '$1Press lap ') : l;
+  }).join('\n');
+}
+let icuDlg = null; // {ext, title, date, sport, mode, lap}
 function renderIcuDialog(el){
   const opts = ICU_MODES[icuDlg.sport] || ICU_MODES.run;
   const hint = {hr:'Zielbereich nach Herzfrequenz-Zone. Gut auf Trails und bei Hitze.', pace:'Zielbereich als Pace. Nur auf flachen Strecken sinnvoll; fehlt eine Pace, nimmt Claude die HF-Zone.', watt:'Zielbereich in Prozent deiner FTP. Für Rad mit Leistungsmesser, wenn du selbst im Bereich fährst.', erg:'Ein fester Wattwert je Abschnitt (Mitte des Zielbereichs). Für die Rolle im ERG-Modus, z. B. mit Tacx Training.', rpe:'Kein Zielbereich, die Uhr zeigt nur den Hinweis mit der RPE.'}[icuDlg.mode]||'';
@@ -1241,6 +1260,7 @@ function renderIcuDialog(el){
       <p class="muted">„${esc(icuDlg.title)}“ · ${esc(fmtDay(icuDlg.date))}</p>
       <div class="fld"><span>Zielvorgabe</span><div class="seg">${opts.map(([v,l])=>`<button data-action="icu-pick" data-m="${v}" aria-pressed="${icuDlg.mode===v}">${l}</button>`).join('')}</div></div>
       <p class="note">${esc(hint)}</p>
+      <label class="fld" for="icLap"><span>Abschnitte beenden</span><select id="icLap" class="sel">${ICU_LAPS.map(([v,l])=>`<option value="${v}" ${icuDlg.lap===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <div class="row end"><button class="btn" data-action="icu-close">Abbrechen</button><button class="btn primary" data-action="icu-send" ${icuBusy?'disabled':''}>Senden</button></div>
     </div>`;
 }
@@ -2559,7 +2579,9 @@ function connCard(){
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <label class="fld" for="cfIcuRide"><span>Zielvorgabe Rad</span>
         <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt-Bereich (Prozent der FTP)'],['erg','Wattzahl für ERG-Modus (Rolle)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
-      <p class="note">Beim Senden einer einzelnen Einheit kannst du die Vorgabe jeweils neu wählen.</p>
+      <label class="fld" for="cfIcuLap"><span>Abschnitte beenden</span>
+        <select id="cfIcuLap" class="sel">${ICU_LAPS.map(([v,l])=>`<option value="${v}" ${icuLap()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <p class="note">Per Lap-Taste: Der Abschnitt endet auf der Uhr erst, wenn du die Lap-Taste drückst; die Zielvorgabe bleibt. Beim Senden einer einzelnen Einheit kannst du Vorgabe und Abschnitte jeweils neu wählen.</p>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
       ${S.plan&&S.plan.icuLast?`<p class="note">Zuletzt gesendet: ${esc(new Date(S.plan.icuLast).toLocaleString('de-DE'))}</p>`:''}</div>`) + `
@@ -3180,7 +3202,7 @@ function icuState(s0){
   if(!IN_APP || !appStatus().icuKey) return null;
   const e = icuEntry(s0); if(!e) return null;
   const h = (S.plan && S.plan.icuSent || {})[e.ext];
-  return !h ? 'new' : h===icuHash(['v5',e.s,icuModeFor(e)]) ? 'ok' : 'changed';
+  return !h ? 'new' : h===icuSentHash(e.s,icuModeFor(e),icuLapFor(e)) ? 'ok' : 'changed';
 }
 const ICU_TYPE = {run:'Run', ride:'Ride', strength:'WeightTraining', walk:'Walk', other:'Workout'};
 async function icuTexts(items){
@@ -3226,27 +3248,28 @@ async function icuCleanup(){
   }catch(e){ /* beim nächsten Senden erneut */ }
   finally{ icuBusy = false; render(); }
 }
-async function icuSync(manual, onlyExt, forceMode){
+async function icuSync(manual, onlyExt, forceMode, forceLap){
   if(!IN_APP || icuBusy || !S.plan) return;
   const st = appStatus(); if(!st.icuKey){ if(manual){ icuMsg={err:true,text:'Bitte zuerst den intervals.icu-API-Schlüssel speichern.'}; render(); } return; }
   if(!sample){ icuMsg={err:true,text:'Claude ist nicht verfügbar.'}; render(); return; }
   icuBusy = true; icuMsg = {text:'Einheiten werden umgewandelt …'}; render();
   try{
     if(onlyExt && forceMode){ S.plan.icuModes = Object.assign({}, S.plan.icuModes||{}, {[onlyExt]:forceMode}); }
-    const items = (onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions()).map(x => Object.assign(x, {mode:icuModeFor(x)}));
+    if(onlyExt && forceLap){ S.plan.icuLaps = Object.assign({}, S.plan.icuLaps||{}, {[onlyExt]:forceLap}); }
+    const items = (onlyExt ? icuAll().filter(x=>x.ext===onlyExt) : icuSessions()).map(x => Object.assign(x, {mode:icuModeFor(x), lap:icuLapFor(x)}));
     const sent = Object.assign({}, S.plan.icuSent||{});
-    const changed = items.filter(({s,ext,mode}) => onlyExt || sent[ext] !== icuHash(['v5',s,mode]));
+    const changed = items.filter(({s,ext,mode,lap}) => onlyExt || sent[ext] !== icuSentHash(s,mode,lap));
     let created = 0, deleted = 0;
     if(changed.length){
       const texts = await icuTexts(changed);
-      const events = changed.filter(({ext})=>texts[ext]).map(({s,ext}) => ({
+      const events = changed.filter(({ext})=>texts[ext]).map(({s,ext,lap}) => ({
         category:'WORKOUT', start_date_local:s.date+'T00:00:00', type:ICU_TYPE[normSport(s.sport)]||'Run',
-        name:s.title||'Training', description:texts[ext], external_id:ext,
+        name:s.title||'Training', description:icuLapify(texts[ext], lap), external_id:ext,
         moving_time: s.durationMin ? s.durationMin*60 : undefined }));
       if(events.length){
         icuMsg = {text:'Wird an intervals.icu gesendet …'}; render();
         await icuCall('POST','/athlete/0/events/bulk?upsert=true', events);
-        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuHash(['v5',it.s,it.mode]); });
+        events.forEach(e => { const it = changed.find(c=>c.ext===e.external_id); sent[e.external_id] = icuSentHash(it.s,it.mode,it.lap); });
         created = events.length;
       }
     }
@@ -3521,15 +3544,16 @@ document.addEventListener('click', async e => {
     const k=document.getElementById('cfIcu'); if(k && k.value.trim()) window.Android.setIntervals(k.value.trim());
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
     const m=document.getElementById('cfIcuMode'), rm=document.getElementById('cfIcuRide'), au=document.getElementById('cfIcuAuto');
-    pr.icu = {mode: m?m.value:'hr', rideMode: rm?rm.value:'hr', auto: !!(au&&au.checked)};
+    const lp=document.getElementById('cfIcuLap');
+    pr.icu = {mode: m?m.value:'hr', rideMode: rm?rm.value:'hr', auto: !!(au&&au.checked), lap: lp?lp.value:'none'};
     await save('profile'); window.Android.toast('Garmin-Einstellungen gespeichert.');
     render();
   }
   else if(a==='icu-sync'){ icuSync(true); }
-  else if(a==='icu-one'){ const s0 = sessions().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); const e = s0 && icuEntry(s0); if(e){ icuDlg = {ext:e.ext, title:s0.title||'Training', date:s0.date, sport:normSport(s0.sport), mode:icuModeFor(e)}; renderMoveDialog(); } }
-  else if(a==='icu-pick'){ if(icuDlg){ icuDlg.mode = b.dataset.m; renderMoveDialog(); } }
+  else if(a==='icu-one'){ const s0 = sessions().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); const e = s0 && icuEntry(s0); if(e){ icuDlg = {ext:e.ext, title:s0.title||'Training', date:s0.date, sport:normSport(s0.sport), mode:icuModeFor(e), lap:icuLapFor(e)}; renderMoveDialog(); } }
+  else if(a==='icu-pick'){ if(icuDlg){ const ls=document.getElementById('icLap'); if(ls) icuDlg.lap = ls.value; icuDlg.mode = b.dataset.m; renderMoveDialog(); } }
   else if(a==='icu-close'){ icuDlg=null; renderMoveDialog(); }
-  else if(a==='icu-send'){ const d=icuDlg; icuDlg=null; renderMoveDialog(); if(d) icuSync(true, d.ext, d.mode); }
+  else if(a==='icu-send'){ const d=icuDlg; const ls=document.getElementById('icLap'); if(d && ls) d.lap = ls.value; icuDlg=null; renderMoveDialog(); if(d) icuSync(true, d.ext, d.mode, d.lap); }
   else if(a==='cf-export'){ const o=window.__ldExport(); if(expSecrets && window.Android.getSecrets){ try{ o.secrets=JSON.parse(window.Android.getSecrets()); }catch(e){} }
     if(!window.Android.saveBackup('lauf-doch-sicherung-'+today()+'.json', JSON.stringify(o))) window.Android.toast('Sicherung konnte nicht gespeichert werden.'); else { expSecrets=false; render(); } }
   else if(a==='cf-import'){ window.Android.pickBackup(); }
