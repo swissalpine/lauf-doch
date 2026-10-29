@@ -754,6 +754,8 @@ details.mphase.fold > summary::-webkit-details-marker{display:none}
 .mphase.past .ck{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center;align-self:center;flex:none}
 .mphase.fold .pchev{font-size:10px;color:var(--muted);align-self:center;transition:transform .2s}
 .mphase.fold[open] .pchev{transform:rotate(180deg)}
+.wk .cur.ready{gap:12px;padding-top:26px;padding-bottom:22px}
+.wk .cur.ready .rplan{font-family:var(--f-display);font-size:26px;font-weight:600;color:var(--ink);margin:6px 0 10px}
 </style>
 </head>
 <body>
@@ -1776,6 +1778,12 @@ function renderWorkout(){
       <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${L*(1-Math.min(1,(w.dur-left)/w.dur))}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
       <p class="exd">Als Nächstes: ${esc(e.name)} · Satz ${w.set+1} von ${e.sets}${e.perSide?(e.holdS?(w.side?' · linke Seite':' · rechte Seite'):' · je Seite'):''}${e.holdS?' · startet automatisch':''}</p>
       <div class="sub"><button class="btn" data-action="wk-rest-add">+15 s</button></div></div>`;
+  } else if(w.started===false){
+    // vor dem ersten Start: nur Übung, Vorgabe und Start – Zähler und Uhr erscheinen erst danach
+    const plan = `${e.sets} × ${e.reps ? e.reps+' Wdh.' : e.holdS ? fmtHold(e.holdS) : '–'}${e.perSide?' je Seite':''}`;
+    body = `<div class="cur ready"><span class="setl">Bereit?</span><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}
+      <div class="rplan">${esc(plan)}</div>
+      <button class="go" data-action="${e.holdS?'wk-hold-start':'wk-go'}">Training starten</button></div>`;
   } else if(e.holdS){
     const running = !!w.until, L = 2*Math.PI*90;
     const left = running ? Math.max(0, Math.ceil((w.until - Date.now())/1000)) : w.val;
@@ -1792,7 +1800,7 @@ function renderWorkout(){
     body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
       ${w.started===false?'<button class="go" data-action="wk-go">Start</button>':'<button class="go" data-action="wk-set-done">Erledigt</button>'}</div>`;
   }
-  return `<div class="wk">${head}${quit}<div class="curbox">${body}${wkNav(w)}</div>${list}</div>`;
+  return `<div class="wk">${head}${quit}<div class="curbox">${body}${w.started===false && w.phase==='work' ? '' : wkNav(w)}</div>${list}</div>`;
 }
 function wkAction(a, b){
   const w = workout; if(!w) return false;
@@ -2377,7 +2385,7 @@ function renderHistory(){
         if(a.re) parts.push('RE '+a.re);
         pl = parts.join(' · ');
       } else if(a.re) pl = 'RE '+a.re;
-      if(isManual(a)) pl = 'selbst eingetragen';
+      if(isManual(a)) pl = a.workout ? 'in der App aufgezeichnet' : 'selbst eingetragen';
       const canDetail = (a.sport==='run'||a.sport==='ride') && a.perf;
       rows.push(`<div class="entry${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
         <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||"")).replace('class="sic"', p ? 'class="sic done"' : 'class="sic extra"')}<span>${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span></span>
@@ -2879,7 +2887,7 @@ function buildContext(){
         return r.laps.map((l,i)=>{ const nz = st && rg[i] ? streamAvg(st,'w',rg[i].from,rg[i].to,true) : null;
           return `R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W${nz && nz-l.w>=5?` (ohne Stopp ${Math.round(nz)}W)`:''} ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`; }).join(' | '); })() : undefined,
       geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
-    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) || undefined, kraftProtokoll: a.workout ? a.desc : undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
+    return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) && !a.workout || undefined, inAppAufgezeichnet: isManual(a) && !!a.workout || undefined, kraftProtokoll: a.workout ? a.desc : undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
       belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
   });
   const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null, kraftEinheiten:acts().filter(a=>a.sport==='strength'&&a.date>=m&&a.date<=addDays(m,6)).length, radMinuten:Math.round(acts().filter(a=>a.sport==='ride'&&a.date>=m&&a.date<=addDays(m,6)).reduce((x,a)=>x+(a.movingS||0),0)/60)}); }
