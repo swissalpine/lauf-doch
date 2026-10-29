@@ -1118,6 +1118,8 @@ function markDone(s){
 /* Selbst eingetragene Einheit als manuelle Aktivität in Strava anlegen (nur App, mit Schreibrecht) */
 /* Geplante Einheit als Beschreibung in Strava eintragen (nur wenn dort noch keine steht) */
 function stravaDescOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-desc')!=='0' && !!appStatus().stravaConnected && !!appStatus().stravaWrite && !!window.__bridgeCall; }catch(_){ return false; } }
+/* „Kraft Hüfte und Rumpf“ → „Kraft: Hüfte und Rumpf“ */
+const descTitle = t => String(t||'Training').replace(/^(Kraft und Mobilität|Kraft|Mobilität)\s+(?=[A-ZÄÖÜ])/, '$1: ');
 function planDescText(ps){
   const steps = (Array.isArray(ps.steps)?ps.steps:[]).map(st=>[st.label, st.detail].filter(Boolean).join(' ')).filter(Boolean).join(' · ');
   return ('Lauf doch! · '+(ps.title||'Training')+(steps ? '\n'+steps : '')).slice(0, 1500);
@@ -1132,7 +1134,7 @@ async function stravaDescribe(){
         const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled);
         if(ps) jobs.push({id:a.id, sid:a.id, text:planDescText(ps)});
       } else if(isManual(a) && a.workout && (a.linked||[]).length){
-        jobs.push({id:a.id, sid:a.linked[0], text:('Lauf doch! · '+a.name+(a.desc ? '\n'+a.desc : '')).slice(0,1500)});
+        jobs.push({id:a.id, sid:a.linked[0], text:('Lauf doch! · '+descTitle(a.name)+(a.desc ? '\n'+a.desc : '')).slice(0,1500)});
       }
     });
     for(const j of jobs.slice(0,6)){
@@ -1159,7 +1161,7 @@ async function pushToStrava(m){
   upd(x => { x.push = 'busy'; });
   try{
     const r = await window.stravaCreate({name:m.name, sport_type: m.sport==='strength'?'WeightTraining':'Workout', start_date_local:start, elapsed_time:dur,
-      description:'Lauf doch! · '+m.name+(m.desc ? '\n'+m.desc : '')});
+      description:'Lauf doch! · '+descTitle(m.name)+(m.desc ? '\n'+m.desc : '')});
     if(!r || !r.id) throw {message:'Strava hat keine Aktivität zurückgegeben.'};
     upd(x => { x.push = 'ok'; x.stravaId = String(r.id); x.descSet = true; delete x.pushErr; });
   }catch(e){ upd(x => { x.push = 'err'; x.pushErr = (e && (e.message || e.code)) || 'Senden fehlgeschlagen.'; }); }
