@@ -1235,7 +1235,7 @@ let bgDlg = null;   // {edit:bool}
 const ICU_LAPS = [['none','Nach Zeit bzw. Strecke'],['warmcool','Ein- und Auslaufen per Lap-Taste'],['all','Alle Abschnitte per Lap-Taste']];
 const icuLap = () => (profile().icu && profile().icu.lap) || 'none';
 function icuLapFor(e){ const o = S.plan && S.plan.icuLaps && S.plan.icuLaps[e.ext]; return o || icuLap(); }
-function icuSentHash(s, mode, lap){ return lap && lap!=='none' ? icuHash(['v5',s,mode,lap]) : icuHash(['v5',s,mode]); }
+function icuSentHash(s, mode, lap){ return lap && lap!=='none' ? icuHash(['v5',s,mode,lap,'l2']) : icuHash(['v5',s,mode]); }
 /* Schritte als „Press lap“ markieren: endet erst mit der Lap-Taste, Dauer bleibt als Schätzung */
 function icuLapify(text, lap){
   if(!lap || lap==='none') return text;
@@ -1247,8 +1247,21 @@ function icuLapify(text, lap){
   return lines.map((l,i) => {
     if(!/^\s*-\s+/.test(l) || /press lap/i.test(l)) return l;
     const isWc = hasHeads ? wc.test(heads[i]) || wc.test(l) : (steps.length>1 && (i===steps[0] || i===steps[steps.length-1])) || wc.test(l);
-    return lap==='all' || isWc ? l.replace(/^(\s*-\s+)/, '$1Press lap ') : l;
+    return lap==='all' || isWc ? icuLapLabel(l.replace(/^(\s*-\s+)/, '$1Press lap ')) : l;
   }).join('\n');
+}
+/* Bei Lap-Taste zeigt die Uhr keine Dauer: Dauer bzw. Strecke ausgeschrieben in den Hinweis übernehmen */
+function icuLapLabel(l){
+  const tk = l.split(/(\s+)/);
+  const k = tk.findIndex(x => /^(\d+h)?(\d+m)?(\d+s?)?$/.test(x) && /\d[hms]/.test(x) || /^\d+(\.\d+)?km$/.test(x) || /^\d+mtr$/.test(x));
+  if(k < 0) return l;
+  const t = tk[k]; let txt;
+  if(/km$/.test(t)) txt = String(parseFloat(t)).replace('.', ',') + ' Kilometer';
+  else if(/mtr$/.test(t)) txt = parseInt(t) + ' Meter';
+  else { const h = +((t.match(/(\d+)h/)||[])[1]||0), m = +((t.match(/(\d+)m/)||[])[1]||0), s = +((t.match(/m(\d+)s?$/)||t.match(/^(\d+)s$/)||[])[1]||0), sec = h*3600+m*60+s;
+    txt = sec < 120 ? sec + ' Sekunden' : (Math.round(sec/30)/2).toString().replace('.', ',') + ' Minuten'; }
+  tk.splice(k, 0, '· ca. ' + txt + ' ');
+  return tk.join('');
 }
 let icuDlg = null; // {ext, title, date, sport, mode, lap}
 function renderIcuDialog(el){
