@@ -1116,6 +1116,35 @@ function markDone(s){
   if(stravaPushOn()) pushToStrava(m);
 }
 /* Selbst eingetragene Einheit als manuelle Aktivität in Strava anlegen (nur App, mit Schreibrecht) */
+/* Geplante Einheit als Beschreibung in Strava eintragen (nur wenn dort noch keine steht) */
+function stravaDescOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-desc')!=='0' && !!appStatus().stravaConnected && !!appStatus().stravaWrite && !!window.__bridgeCall; }catch(_){ return false; } }
+function planDescText(ps){
+  const steps = (Array.isArray(ps.steps)?ps.steps:[]).map(st=>[st.label, st.detail].filter(Boolean).join(' ')).filter(Boolean).join(' · ');
+  return ('Lauf doch! · '+(ps.title||'Training')+(steps ? '\n'+steps : '')).slice(0, 1500);
+}
+let descBusy = false;
+async function stravaDescribe(){
+  if(descBusy || !stravaDescOn()) return; descBusy = true;
+  try{
+    const t0 = addDays(today(), -2), jobs = [];
+    acts().filter(a => a.date>=t0 && !a.descSet).forEach(a => {
+      if(!isManual(a) && ['run','ride'].includes(a.sport)){
+        const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled);
+        if(ps) jobs.push({id:a.id, sid:a.id, text:planDescText(ps)});
+      } else if(isManual(a) && a.workout && (a.linked||[]).length){
+        jobs.push({id:a.id, sid:a.linked[0], text:('Lauf doch! · '+a.name+(a.desc ? '\n'+a.desc : '')).slice(0,1500)});
+      }
+    });
+    for(const j of jobs.slice(0,6)){
+      let res = true;
+      try{
+        const d = await window.__bridgeCall('strava', {path:'/activities/'+encodeURIComponent(j.sid)});
+        if(!(d && String(d.description||'').trim())) await window.__bridgeCall('strava', {method:'PUT', path:'/activities/'+encodeURIComponent(j.sid), form:{description:j.text}});
+      }catch(e){ if(e && (e.code==='needs_scope' || e.code==='needs_reauth' || e.code==='server_not_connected')) break; res = false; }
+      const x = acts().find(y=>y.id===j.id); if(x && res){ x.descSet = true; await save('log'); }
+    }
+  }finally{ descBusy = false; }
+}
 function stravaPushOn(){ try{ return IN_APP && localStorage.getItem('ld-strava-push')==='1' && !!appStatus().stravaConnected && !!window.stravaCreate; }catch(_){ return false; } }
 async function pushToStrava(m){
   const dur = Math.max(60, m.movingS || 600);
@@ -1130,9 +1159,9 @@ async function pushToStrava(m){
   upd(x => { x.push = 'busy'; });
   try{
     const r = await window.stravaCreate({name:m.name, sport_type: m.sport==='strength'?'WeightTraining':'Workout', start_date_local:start, elapsed_time:dur,
-      description:(m.desc ? m.desc+'\n\n' : '')+'Eingetragen mit Lauf doch!'});
+      description:'Lauf doch! · '+m.name+(m.desc ? '\n'+m.desc : '')});
     if(!r || !r.id) throw {message:'Strava hat keine Aktivität zurückgegeben.'};
-    upd(x => { x.push = 'ok'; x.stravaId = String(r.id); delete x.pushErr; });
+    upd(x => { x.push = 'ok'; x.stravaId = String(r.id); x.descSet = true; delete x.pushErr; });
   }catch(e){ upd(x => { x.push = 'err'; x.pushErr = (e && (e.message || e.code)) || 'Senden fehlgeschlagen.'; }); }
 }
 function unmarkDone(id){
@@ -2578,7 +2607,11 @@ function connCard(){
       ${(() => { let on=false; try{ on = localStorage.getItem('ld-strava-push')==='1'; }catch(_){}
         return `<div class="row"><span>Kraft an Strava senden</span><button class="toggle" style="padding:8px 14px" data-action="cf-strava-push" aria-pressed="${on}">${on?'An':'Aus'}</button></div>
         ${on && !st.stravaWrite ? `<div class="status err">Dafür muss Strava der App das Anlegen von Aktivitäten erlauben. Einmal neu verbinden und zustimmen.</div><div><button class="btn primary" data-action="cf-strava-re">Strava neu verbinden</button></div>` : ''}
-        <p class="note">Legt beim Tippen auf „Erledigt“ eine manuelle Aktivität in Strava an (ohne Puls). Nicht einschalten, wenn du Kraft mit der Uhr aufzeichnest – sonst doppelt.</p>`; })()}`
+        <p class="note">Legt beim Tippen auf „Erledigt“ eine manuelle Aktivität in Strava an (ohne Puls). Nicht einschalten, wenn du Kraft mit der Uhr aufzeichnest – sonst doppelt.</p>`; })()}
+      ${(() => { let on=true; try{ on = localStorage.getItem('ld-strava-desc')!=='0'; }catch(_){}
+        return `<div class="row"><span>Geplante Einheit in Strava-Beschreibung</span><button class="toggle" style="padding:8px 14px" data-action="cf-strava-desc" aria-pressed="${on}">${on?'An':'Aus'}</button></div>
+        ${on && !st.stravaWrite ? `<div class="status err">Dafür braucht die App die Strava-Schreibberechtigung. Einmal neu verbinden und zustimmen.</div><div><button class="btn primary" data-action="cf-strava-re">Strava neu verbinden</button></div>` : ''}
+        <p class="note">Trägt bei neuen Läufen, Radeinheiten und Krafteinheiten die geplante Einheit („Lauf doch! · Titel“ und Ablauf bzw. Protokoll) als Beschreibung in Strava ein – nur wenn dort noch keine steht.</p>`; })()}`
       :`<p class="note">Einmalig unter strava.com/settings/api eine Anwendung anlegen. Als „Autorisierungs-Callback-Domain“ <b>swissalpine.github.io</b> eintragen. Dann Client-ID und Client-Secret hier eintragen.</p>
       <input id="cfSid" type="text" inputmode="numeric" autocomplete="off" placeholder="Client-ID" value="${esc(st.stravaClientId||'')}">
       <input id="cfSecret" type="password" autocomplete="off" placeholder="${st.stravaClient?'Client-Secret gespeichert':'Client-Secret'}">
@@ -2868,6 +2901,7 @@ async function syncStrava(){
       }
       a.perf = perf;
     }
+    setTimeout(stravaDescribe, 2500);
     // Verlaufsdaten neuer Läufe und Fahrten gleich mitholen (genaue Entkopplung, Analyse sofort verfügbar)
     const wantSt = log.activities.filter(a=>(a.sport==='run'||a.sport==='ride') && !isManual(a) && a.perf && daysUntil(a.date)>=-14 && !getStreams(a.id) && !(a.perf.dec && a.perf.dec.ver===2)).slice(0,6);
     for(let i=0;i<wantSt.length;i++){
@@ -3550,6 +3584,7 @@ document.addEventListener('click', async e => {
   else if(a==='upd-skip'){ try{ localStorage.setItem('ld-upd-skip', upd.info.version); }catch(_){} render(); }
   else if(a==='open-releases'){ try{ window.Android.openUrl(window.IS_WEB ? 'https://github.com/swissalpine/lauf-doch' : 'https://github.com/swissalpine/lauf-doch/releases'); }catch(_){} }
   else if(a==='cf-strava-off'){ window.Android.stravaDisconnect(); render(); }
+  else if(a==='cf-strava-desc'){ try{ const on = localStorage.getItem('ld-strava-desc')!=='0'; localStorage.setItem('ld-strava-desc', on?'0':'1'); }catch(_){} render(); if(stravaDescOn()) stravaDescribe(); }
   else if(a==='cf-strava-push'){ try{ const on = localStorage.getItem('ld-strava-push')==='1'; localStorage.setItem('ld-strava-push', on?'0':'1'); }catch(_){} render(); }
   else if(a==='cf-strava-re'){ window.Android.stravaConnect(); }
   else if(a==='done-push'){ const m = acts().find(x=>x.id===b.dataset.id); if(m) pushToStrava(m); }
