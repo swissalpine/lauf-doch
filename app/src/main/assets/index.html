@@ -1253,7 +1253,7 @@ function moveControl(s, noCheck){
 }
 function cancelledCard(s){
   return `<div class="card cancelled"><div class="card-head"><span class="tag extra">Abgesagt</span><span class="sport">${esc(SPORT[normSport(s.sport)])} · ${esc(fmtDay(s.date))}</span></div>
-    <p class="ct">${esc(s.title||'Training')}</p>${s.cancelled.reason?`<p class="muted">Grund: ${esc(s.cancelled.reason)}</p>`:''}</div>`;
+    <p class="ct">${esc(descTitle(s.title||'Training'))}</p>${s.cancelled.reason?`<p class="muted">Grund: ${esc(s.cancelled.reason)}</p>`:''}</div>`;
 }
 /* Dialog zum Verschieben (Bottom Sheet) */
 let moveDlg = null; // {from, title, to}
@@ -1505,7 +1505,7 @@ function plannedCard(s, label){
   if(rest) label = String(label||'').replace('Geplant · heute','Ruhetag · heute').replace('Nächstes Training','Ruhetag');
   return `<article class="card${rest?' restday':''}">
     <div class="card-head"><span class="tag ${rest?'':'plan'}">${esc(label||'Geplant')}</span><span class="sport">${esc(SPORT[normSport(s.sport)])}</span></div>
-    <h3 class="hic">${rest?'':sic(normSport(s.sport), s.title)}<span>${esc(s.title||'Training')}</span></h3>
+    <h3 class="hic">${rest?'':sic(normSport(s.sport), s.title)}<span>${esc(descTitle(s.title||'Training'))}</span></h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
     ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
     ${steps.length?`<details class="stepsd" data-k="${esc('steps|'+s.date+'|'+(s.title||''))}"><summary><span>Ablauf</span><span class="note">${steps.length} ${steps.length===1?'Schritt':'Schritte'}</span></summary><ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol></details>`:''}
@@ -1525,7 +1525,7 @@ function manualCard(a, planned){
   if(noteText(f)) chips.push(`<span class="chip">${esc(f.note)}</span>`);
   return `<article class="card">
     <div class="card-head"><span class="tag done">Absolviert</span><span class="sport">${esc(SPORT[a.sport]||'')}${a.time?' · '+esc(a.time)+' Uhr':''}</span></div>
-    <h3 class="hic">${sic(a.sport, a.name).replace('class="sic"', 'class="sic done"')}<span>${esc(a.name)}</span></h3>
+    <h3 class="hic">${sic(a.sport, a.name).replace('class="sic"', 'class="sic done"')}<span>${esc(descTitle(a.name))}</span></h3>
     ${(() => { const m = [];
       if(a.movingS) m.push([a.workout?'Dauer':'Dauer (ca.)', a.workout ? fmtDur(a.movingS) : Math.round(a.movingS/60)+' min']);
       if(a.workout) m.push(['Übungen', a.workout.filter(x=>(x.log||[]).some(l=>!l.skip)).length+' von '+a.workout.length]);
@@ -1540,7 +1540,7 @@ function manualCard(a, planned){
     ${!a.push && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
     ${a.workout && a.stravaId && !a.push ? `<p class="note">In der App aufgezeichnet · ✓ mit Strava verknüpft</p>` : ''}
     <div class="row"><span class="note">${a.push?'':a.workout?(a.stravaId?'':'In der App aufgezeichnet. Kommt die Einheit auch über Strava (z. B. von der Uhr), bleibt dieses Protokoll erhalten; Puls und Relative Effort werden übernommen.'):'Selbst eingetragen. Kommt die Einheit später über Strava, ersetzt sie diesen Eintrag.'}</span><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Eintrag löschen</button></div>
-    ${planned && (planned.title||'')!==a.name ? `<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b></p>` : ''}
+    ${planned && (planned.title||'')!==a.name ? `<p class="planref">Geplant war: <b>${esc(descTitle(planned.title||''))}</b></p>` : ''}
     ${delAsk===a.id ? `<div class="rsbox"><p><b>Eintrag löschen?</b> ${a.workout?'Übungsprotokoll und ':''}Rückmeldung gehen verloren, die geplante Einheit ist danach wieder offen.${a.push==='ok'?' In Strava bleibt die Aktivität bestehen – dort bitte selbst löschen.':''}</p>
       <div class="row" style="justify-content:flex-start"><button class="btn danger primary" data-action="done-undo-yes" data-id="${esc(a.id)}">Löschen</button><button class="btn" data-action="done-undo-no">Abbrechen</button></div></div>` : ''}
   </article>`;
@@ -1569,7 +1569,7 @@ function doneCard(a, planned, extra){
   }
   return `<article class="card">
     <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type)} · ${esc(a.time||'')} Uhr</span></div>
-    <h3 class="hic">${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', extra ? 'class="sic extra"' : 'class="sic done"')}<span>${esc(a.name)}</span></h3>
+    <h3 class="hic">${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', extra ? 'class="sic extra"' : 'class="sic done"')}<span>${esc(descTitle(a.name))}</span></h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
     ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
@@ -1578,7 +1578,7 @@ function doneCard(a, planned, extra){
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
     ${!careMode() && !rp && !(f && f.note) ? `<div class="row"><span class="note">Noch keine Rückmeldung zum Befinden.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>` : ''}
     ${as?`<details class="assess"><summary><b>Einschätzung</b><span class="ashort">${esc(as.short || String(as.text).split(/(?<=[.!?])\s/)[0])}</span><span class="amore">mehr ▼</span></summary><div class="md">${md(as.text)}</div></details>${staleAssess(a)?`<div class="row" style="margin-top:6px"><span class="note">Vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:''}`:isPending(a.id)?`<p class="note">Claude bewertet die Einheit, sobald RPE${careMode()?' und Schmerz':''} eingetragen sind.</p>`:`<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
-    ${planned?`<p class="planref">Geplant war: <b>${esc(planned.title||'')}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
+    ${planned?`<p class="planref">Geplant war: <b>${esc(descTitle(planned.title||''))}</b>${planned.distanceKm?' · '+fmtNum(planned.distanceKm, planned.distanceKm%1?1:0)+' km':''}</p>`:''}
   </article>`;
 }
 
@@ -1813,7 +1813,7 @@ function renderWorkout(){
   const w = workout, e = wkCur();
   const el = mmss(wkElapsed(w));
   const dots = w.ex.map((x,k) => `<span class="${k<w.i||w.phase==='done'?'d':k===w.i?'c':''}" ${k===w.i?`style="--p:${Math.round(100*x.log.length/x.sets)}%"`:''}></span>`).join('');
-  const head = `<div class="wkhead"><h2>${esc(w.title)}</h2><span class="el" id="wkEl">${el}</span><button class="wkx" data-action="wk-quit" aria-label="Training beenden">×</button><div class="dots">${dots}</div></div>`;
+  const head = `<div class="wkhead"><h2>${esc(descTitle(w.title))}</h2><span class="el" id="wkEl">${el}</span><button class="wkx" data-action="wk-quit" aria-label="Training beenden">×</button><div class="dots">${dots}</div></div>`;
   const quit = w.confirmQuit ? `<div class="card"><p><b>Training abbrechen?</b> Bisher erledigte Sätze kannst du speichern oder verwerfen.</p>
     <div class="row"><button class="btn primary" data-action="wk-save-now">Bisheriges speichern</button><button class="btn" data-action="wk-discard">Verwerfen</button><button class="btn ghost" data-action="wk-resume">Weiter trainieren</button></div></div>` : '';
   const list = `<div class="exlist">${w.ex.map((x,k) => `${(()=>{ const now=k===w.i&&w.phase!=='done', ok=x.log.length>=x.sets||k<w.i||w.phase==='done', plan=x.sets+' × '+(x.reps||(x.holdS?fmtHold(x.holdS):'–'));
@@ -1909,7 +1909,7 @@ function nextCompact(){
   return `<div class="card nextc"><div class="card-head"><span class="tag plan">Als Nächstes · ${esc(when)}</span></div>
     ${ss.map(s => { const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const steps = Array.isArray(s.steps) ? s.steps : [];
-      return `<details class="nx" data-k="${esc('nx|'+s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport), s.title)}<div><b>${esc(s.title||'Training')}</b><span>${esc(x)}</span></div></summary>
+      return `<details class="nx" data-k="${esc('nx|'+s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport), s.title)}<div><b>${esc(descTitle(s.title||'Training'))}</b><span>${esc(x)}</span></div></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
       </details>`; }).join('')}</div>`;
@@ -2230,7 +2230,7 @@ function renderDetail(){
   const as = assess(a.id);
   const stops = rows.filter(r => r.wNZ && r.w && r.wNZ - r.w >= 5);
   return `<div class="card dcard"><div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
-      <div><h2>${esc(a.name)}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
+      <div><h2>${esc(descTitle(a.name))}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
     <div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
     ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':isRide&&(p.laps||[]).length>15?'Je 5 km':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
       ${lapBars(a, rows, byPower, isRide)}
@@ -2291,19 +2291,19 @@ function renderPlan(){
     const doneFacts = a => [a.distKm ? fmtNum(a.distKm,1)+' km' : '', a.movingS ? Math.round(a.movingS/60)+' min' : ''].filter(Boolean).join(' · ');
     const greenIc = html => html.replace('class="sic"', 'class="sic done"');
     const items = ss.map(s => {
-      if(s.cancelled) return `<div class="cx"><span class="t">${esc(s.title||'Training')}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
+      if(s.cancelled) return `<div class="cx"><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
       const ma = matchA.get(s), miss = past && !ma;
-      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"${miss?' class="miss"':''}><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : miss ? sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"') : sic(normSport(s.sport), s.title)}<span class="t">${esc(s.title||'Training')}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : miss ? `${esc(SPORT[normSport(s.sport)])} · <span class="ms">nicht absolviert</span>` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
+      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"${miss?' class="miss"':''}><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : miss ? sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"') : sic(normSport(s.sport), s.title)}<span class="t">${esc(descTitle(s.title||'Training'))}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : miss ? `${esc(SPORT[normSport(s.sport)])} · <span class="ms">nicht absolviert</span>` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
         ${past ? '' : moveControl(s)}
       </details>`;
     }).join('');
     const doneLine = dn.filter(a => !usedA.has(a.id)).map(a => { const det = (a.sport==='run'||a.sport==='ride') && a.perf;
-      return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', 'class="sic extra"')}<span class="t">${esc(a.name||SPORT[a.sport])}</span><span class="x">${esc(SPORT[a.sport])} · <span class="dn ex">✓ ${esc(doneFacts(a))}</span></span></div>`; }).join('');
+      return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', 'class="sic extra"')}<span class="t">${esc(descTitle(a.name||SPORT[a.sport]))}</span><span class="x">${esc(SPORT[a.sport])} · <span class="dn ex">✓ ${esc(doneFacts(a))}</span></span></div>`; }).join('');
     const ab = absenceAt(d);
     if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
     const isRest = !items && !doneLine;
@@ -2458,9 +2458,9 @@ function renderHistory(){
         ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
     });
     planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Ausgelassen: ${esc(s.title)}</span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div></div>`));
+      <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Ausgelassen: ${esc(descTitle(s.title))}</span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div></div>`));
     cancelledD.forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Abgesagt: ${esc(s.title)}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</div></div>`));
+      <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Abgesagt: ${esc(descTitle(s.title))}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</div></div>`));
   }
   const ws = weekSummary(mon);
   const msgs = ((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun).length;
