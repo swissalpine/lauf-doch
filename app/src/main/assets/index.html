@@ -1828,7 +1828,7 @@ function renderWorkout(){
   if(w.paused){
     return `<div class="wk">${head}${quit}<div class="curbox"><div class="cur paused"><span class="setl">Pausiert</span><div class="big">${mmss(wkElapsed(w))}</div>
       <p class="exd">Weiter mit: ${w.phase==='rest'?'Pause, dann ':''}${esc(e.name)} · Satz ${Math.min(w.set+1, e.sets)} von ${e.sets}${w.left!=null?' · noch '+mmss(Math.ceil(w.left/1000)):''}</p>
-      ${w.phase==='work' && e.holdS && w.left!=null ? `<button class="btn" data-action="wk-restart-set">Satz neu starten</button>` : ''}
+      ${w.phase==='work' && e.holdS && w.left!=null ? `<button class="btn" data-action="wk-restart-set">Haltezeit neu starten</button>` : ''}
       </div>${wkNav(w)}</div>${list}</div>`;
   }
   const q = `<button class="qhelp" data-action="guide" data-label="${esc(e.name)}" data-detail="${esc(e.detail||'')}" aria-label="Übung erklären">?</button>`;
