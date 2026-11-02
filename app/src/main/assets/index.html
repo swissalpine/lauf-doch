@@ -757,6 +757,8 @@ details.mphase.fold > summary::-webkit-details-marker{display:none}
 .wk .cur.ready{gap:12px;padding-top:26px;padding-bottom:22px}
 .wk .cur.ready .rplan{font-family:var(--f-display);font-size:26px;font-weight:600;color:var(--ink);margin:6px 0 10px}
 .wk .rsp{min-height:0;height:30px;padding:0 14px;border-radius:999px;border:0;background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:600}
+.entry .rep{display:flex;gap:16px;margin-top:6px}
+.entry .rep .lnk{border:0;background:none;padding:4px 0;color:var(--accent);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 </style>
 </head>
 <body>
@@ -1234,9 +1236,36 @@ const IC = {
   watchWarn:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3M12 9.5v3M12 14.5v.01"/></svg>',
   move:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M10 15h6M13 12l3 3-3 3"/></svg>',
   edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>',
-  cancel:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
+  cancel:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',
+  today:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="2.2" fill="currentColor"/></svg>',
+  play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>'
 };
 const IC_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+/* Absolvierte Einheit als Vorlage für heute: Kraft aus dem Protokoll, sonst die damals geplante Einheit */
+function repSession(a){
+  if(!a || !['run','ride','strength'].includes(a.sport)) return null;
+  const p = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled);
+  if(a.sport==='strength'){
+    const ps = (p && p.steps) || [];
+    if(a.workout && a.workout.length) return {sport:'strength', title:a.name, goal:(p&&p.goal)||'', durationMin:Math.max(5, Math.round((a.movingS||600)/60)),
+      steps:a.workout.map(x=>{ const o = ps.find(st=>st.label===x.name) || {};
+        return {label:x.name, detail:o.detail||'', sets:x.sets||1, reps:x.reps||undefined, holdS:x.holdS||undefined, perSide:x.perSide||undefined, restS:o.restS!=null?o.restS:undefined}; })};
+    return p && (p.steps||[]).length ? {sport:'strength', title:p.title, goal:p.goal, durationMin:p.durationMin, steps:JSON.parse(JSON.stringify(p.steps))} : null;
+  }
+  if(p) return {sport:normSport(p.sport), title:p.title, goal:p.goal, distanceKm:p.distanceKm, durationMin:p.durationMin, steps:JSON.parse(JSON.stringify(p.steps||[]))};
+  return {sport:a.sport, title:a.name, distanceKm:Math.round((a.distKm||0)*10)/10||undefined, durationMin:Math.round((a.movingS||0)/60)||undefined, steps:[]};
+}
+/* Nachricht an Claude, sobald keine andere Anfrage mehr läuft */
+function askWhenFree(text, opt, n=0){ if(!sample) return; if(busy){ if(n<90) setTimeout(()=>askWhenFree(text, opt, n+1), 2000); return; } askClaude(text, opt); }
+async function planToday(s0, from){
+  const t = today(); if(!S.plan) S.plan = {sessions:[]};
+  let title = s0.title || 'Training';
+  if(S.plan.sessions.some(x=>x.date===t && (x.title||'')===title)) title += ' (Wiederholung)';
+  const s = Object.assign({}, s0, {date:t, title, extra:true, repeatOf:from});
+  S.plan.sessions.push(s); S.plan.sessions.sort((x,y)=>x.date.localeCompare(y.date));
+  S.plan.allowDates = [...new Set([...(S.plan.allowDates||[]), t])].filter(d=>d>=t).sort();
+  await save('plan'); return s;
+}
 function moveControl(s, noCheck){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
   if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
@@ -1248,6 +1277,8 @@ function moveControl(s, noCheck){
     : is==='changed' ? `<button class="pill p-chg" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watchWarn}neu senden</button>` : '';
   return `<div class="actbar">${pill}<span class="acts">
     ${!noCheck && MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() ? `<button class="ic okc" data-action="done-mark" ${da} data-tip="Erledigt" aria-label="Als erledigt markieren">${IC_CHECK}</button>` : ''}
+    ${s.date > today() && normSport(s.sport)==='strength' ? `<button class="ic" data-action="pull-start" ${da} data-tip="Jetzt starten" aria-label="Jetzt starten">${IC.play}</button>` : ''}
+    ${s.date > today() ? `<button class="ic" data-action="pull-today" ${da} data-tip="Auf heute vorziehen" aria-label="Auf heute vorziehen">${IC.today}</button>` : ''}
     <button class="ic" data-action="move-open" ${da} data-tip="Verschieben" aria-label="Verschieben">${IC.move}</button>
     <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
     <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
@@ -2459,7 +2490,8 @@ function renderHistory(){
         <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||"")).replace('class="sic"', p ? 'class="sic done"' : 'class="sic extra"')}<span>${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span></span>
         ${pl?`<span class="pl">${esc(pl)}</span>`:''}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}</div></div>`);
+        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}
+        ${d < t && repSession(a) ? `<div class="rep"><button class="lnk" data-action="rep-today" data-id="${esc(a.id)}">↻ Heute wiederholen</button>${a.sport==='strength' ? `<button class="lnk" data-action="rep-start" data-id="${esc(a.id)}">▶ Jetzt starten</button>` : ''}</div>` : ''}</div></div>`);
     });
     planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Ausgelassen: ${esc(descTitle(s.title))}</span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div></div>`));
@@ -3538,6 +3570,25 @@ document.addEventListener('click', async e => {
     S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
     render(); await save('plan'); icuAutoSync();
     if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung bis Ende nächster Woche: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true, overlay:true, display:`„${title}“ abgesagt${reason?' – '+reason:''}`});
+  }
+  else if(a==='rep-today' || a==='rep-start'){
+    const x = acts().find(y=>y.id===b.dataset.id), s0 = repSession(x); if(!s0) return;
+    const s = await planToday(s0, x.date);
+    if(a==='rep-start'){ wkStart(s); return; }
+    tab = 'heute'; detailId = null; render(); window.scrollTo({top:0}); icuAutoSync();
+    if(s.sport!=='strength') askWhenFree(`Heute zusätzlich: „${s.title}“ (Wiederholung der Einheit vom ${fmtDay(x.date)}). Die Einheit bleibt heute. Prüfe Trainingslast und Abstände und passe den Rest des Plans bis Ende nächster Woche bei Bedarf an, z. B. eine ähnliche Einheit kürzen oder streichen.`, {auto:true, overlay:true, display:`„${s.title}“ heute wiederholen`});
+  }
+  else if(a==='pull-today' || a==='pull-start'){
+    if(!S.plan) return;
+    const s = S.plan.sessions.find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(!s) return;
+    const from = s.date, t = today();
+    s.date = t; s.extra = true;
+    S.plan.allowDates = [...new Set([...(S.plan.allowDates||[]), t])].filter(d=>d>=t).sort();
+    S.plan.sessions.sort((x,y)=>x.date.localeCompare(y.date));
+    await save('plan'); icuAutoSync();
+    if(a==='pull-start'){ wkStart(s); return; }
+    tab = 'heute'; render(); window.scrollTo({top:0});
+    if(normSport(s.sport)!=='strength') askWhenFree(`Ich ziehe „${s.title}“ vom ${fmtDay(from)} auf heute vor. Die Einheit bleibt heute; am ${fmtDay(from)} ist der Platz frei. Prüfe Abstände und Trainingslast der angrenzenden Einheiten und passe den Plan bis Ende nächster Woche bei Bedarf an.`, {auto:true, overlay:true, display:`„${s.title}“ auf heute vorgezogen`});
   }
   else if(a==='move-open'){ moveDlg={from:b.dataset.date, title:b.dataset.title, to:null}; renderMoveDialog(); }
   else if(a==='move-close'){ moveDlg=null; renderMoveDialog(); }
