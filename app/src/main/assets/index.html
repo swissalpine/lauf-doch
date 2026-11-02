@@ -756,6 +756,7 @@ details.mphase.fold > summary::-webkit-details-marker{display:none}
 .mphase.fold[open] .pchev{transform:rotate(180deg)}
 .wk .cur.ready{gap:12px;padding-top:26px;padding-bottom:22px}
 .wk .cur.ready .rplan{font-family:var(--f-display);font-size:26px;font-weight:600;color:var(--ink);margin:6px 0 10px}
+.wk .rsp{min-height:0;height:30px;padding:0 14px;border-radius:999px;border:0;background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:600}
 </style>
 </head>
 <body>
@@ -1854,7 +1855,7 @@ function renderWorkout(){
     const left = running ? Math.max(0, Math.ceil((w.until - Date.now())/1000)) : w.val;
     body = `<div class="cur"><div class="exn">${esc(e.name)}${q}</div>${e.detail?`<p class="exd">${esc(e.detail)}</p>`:''}<span class="setl">${setl}</span>
       <div class="ring"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="90"/><circle class="fg" id="wkRing" cx="100" cy="100" r="90" stroke-dasharray="${L}" stroke-dashoffset="${running ? L*(1-Math.min(1,(w.dur-left)/w.dur)) : L}"/></svg><div class="big" id="wkClock">${mmss(left)}</div></div>
-      ${running ? ``
+      ${running ? `<div class="sub"><button class="btn rsp" data-action="wk-restart-run">↺ Neu starten</button></div>`
         : `<div class="adj"><button data-action="wk-adj" data-d="-5" aria-label="5 Sekunden weniger">−</button><span class="exd">Haltezeit</span><button data-action="wk-adj" data-d="5" aria-label="5 Sekunden mehr">+</button></div>
            <button class="go" data-action="wk-hold-start">Start</button>`}</div>`;
   } else if(e.reps){
@@ -1881,6 +1882,7 @@ function wkAction(a, b){
   else if(a==='wk-adj'){ const d = Number(b.dataset.d); w.val = Math.max(e.holdS ? 5 : 1, (w.val||0) + d); wkSave(); render(); }
   else if(a==='wk-go'){ wkSave(); render(); wkBeep(1); }
   else if(a==='wk-set-done'){ wkLogSet(e.reps ? {reps:w.val} : {}); }
+  else if(a==='wk-restart-run'){ if(w.until && w.dur){ w.until = Date.now() + w.dur*1000; wkSave(); render(); wkBeep(1); } }
   else if(a==='wk-restart-set'){ wkResume(); w.until = null; w.left = null; w.dur = null; if(w.lastHold) w.val = w.lastHold; wkSave(); render(); }
   else if(a==='wk-hold-start'){ w.lastHold = w.val; w.dur = w.val; w.until = Date.now() + w.val*1000; wkSave(); render(); wkBeep(1); }
   else if(a==='wk-hold-stop'){ const done = Math.max(1, Math.round(w.dur - (w.until - Date.now())/1000)); wkLogSet({holdS: Math.min(done, w.dur)}); }
