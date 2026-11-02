@@ -1948,6 +1948,7 @@ function nextCompact(){
       return `<details class="nx" data-k="${esc('nx|'+s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport), s.title)}<div><b>${esc(descTitle(s.title||'Training'))}</b><span>${esc(x)}</span></div></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
+        ${moveControl(s)}
       </details>`; }).join('')}</div>`;
 }
 function renderToday(){
