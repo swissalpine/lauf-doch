@@ -287,7 +287,7 @@ nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .seg button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 0;font-weight:600;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.actbar{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+.actbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
 .actbar .acts{display:flex;gap:8px}
 .actbar .pill + .acts{margin-left:auto}
 .actbar svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -759,6 +759,7 @@ details.mphase.fold > summary::-webkit-details-marker{display:none}
 .wk .rsp{min-height:0;height:30px;padding:0 14px;border-radius:999px;border:0;background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:600}
 .entry .rep{display:flex;gap:16px;margin-top:6px}
 .entry .rep .lnk{border:0;background:none;padding:4px 0;color:var(--accent);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.actbar .pill{white-space:nowrap;min-width:max-content}
 </style>
 </head>
 <body>
@@ -1273,7 +1274,7 @@ function moveControl(s, noCheck){
   const is = icuState(s);
   const lbl = is ? ({hr:'HF', pace:'Pace', watt:'Watt', erg:'Watt', rpe:'RPE'})[icuModeFor(icuEntry(s))] : '';
   const pill = is==='new' ? `<button class="pill p-new" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watch}senden</button>`
-    : is==='ok' ? `<button class="pill p-ok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} aria-label="${esc(lbl)} gesendet, erneut senden">${IC.watchOk}${esc(lbl)} gesendet</button>`
+    : is==='ok' ? `<button class="pill p-ok" data-action="icu-one" ${da} ${icuBusy?'disabled':''} aria-label="${esc(lbl)} gesendet, erneut senden">${IC.watchOk}${esc(lbl)}</button>`
     : is==='changed' ? `<button class="pill p-chg" data-action="icu-one" ${da} ${icuBusy?'disabled':''}>${IC.watchWarn}neu senden</button>` : '';
   return `<div class="actbar">${pill}<span class="acts">
     ${!noCheck && MANUAL_SPORTS.includes(normSport(s.sport)) && s.date===today() ? `<button class="ic okc" data-action="done-mark" ${da} data-tip="Erledigt" aria-label="Als erledigt markieren">${IC_CHECK}</button>` : ''}
