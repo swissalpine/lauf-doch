@@ -1565,7 +1565,7 @@ function manualCard(a, planned){
       if(a.perf && a.perf.hr) m.push(['Ø HF', Math.round(a.perf.hr)+(a.perf.hrMax?' / '+a.perf.hrMax:'')+' bpm']);
       if(a.re!=null) m.push(['Relative Effort', a.re]);
       return m.length ? `<div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>` : ''; })()}
-    ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${(x.log||[]).length ? x.log.map(l=>wkSetText(x,l)).join(' · ')+(x.reps?' Wdh.':'')+(x.perSide?' je Seite':'') : 'ausgelassen'}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
+    ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${wkLogText(x)}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
@@ -1810,6 +1810,12 @@ function wkTick(){
       else if(workout.phase==='rest'){ wkBeep(1); wkAfterRest(); wkSave(); render(); }
     }
   }, 250);
+}
+/* Protokoll kompakt: „3 × 45 s“, „2 × 8 Wdh. je Seite“; abweichende Werte einzeln */
+function wkLogText(x){
+  const done = (x.log||[]).filter(l=>!l.skip); if(!done.length) return 'ausgelassen';
+  const v = done.map(l=>wkSetText(x,l)), same = v.every(y=>y===v[0]);
+  return (same ? done.length+' × '+v[0] : v.join(' · ')) + (x.reps?' Wdh.':'') + (x.perSide?' je Seite':'');
 }
 function wkSetText(e, l){ return l.skip ? '–' : e.holdS ? fmtHold(l.holdS) : e.reps ? l.reps+'' : '✓'; }
 function wkSummary(w){
