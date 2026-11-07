@@ -186,9 +186,15 @@
     const MARK = '\n<<<CACHE>>>';
     if (messages[0] && typeof messages[0].content === 'string' && messages[0].content.indexOf(MARK) > 0) {
       const c = messages[0].content, i = c.indexOf(MARK);
-      messages[0].content = [
+      // Trainingsdaten (bis zur zweiten Marke) ebenfalls zwischenspeichern: Folgenachrichten lesen sie nicht neu ein
+      const rest = c.slice(i + MARK.length).replace(/^\s+/, ''), MARK2 = '\n<<<CACHE2>>>', j = rest.indexOf(MARK2);
+      messages[0].content = j > 0 ? [
         {type:'text', text:c.slice(0, i), cache_control:{type:'ephemeral'}},
-        {type:'text', text:c.slice(i + MARK.length).replace(/^\s+/, '')}
+        {type:'text', text:rest.slice(0, j), cache_control:{type:'ephemeral'}},
+        {type:'text', text:rest.slice(j + MARK2.length).replace(/^\s+/, '')}
+      ] : [
+        {type:'text', text:c.slice(0, i), cache_control:{type:'ephemeral'}},
+        {type:'text', text:rest}
       ];
     }
     const res = await call('claude', {messages: messages, system: system});

@@ -3060,7 +3060,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "weekSummaries":[{"week":"YYYY-MM-DD (Montag)","text":"Wochenfazit"}]
  }}
 Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. "complaints" und "absences" sind immer die vollständige Liste (nur liefern, wenn ${nm} eine Abwesenheit nennt oder ändert). An Tagen mit Abwesenheit "kein Training" planst du nichts. Ein Zeitraum "jeden Tag Training" (type "daily") macht jeden Tag darin zum Trainingstag: Ohne Beschwerdesignale und bei Belastung im Rahmen (7/28 nicht erhöht, Morgen-Checks frisch oder normal) planst du den ganzen Zeitraum neu und frei. Die Kerneinheiten (langer Lauf, Intervalle, Tempo) bleiben in Zahl und Qualität erhalten, dürfen aber auf beliebige Tage gelegt werden; die übrigen Tage füllst du mit leichten, ergänzenden Einheiten aus den gewählten Sportarten; vor jeder Kerneinheit ein lockerer Tag, keine zwei harten Tage hintereinander; der Wochenumfang darf moderat steigen. Bei Beschwerdesignalen oder Müdigkeit bleiben die Kerneinheiten an ihren Trainingstagen, die Zusatztage sind sehr leicht (Mobilität, lockeres Rad oder Schwimmen). Die Notiz hat Vorrang, z. B. „2× täglich möglich“ oder „Trainingslager, Umfang darf deutlich steigen“ (dann Entlastungswoche danach). Sagt ${nm} im Dialog, in einem Zeitraum jeden Tag trainieren zu wollen, trägst du ihn als "daily" unter "absences" ein. Bei "eingeschränkt" bei "eingeschränkt" richtest du dich nach der Notiz. Rückmeldungen, die ${nm} im Dialog gibt, trägst du unter "feedback" bei der passenden Aktivität ein; "note" nur für Beobachtungen, die nicht schon in painDuring, painAfter oder rpe stehen (z. B. „Beine schwer“), sonst weglassen.` + (window.IN_APP ? '\n<<<CACHE>>>' : ''),
-`HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}. Aktiver Tab in der App: ${tab}.`,
+`HEUTE: ${WD_LONG[parseYmd(t).getDay()]}, ${t}.`,
 `KALENDER (heute bis ${planEnd()}): ${Array.from({length:planDays()},(_,i)=>{ const d=addDays(t,i), wd=parseYmd(d).getDay(); const al=(S.plan&&S.plan.allowDates)||[], bl=(S.plan&&S.plan.blockedDates)||[];
   const ab = absenceAt(d);
   if(ab) return `${d} ${WD_LONG[wd]} (${ab.type==='off'?'abwesend, kein Training':ab.type==='daily'?'jeden Tag Training'+(ab.note?': '+ab.note:''):'eingeschränkt: '+(ab.note||'siehe Notiz')}${ab.type==='off'&&ab.note?' – '+ab.note:''})`;
@@ -3083,7 +3083,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
 `WOCHENWERTE (letzte 6 Wochen): ${JSON.stringify(wochen)}`,
 `WOCHENFAZITS DER LETZTEN 6 WOCHEN: ${JSON.stringify(Object.fromEntries(Object.entries((S.log&&S.log.weekSummaries)||{}).filter(([k])=>k>=mondayOf(since)).map(([k,v])=>[k,v.text])))}`
-  ].join('\n\n');
+  ].join('\n\n') + (window.IN_APP ? '\n<<<CACHE2>>>' : '') + `\n\nAKTIVER TAB IN DER APP: ${tab}`;
 }
 
 /* Kraft-/Dehnschritte aus Lauf- und Radeinheiten als eigene Krafteinheit abtrennen */
