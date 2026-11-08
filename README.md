@@ -84,6 +84,7 @@ Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt
 - **Trainingslast und Form:** Relative Effort der letzten 8 Wochen, Verhältnis der Belastung 7 zu 28 Tagen, Lauf-Effizienz im Vergleich zur Vorwoche.
 - **Schmerz und Belastung:** Lauf-km und höchster Schmerzwert je Woche. Die Karte erscheint nur, wenn Schmerz gemeldet wurde.
 - **Wochenfazit** von Claude und alle Einheiten der Woche, jeweils mit Analyse.
+- **Analyse einer Einheit:** oben die Strecke auf einer hellen Karte (OpenStreetMap), darunter Kennzahlen, Runden mit Pace in Bewegung, Verlaufskurven und Zeit in Zonen. Ohne Netz erscheint die Strecke auf einem Raster.
 
 <p align="center">
   <img src="docs/screenshots/detail.png" width="260" alt="Analyse einer Einheit mit Runden">&nbsp;
@@ -144,6 +145,7 @@ Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Trai
 - Alle Trainingsdaten (Profil, Plan, Aktivitäten, Rückmeldungen, Dialog) liegen **nur auf dem eigenen Gerät**. Es gibt keinen eigenen Server; auch die Web-App ist nur eine Seite, die im Browser läuft.
 - API-Schlüssel und Strava-Zugangsdaten liegen in der Android-App in deren Einstellungen, in der Web-App im Speicher des Browsers.
 - An **Anthropic** geht bei jeder Claude-Anfrage der oben beschriebene Kontext. An **Strava** gehen nur Abrufe und, wenn eingeschaltet, selbst angelegte Krafteinheiten. An **intervals.icu** gehen nur die geplanten Lauf- und Radeinheiten.
+- **Karte:** Für die Streckenkarte lädt die App Kartenkacheln vom Server der OpenStreetMap Foundation. Dabei sieht der Server die IP-Adresse und den Kartenausschnitt, also grob, wo trainiert wurde. Die Strecke selbst wird nicht übertragen. Die Android-App speichert geladene Kacheln 30 Tage und lädt sie in dieser Zeit nicht erneut.
 
 ---
 
@@ -157,7 +159,7 @@ Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Trai
 2. Auf dem Handy öffnen. Android fragt beim ersten Mal, ob die Installation aus dieser Quelle erlaubt werden soll.
 3. Voraussetzung ist Android 10 oder neuer.
 
-**Updates:** Die App prüft einmal am Tag, ob es eine neue Version gibt, und bietet sie zum Installieren an (auch unter Einstellungen → Über Lauf doch! → „Nach Updates suchen“). Android fragt dabei einmalig, ob die App Updates installieren darf. Die Daten bleiben erhalten. Nach dem Update erscheint eine Benachrichtigung, über die sich die App direkt wieder öffnen lässt (dafür muss die Erlaubnis für Benachrichtigungen erteilt sein).
+**Updates:** Die App prüft einmal am Tag, ob es eine neue Version gibt, und bietet sie zum Installieren an (auch unter Einstellungen → Über Lauf doch! → „Nach Updates suchen“). Android fragt dabei einmalig, ob die App Updates installieren darf. Die Daten bleiben erhalten. Die Installation läuft über das Android-Fenster „Aktualisieren“, danach öffnet „Öffnen“ die neue Version. Ist die GitHub-Schnittstelle kurz gestört, versucht die App es erneut und weicht auf die Release-Seite aus.
 
 #### iPhone, iPad und Computer (Web-App)
 
@@ -304,4 +306,5 @@ Die Oberfläche ist eine Web-App. In der Android-App läuft sie in einer WebView
 - **Keine Diagnose:** Die App ersetzt keine medizinische Beurteilung. Die Schmerzregeln sind bewusst vorsichtig, aber allgemein.
 - **Abhängig von Strava:** Ohne Strava-Abgleich fehlen Auswertung und Anpassung. Die Abrufe der App liegen weit unter den Limits der Strava-API.
 - **Erinnerungen ohne Hintergrundabgleich (Android):** Was nach dem letzten Öffnen in Strava dazukommt, kennt die Abenderinnerung noch nicht.
+- **Kartenkacheln von OpenStreetMap:** Die Nutzungsregeln der OSM-Server erlauben gelegentliche Nutzung durch kleine Apps (mit App-Kennung, Zwischenspeicher und Quellenhinweis – so umgesetzt). Für eine größere Verbreitung der App müsste ein anderer Kartendienst eingebunden werden, z. B. MapTiler oder Stadia Maps mit eigenem Schlüssel; bei zu viel Last kann OSM den Zugang sperren. Es gibt keine Verfügbarkeitsgarantie.
 - **Web-App:** keine Erinnerungen, keine Vibration auf dem iPhone, Daten nur im Browser des jeweiligen Geräts. Kein Zugriff auf Apple Health oder die Apple Watch.
