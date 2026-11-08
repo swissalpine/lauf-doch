@@ -1295,10 +1295,18 @@ function moveControl(s, noCheck){
     <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
     <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
 }
-/* Aktivitäten eines Tages den geplanten Einheiten zuordnen: je Einheit die längste passende Aktivität */
+/* Aktivitäten eines Tages den geplanten Einheiten zuordnen: je Einheit die ähnlichste passende Aktivität
+   (Dauer und Strecke im Verhältnis zum Plan); ohne Planwerte die längste */
+function actDiff(s, a){
+  const r = (x, y) => Math.abs(Math.log(Math.max(x,0.1)/Math.max(y,0.1)));
+  let d = 0, n = 0;
+  if(s.durationMin && a.movingS){ d += r(a.movingS/60, s.durationMin); n++; }
+  if(s.distanceKm && a.distKm){ d += r(a.distKm, s.distanceKm); n++; }
+  return n ? d/n : -(a.movingS||0)/1e6;
+}
 function matchActs(planned, done){
   const m = new Map(), used = new Set();
-  planned.forEach(s => { const c = done.filter(a => !used.has(a.id) && a.sport===normSport(s.sport)).sort((x,y)=>(y.movingS||0)-(x.movingS||0))[0]; if(c){ used.add(c.id); m.set(s, c); } });
+  planned.forEach(s => { const c = done.filter(a => !used.has(a.id) && a.sport===normSport(s.sport)).sort((x,y)=>actDiff(s,x)-actDiff(s,y))[0]; if(c){ used.add(c.id); m.set(s, c); } });
   return m;
 }
 const byTime = list => list.slice().sort((x,y)=>(x.time||'').localeCompare(y.time||''));
