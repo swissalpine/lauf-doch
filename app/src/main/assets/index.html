@@ -775,7 +775,10 @@ details.rcx[open] > summary::after{content:'▲'}
 .droute{margin:-12px -12px 0;height:170px;position:relative;background-color:var(--sunk)}
 .droute::before{content:'';position:absolute;inset:0;opacity:.45;pointer-events:none;
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px}
-.droute::after{content:'';position:absolute;inset:auto 0 0 0;height:55%;background:linear-gradient(to bottom,transparent,var(--surface));pointer-events:none}
+.droute .rtiles{opacity:.9}
+.droute .rattr{position:absolute;top:4px;right:8px;z-index:2;font-size:9px;color:var(--muted);opacity:.8}
+:root[data-theme="dark"] .droute .rtiles{filter:invert(1) hue-rotate(180deg) brightness(.85)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .droute .rtiles{filter:invert(1) hue-rotate(180deg) brightness(.85)}}
 .droute svg{width:100%;height:100%;display:block;position:relative;z-index:1}
 .droute .rr{fill:none;stroke:var(--surface);stroke-width:2}
 .droute .rh{fill:none;stroke:var(--surface);stroke-width:7;stroke-linejoin:round;stroke-linecap:round;opacity:.9}
@@ -2954,25 +2957,40 @@ function decodePoly(str){
   }
   return pts;
 }
+/* Strecke auf heller Karte (Kacheln von CARTO, Daten OpenStreetMap); ohne Netz bleibt das Raster */
 function routeSvg(a){
   if(!a.poly || typeof a.poly!=='string') return '';
   let pts; try{ pts = decodePoly(a.poly); }catch(_){ return ''; }
   if(pts.length < 2) return '';
   const W = 400, H = 170, P = 20, PB = 44;
-  const lat0 = pts.reduce((s,p)=>s+p[0],0)/pts.length, kx = Math.cos(lat0*Math.PI/180);
-  const xy = pts.map(([la,lo]) => [lo*kx, -la]);
+  // Web-Mercator in Weltpixeln bei Zoom 0
+  const merc = ([la,lo]) => { const s = Math.min(Math.max(Math.sin(la*Math.PI/180),-0.9999),0.9999); return [(lo+180)/360*256, (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256]; };
+  const xy = pts.map(merc);
   const xs = xy.map(p=>p[0]), ys = xy.map(p=>p[1]);
-  const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(...xs)-x0 || 1e-6, h = Math.max(...ys)-y0 || 1e-6;
-  const sc = Math.min((W-2*P)/w, (H-P-PB)/h), ox = (W - w*sc)/2, oy = P + (H-P-PB - h*sc)/2;
+  const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(...xs)-x0 || 1e-9, h = Math.max(...ys)-y0 || 1e-9;
+  const sc = Math.min((W-2*P)/w, (H-P-PB)/h, 2**17), ox = (W - w*sc)/2, oy = P + (H-P-PB - h*sc)/2;
   const q = xy.map(([x,y]) => [ox+(x-x0)*sc, oy+(y-y0)*sc]);
   const d = q.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
   const s = q[0], e = q[q.length-1], f = n => n.toFixed(1);
+  // Kacheln: Zoomstufe so, dass eine Kachel 256–512 Einheiten groß ist (Retina-Kacheln mit 512 px)
+  const z = Math.max(0, Math.min(17, Math.floor(Math.log2(sc)))), n = 2**z, T = 256/n*sc;
+  const wx = vx => (x0 + (vx-ox)/sc) * n / 256, wy = vy => (y0 + (vy-oy)/sc) * n / 256;
+  const tiles = [];
+  for(let ty = Math.floor(wy(-20)); ty <= Math.floor(wy(H+20)); ty++){
+    if(ty < 0 || ty >= n) continue;
+    for(let tx = Math.floor(wx(-20)); tx <= Math.floor(wx(W+20)); tx++){
+      const mx = ((tx % n) + n) % n, sub = 'abcd'[(mx+ty)%4];
+      tiles.push(`<image href="https://${sub}.basemaps.cartocdn.com/light_all/${z}/${mx}/${ty}@2x.png" x="${f(ox+(tx*256/n - x0)*sc)}" y="${f(oy+(ty*256/n - y0)*sc)}" width="${f(T+0.5)}" height="${f(T+0.5)}" preserveAspectRatio="none"/>`);
+    }
+  }
   // Runde (Start ≈ Ziel): ein Punkt, halb Start (grün), halb Ziel (dunkel)
   const dots = Math.hypot(s[0]-e[0], s[1]-e[1]) < 12
     ? `<circle cx="${f(s[0])}" cy="${f(s[1])}" r="6" class="re"/><path d="M${f(s[0])} ${f(s[1]-6)}A6 6 0 0 0 ${f(s[0])} ${f(s[1]+6)}Z" class="rs" style="stroke:none"/><circle cx="${f(s[0])}" cy="${f(s[1])}" r="6" class="rr"/>`
     : `<circle cx="${f(e[0])}" cy="${f(e[1])}" r="5" class="re"/><circle cx="${f(s[0])}" cy="${f(s[1])}" r="5" class="rs"/>`;
-  return `<div class="droute" aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-    <path d="${d}" class="rh"/><path d="${d}" class="rl"/>${dots}</svg></div>`;
+  return `<div class="droute"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><linearGradient id="rfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--surface);stop-opacity:0"/><stop offset="1" style="stop-color:var(--surface);stop-opacity:1"/></linearGradient></defs>
+    <g class="rtiles">${tiles.join('')}</g><rect x="-50" y="${H*0.45}" width="${W+100}" height="${H*0.55+1}" fill="url(#rfade)"/>
+    <path d="${d}" class="rh"/><path d="${d}" class="rl"/>${dots}</svg><span class="rattr">© OpenStreetMap · © CARTO</span></div>`;
 }
 async function syncStrava(){
   if(!mcp || syncBusy) return;
