@@ -765,7 +765,9 @@ details.cancelled > summary::-webkit-details-marker, details.cx > summary::-webk
 details.cancelled .chev{font-size:10px;color:var(--muted);text-decoration:none;display:inline-block}
 details.cancelled[open] .chev{transform:rotate(180deg)}
 .uncx{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.uncx .btn{width:auto;flex:0 0 auto;margin:0;padding:8px 12px;font-size:14px}
 details.cx .note{margin-top:4px}
+details.rcx > summary{display:flex;flex-direction:column}
 </style>
 </head>
 <body>
@@ -1292,8 +1294,9 @@ function moveControl(s, noCheck){
 }
 /* Abgesagte Einheit wieder aufnehmen: Knöpfe beim Antippen */
 function uncancelBar(s){
-  if(s.date < today()) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
+  if(s.date < today()) return `<div class="uncx"><button class="btn" data-action="cx-today" ${da}>↺ Heute einplanen</button>${normSport(s.sport)==='strength' ? `<button class="btn primary" data-action="cx-start" ${da}>▶ Jetzt starten</button>` : ''}</div>
+    <p class="note">Die Einheit kommt auf heute; die Absage am ${esc(fmtDay(s.date))} bleibt im Verlauf.</p>`;
   return `<div class="uncx"><button class="btn" data-action="uncancel" ${da}>↺ Wieder einplanen</button>${normSport(s.sport)==='strength' && s.date===today() ? `<button class="btn primary" data-action="uncancel-start" ${da}>▶ Jetzt starten</button>` : ''}</div>
     <p class="note">Danach lässt sie sich wieder senden, verschieben oder tauschen.</p>`;
 }
@@ -2362,7 +2365,7 @@ function renderPlan(){
     const doneFacts = a => [a.distKm ? fmtNum(a.distKm,1)+' km' : '', a.movingS ? Math.round(a.movingS/60)+' min' : ''].filter(Boolean).join(' · ');
     const greenIc = html => html.replace('class="sic"', 'class="sic done"');
     const items = ss.map(s => {
-      if(s.cancelled) return s.date >= today() ? `<details class="cx" data-k="${esc('cx|'+s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></summary>${uncancelBar(s)}</details>` : `<div class="cx"><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
+      if(s.cancelled) return `<details class="cx" data-k="${esc('cx|'+s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></summary>${uncancelBar(s)}</details>`;
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
@@ -2532,7 +2535,7 @@ function renderHistory(){
     planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
       <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Ausgelassen: ${esc(descTitle(s.title))}</span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div></div>`));
     cancelledD.forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Abgesagt: ${esc(descTitle(s.title))}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</div></div>`));
+      <div class="body"><details class="cx rcx" data-k="${esc('rcx|'+s.date+'|'+(s.title||''))}"><summary><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Abgesagt: ${esc(descTitle(s.title))}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</summary>${uncancelBar(s)}</details></div></div>`));
   }
   const ws = weekSummary(mon);
   const msgs = ((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun).length;
@@ -3617,6 +3620,15 @@ document.addEventListener('click', async e => {
     if(a==='uncancel-start'){ wkStart(s); return; }
     render();
     if(normSport(s.sport)!=='strength') askWhenFree(`Ich habe die Absage von „${s.title}“ am ${fmtDay(s.date)}${reason?' (Grund war: „'+reason+'“)':''} zurückgenommen und mache die Einheit doch. Die Einheit bleibt an diesem Tag. Prüfe Trainingslast und Abstände und passe den Plan bis Ende nächster Woche bei Bedarf an, z. B. wenn du ihre Inhalte nach der Absage schon anderswo eingeplant hast.`, {auto:true, overlay:true, display:`„${s.title}“ wieder eingeplant`});
+  }
+  else if(a==='cx-today' || a==='cx-start'){
+    if(!S.plan) return;
+    const x = S.plan.sessions.find(y=>y.date===b.dataset.date && (y.title||'')===b.dataset.title && y.cancelled); if(!x) return;
+    const s0 = JSON.parse(JSON.stringify(x)); delete s0.cancelled; delete s0.repeatOf;
+    const s = await planToday(s0, x.date); icuAutoSync();
+    if(a==='cx-start'){ wkStart(s); return; }
+    tab = 'heute'; detailId = null; render(); window.scrollTo({top:0});
+    if(normSport(s.sport)!=='strength') askWhenFree(`Heute zusätzlich: „${s.title}“. Die Einheit war am ${fmtDay(x.date)} abgesagt${x.cancelled.reason?' (Grund: „'+x.cancelled.reason+'“)':''}, ich hole sie heute nach. Die Einheit bleibt heute. Prüfe Trainingslast und Abstände und passe den Rest des Plans bis Ende nächster Woche bei Bedarf an, z. B. eine ähnliche Einheit kürzen oder streichen.`, {auto:true, overlay:true, display:`„${s.title}“ heute nachholen`});
   }
   else if(a==='rep-today' || a==='rep-start'){
     const x = acts().find(y=>y.id===b.dataset.id), s0 = repSession(x); if(!s0) return;
