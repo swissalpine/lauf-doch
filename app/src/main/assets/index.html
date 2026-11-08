@@ -1294,7 +1294,7 @@ function moveControl(s, noCheck){
 function uncancelBar(s){
   if(s.date < today()) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
-  return `<div class="uncx"><button class="btn" data-action="uncancel" ${da}>↺ Doch machen</button>${normSport(s.sport)==='strength' && s.date===today() ? `<button class="btn primary" data-action="uncancel-start" ${da}>▶ Jetzt starten</button>` : ''}</div>
+  return `<div class="uncx"><button class="btn" data-action="uncancel" ${da}>↺ Wieder einplanen</button>${normSport(s.sport)==='strength' && s.date===today() ? `<button class="btn primary" data-action="uncancel-start" ${da}>▶ Jetzt starten</button>` : ''}</div>
     <p class="note">Danach lässt sie sich wieder senden, verschieben oder tauschen.</p>`;
 }
 function cancelledCard(s){
@@ -3616,7 +3616,7 @@ document.addEventListener('click', async e => {
     await save('plan'); icuAutoSync();
     if(a==='uncancel-start'){ wkStart(s); return; }
     render();
-    if(normSport(s.sport)!=='strength') askWhenFree(`Ich mache „${s.title}“ am ${fmtDay(s.date)} doch (Absage${reason?' wegen „'+reason+'“':''} zurückgenommen). Die Einheit bleibt an diesem Tag. Prüfe Trainingslast und Abstände und passe den Plan bis Ende nächster Woche bei Bedarf an, z. B. wenn du ihre Inhalte nach der Absage schon anderswo eingeplant hast.`, {auto:true, overlay:true, display:`„${s.title}“ doch machen`});
+    if(normSport(s.sport)!=='strength') askWhenFree(`Ich habe die Absage von „${s.title}“ am ${fmtDay(s.date)}${reason?' (Grund war: „'+reason+'“)':''} zurückgenommen und mache die Einheit doch. Die Einheit bleibt an diesem Tag. Prüfe Trainingslast und Abstände und passe den Plan bis Ende nächster Woche bei Bedarf an, z. B. wenn du ihre Inhalte nach der Absage schon anderswo eingeplant hast.`, {auto:true, overlay:true, display:`„${s.title}“ wieder eingeplant`});
   }
   else if(a==='rep-today' || a==='rep-start'){
     const x = acts().find(y=>y.id===b.dataset.id), s0 = repSession(x); if(!s0) return;
