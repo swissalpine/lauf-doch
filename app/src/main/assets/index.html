@@ -786,6 +786,29 @@ details.rcx[open] > summary::after{content:'▲'}
 .droute .rs{fill:#1F9D55;stroke:var(--surface);stroke-width:2}
 .droute .re{fill:var(--ink);stroke:var(--surface);stroke-width:2}
 .droute + .dhead{margin-top:-34px;position:relative;z-index:2}
+/* Rückblick nach Tagen, Einträge wie im Plan */
+.ritems{gap:0 !important}
+.ritem{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line);min-width:0}
+.ritem:first-child{border-top:0;padding-top:0}
+.ritem:last-child{padding-bottom:0}
+.ritem .facts .t{font-weight:600}
+.ritem .rx{color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums;margin-top:-4px}
+.ritem .rx .s{color:var(--muted)}
+.ritem.missed .t{color:var(--muted)}
+.ritem .ms{color:var(--crit)}
+.ritem.tappable{cursor:pointer;position:relative;padding-right:24px}
+.ritem.tappable::after{content:'›';position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:22px;color:var(--muted)}
+.ritem.tappable:active{background:var(--sunk)}
+.ritem .rep{display:flex;gap:16px;margin-top:2px}
+.ritem .rep .lnk,.anl .lnk{border:0;background:none;padding:4px 0;color:var(--accent);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.anl{margin:2px 0 6px}
+details.cx > summary .sic{width:19px;height:19px;border-radius:5px;margin-right:6px;vertical-align:-3px}
+details.cx > summary .sic svg{width:16px;height:16px}
+details.cx > summary{display:block;position:relative;padding-right:24px}
+details.cx > summary .t{text-decoration:line-through;color:var(--muted);font-weight:600;line-height:26px}
+details.cx > summary .x{display:block;color:var(--muted);font-size:15px;line-height:22px}
+details.cx > summary .cxl{color:var(--warn)}
+.day details.cx > summary .x{color:var(--muted);font-size:15px}
 </style>
 </head>
 <body>
@@ -1325,6 +1348,10 @@ function matchActs(planned, done){
   return m;
 }
 const byTime = list => list.slice().sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+/* Abgesagte Einheit: einheitlich in Plan und Rückblick (Symbol, durchgestrichen, Grund), aufklappbar */
+function cxDetails(s, cls){
+  return `<details class="cx ${cls||''}" data-k="${esc((cls==='rcx'?'rcx|':'cx|')+s.date+'|'+(s.title||''))}"><summary>${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}<span class="t">${esc(descTitle(s.title||'Training'))}</span><span class="x">${esc(SPORT[normSport(s.sport)])} · <span class="cxl">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></span></summary>${uncancelBar(s)}</details>`;
+}
 /* Abgesagte Einheit wieder aufnehmen: Knöpfe beim Antippen */
 function uncancelBar(s){
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
@@ -2407,7 +2434,7 @@ function renderPlan(){
       return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', 'class="sic extra"')}<span class="t">${esc(descTitle(a.name||SPORT[a.sport]))}</span><span class="x">${esc(SPORT[a.sport])} · <span class="dn ex">✓ ${esc(doneFacts(a))}</span></span></div>`; };
     const items = parts.map(([k, s, xa]) => {
       if(xa) return xactHtml(xa);
-      if(s.cancelled) return `<details class="cx" data-k="${esc('cx|'+s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></summary>${uncancelBar(s)}</details>`;
+      if(s.cancelled) return cxDetails(s);
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
@@ -2415,6 +2442,7 @@ function renderPlan(){
       return `<details data-k="${esc(s.date+'|'+(s.title||''))}"${miss?' class="miss"':''}><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : miss ? sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"') : sic(normSport(s.sport), s.title)}<span class="t">${esc(descTitle(s.title||'Training'))}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : miss ? `${esc(SPORT[normSport(s.sport)])} · <span class="ms">nicht absolviert</span>` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
+        ${ma && (ma.sport==='run'||ma.sport==='ride') && ma.perf ? `<div class="anl"><button class="lnk" data-action="detail-open" data-id="${esc(ma.id)}">Analyse ansehen ›</button></div>` : ''}
         ${past ? '' : moveControl(s)}
       </details>`;
     }).join('');
@@ -2540,7 +2568,8 @@ function renderHistory(){
     const done = byTime(wa.filter(a=>a.date===d));
     const planned = active().filter(s=>s.date===d);
     const cancelledD = sessions().filter(s=>s.date===d && s.cancelled);
-    const mr = matchActs(planned, done), used = new Set(mr.keys());
+    const mr = matchActs(planned, done);
+    const its = [];
     done.forEach(a => {
       const p = planned.find(s => mr.get(s)===a);
       const f = fb(a.id), as = assess(a.id);
@@ -2566,17 +2595,20 @@ function renderHistory(){
       } else if(a.re) pl = 'RE '+a.re;
       if(isManual(a)) pl = a.workout ? 'in der App aufgezeichnet' : 'selbst eingetragen';
       const canDetail = (a.sport==='run'||a.sport==='ride') && a.perf;
-      rows.push(`<div class="entry${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-        <div class="body"><span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||"")).replace('class="sic"', p ? 'class="sic done"' : 'class="sic extra"')}<span>${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span></span>
+      const title = descTitle(p ? (p.title||'Training') : (a.name||SPORT[a.sport]));
+      its.push(`<div class="ritem${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}>
+        <span class="facts">${sic(a.sport, (a.type||"")+" "+(a.name||"")).replace('class="sic"', p ? 'class="sic done"' : 'class="sic extra"')}<span class="t">${esc(title)}</span></span>
+        <span class="rx">${esc(SPORT[a.sport])} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span>
         ${pl?`<span class="pl">${esc(pl)}</span>`:''}
         ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
-        ${short?`<p class="short">${esc(short)}</p>`:''}${p?`<span class="note">Geplant: ${esc(p.title)}</span>`:''}
-        ${d < t && repSession(a) ? `<div class="rep"><button class="lnk" data-action="rep-today" data-id="${esc(a.id)}">↻ Heute wiederholen</button>${a.sport==='strength' ? `<button class="lnk" data-action="rep-start" data-id="${esc(a.id)}">▶ Jetzt starten</button>` : ''}</div>` : ''}</div></div>`);
+        ${short?`<p class="short">${esc(short)}</p>`:''}
+        ${d < t && repSession(a) ? `<div class="rep"><button class="lnk" data-action="rep-today" data-id="${esc(a.id)}">↻ Heute wiederholen</button>${a.sport==='strength' ? `<button class="lnk" data-action="rep-start" data-id="${esc(a.id)}">▶ Jetzt starten</button>` : ''}</div>` : ''}</div>`);
     });
-    planned.filter(s=>!used.has(s) && d<t).forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="body"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Ausgelassen: ${esc(descTitle(s.title))}</span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div></div>`));
-    cancelledD.forEach(s => rows.push(`<div class="entry missed"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
-      <div class="body"><details class="cx rcx" data-k="${esc('rcx|'+s.date+'|'+(s.title||''))}"><summary><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}Abgesagt: ${esc(descTitle(s.title))}</span>${s.cancelled.reason?`<span class="pl">Grund: ${esc(s.cancelled.reason)}</span>`:''}</summary>${uncancelBar(s)}</details></div></div>`));
+    planned.filter(s=>!mr.has(s) && d<t).forEach(s => its.push(`<div class="ritem missed"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}<span class="t">${esc(descTitle(s.title||'Training'))}</span></span>
+      <span class="rx">${esc(SPORT[normSport(s.sport)])} <span class="s">·</span> <span class="ms">nicht absolviert</span></span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div>`));
+    cancelledD.forEach(s => its.push(`<div class="ritem">${cxDetails(s, 'rcx')}</div>`));
+    if(its.length) rows.push(`<div class="entry"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
+      <div class="body ritems">${its.join('')}</div></div>`);
   }
   const ws = weekSummary(mon);
   const msgs = ((S.chat&&S.chat.messages)||[]).filter(m=>!m.error && m.ts && ymd(new Date(m.ts))>=mon && ymd(new Date(m.ts))<=sun).length;
