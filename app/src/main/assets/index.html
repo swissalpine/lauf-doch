@@ -1312,9 +1312,11 @@ let insightDlg = null; // {edit: index|null}
 let goalDlg = null; // {text,date}
 let bgDlg = null;   // {edit:bool}
 /* Abschnitte per Lap-Taste beenden: none | warmcool (Ein-/Auslaufen) | all */
-const ICU_LAPS = [['none','Nach Zeit bzw. Strecke'],['warmcool','Ein- und Auslaufen per Lap-Taste'],['all','Alle Abschnitte per Lap-Taste']];
-const icuLap = () => (profile().icu && profile().icu.lap) || 'none';
-function icuLapFor(e){ const o = S.plan && S.plan.icuLaps && S.plan.icuLaps[e.ext]; return o || icuLap(); }
+const icuLaps = sport => [['none','Nach Zeit bzw. Strecke'],['warmcool',(sport==='ride'?'Ein- und Ausfahren':'Ein- und Auslaufen')+' per Lap-Taste'],['all','Alle Abschnitte per Lap-Taste']];
+const ICU_LAPS = icuLaps('run');
+/* Lap-Einstellung getrennt für Laufen und Rad; alte gemeinsame Einstellung gilt für beide weiter */
+const icuLap = sport => { const c = profile().icu || {}; return (sport==='ride' ? (c.rideLap || c.lap) : c.lap) || 'none'; };
+function icuLapFor(e){ const o = S.plan && S.plan.icuLaps && S.plan.icuLaps[e.ext]; return o || icuLap(normSport(e.s.sport)); }
 function icuSentHash(s, mode, lap){ return lap && lap!=='none' ? icuHash(['v5',s,mode,lap,'l2']) : icuHash(['v5',s,mode]); }
 /* Schritte als „Press lap“ markieren: endet erst mit der Lap-Taste, Dauer bleibt als Schätzung */
 function icuLapify(text, lap){
@@ -1353,7 +1355,7 @@ function renderIcuDialog(el){
       <p class="muted">„${esc(icuDlg.title)}“ · ${esc(fmtDay(icuDlg.date))}</p>
       <div class="fld"><span>Zielvorgabe</span><div class="seg">${opts.map(([v,l])=>`<button data-action="icu-pick" data-m="${v}" aria-pressed="${icuDlg.mode===v}">${l}</button>`).join('')}</div></div>
       <p class="note">${esc(hint)}</p>
-      <label class="fld" for="icLap"><span>Abschnitte beenden</span><select id="icLap" class="sel">${ICU_LAPS.map(([v,l])=>`<option value="${v}" ${icuDlg.lap===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="fld" for="icLap"><span>Abschnitte beenden</span><select id="icLap" class="sel">${icuLaps(icuDlg.sport).map(([v,l])=>`<option value="${v}" ${icuDlg.lap===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <div class="row end"><button class="btn" data-action="icu-close">Abbrechen</button><button class="btn primary" data-action="icu-send" ${icuBusy?'disabled':''}>Senden</button></div>
     </div>`;
 }
@@ -2700,10 +2702,12 @@ function connCard(){
       <input id="cfIcu" type="password" autocomplete="off" placeholder="${st.icuKey?'API-Schlüssel gespeichert (neu eintragen zum Ändern)':'intervals.icu-API-Schlüssel'}">
       <label class="fld" for="cfIcuMode"><span>Zielvorgabe Laufen</span>
         <select id="cfIcuMode" class="sel">${[['hr','Herzfrequenz-Zone (empfohlen für Trails)'],['pace','Pace (nur flache Strecken, sonst HF)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="fld" for="cfIcuLap"><span>Abschnitte beenden · Laufen</span>
+        <select id="cfIcuLap" class="sel">${icuLaps('run').map(([v,l])=>`<option value="${v}" ${icuLap('run')===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <label class="fld" for="cfIcuRide"><span>Zielvorgabe Rad</span>
         <select id="cfIcuRide" class="sel">${[['hr','Herzfrequenz-Zone'],['watt','Watt-Bereich (Prozent der FTP)'],['erg','Wattzahl für ERG-Modus (Rolle)'],['rpe','RPE als Text, ohne Zielbereich']].map(([v,l])=>`<option value="${v}" ${icuRideMode()===v?'selected':''}>${l}</option>`).join('')}</select></label>
-      <label class="fld" for="cfIcuLap"><span>Abschnitte beenden</span>
-        <select id="cfIcuLap" class="sel">${ICU_LAPS.map(([v,l])=>`<option value="${v}" ${icuLap()===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="fld" for="cfIcuRideLap"><span>Abschnitte beenden · Rad</span>
+        <select id="cfIcuRideLap" class="sel">${icuLaps('ride').map(([v,l])=>`<option value="${v}" ${icuLap('ride')===v?'selected':''}>${l}</option>`).join('')}</select></label>
       <p class="note">Per Lap-Taste: Der Abschnitt endet auf der Uhr erst, wenn du die Lap-Taste drückst; die Zielvorgabe bleibt. Beim Senden einer einzelnen Einheit kannst du Vorgabe und Abschnitte jeweils neu wählen.</p>
       <label class="chk"><input id="cfIcuAuto" type="checkbox" ${icuAuto()?'checked':''}> Nach jeder Planänderung automatisch senden</label>
       <div class="row" style="justify-content:flex-start"><button class="btn" data-action="cf-icu-save">Speichern</button></div>
@@ -3708,8 +3712,8 @@ document.addEventListener('click', async e => {
     const k=document.getElementById('cfIcu'); if(k && k.value.trim()) window.Android.setIntervals(k.value.trim());
     const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
     const m=document.getElementById('cfIcuMode'), rm=document.getElementById('cfIcuRide'), au=document.getElementById('cfIcuAuto');
-    const lp=document.getElementById('cfIcuLap');
-    pr.icu = {mode: m?m.value:'hr', rideMode: rm?rm.value:'hr', auto: !!(au&&au.checked), lap: lp?lp.value:'none'};
+    const lp=document.getElementById('cfIcuLap'), rlp=document.getElementById('cfIcuRideLap');
+    pr.icu = {mode: m?m.value:'hr', rideMode: rm?rm.value:'hr', auto: !!(au&&au.checked), lap: lp?lp.value:'none', rideLap: rlp?rlp.value:'none'};
     await save('profile'); window.Android.toast('Garmin-Einstellungen gespeichert.');
     render();
   }
