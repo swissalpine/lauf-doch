@@ -760,6 +760,12 @@ details.mphase.fold > summary::-webkit-details-marker{display:none}
 .entry .rep{display:flex;gap:16px;margin-top:6px}
 .entry .rep .lnk{border:0;background:none;padding:4px 0;color:var(--accent);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .actbar .pill{white-space:nowrap;min-width:max-content}
+details.cancelled > summary, details.cx > summary{list-style:none;cursor:pointer}
+details.cancelled > summary::-webkit-details-marker, details.cx > summary::-webkit-details-marker{display:none}
+details.cancelled .chev{font-size:10px;color:var(--muted);text-decoration:none;display:inline-block}
+details.cancelled[open] .chev{transform:rotate(180deg)}
+.uncx{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+details.cx .note{margin-top:4px}
 </style>
 </head>
 <body>
@@ -1284,9 +1290,16 @@ function moveControl(s, noCheck){
     <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
     <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
 }
+/* Abgesagte Einheit wieder aufnehmen: Knöpfe beim Antippen */
+function uncancelBar(s){
+  if(s.date < today()) return '';
+  const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
+  return `<div class="uncx"><button class="btn" data-action="uncancel" ${da}>↺ Doch machen</button>${normSport(s.sport)==='strength' && s.date===today() ? `<button class="btn primary" data-action="uncancel-start" ${da}>▶ Jetzt starten</button>` : ''}</div>
+    <p class="note">Danach lässt sie sich wieder senden, verschieben oder tauschen.</p>`;
+}
 function cancelledCard(s){
-  return `<div class="card cancelled"><div class="card-head"><span class="tag extra">Abgesagt</span><span class="sport">${esc(SPORT[normSport(s.sport)])} · ${esc(fmtDay(s.date))}</span></div>
-    <p class="ct">${esc(descTitle(s.title||'Training'))}</p>${s.cancelled.reason?`<p class="muted">Grund: ${esc(s.cancelled.reason)}</p>`:''}</div>`;
+  return `<details class="card cancelled" data-k="${esc('cx|'+s.date+'|'+(s.title||''))}"><summary><div class="card-head"><span class="tag extra">Abgesagt</span><span class="sport">${esc(SPORT[normSport(s.sport)])} · ${esc(fmtDay(s.date))}</span></div>
+    <p class="ct">${esc(descTitle(s.title||'Training'))} <span class="chev">▼</span></p>${s.cancelled.reason?`<p class="muted">Grund: ${esc(s.cancelled.reason)}</p>`:''}</summary>${uncancelBar(s)}</details>`;
 }
 /* Dialog zum Verschieben (Bottom Sheet) */
 let moveDlg = null; // {from, title, to}
@@ -2349,7 +2362,7 @@ function renderPlan(){
     const doneFacts = a => [a.distKm ? fmtNum(a.distKm,1)+' km' : '', a.movingS ? Math.round(a.movingS/60)+' min' : ''].filter(Boolean).join(' · ');
     const greenIc = html => html.replace('class="sic"', 'class="sic done"');
     const items = ss.map(s => {
-      if(s.cancelled) return `<div class="cx"><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
+      if(s.cancelled) return s.date >= today() ? `<details class="cx" data-k="${esc('cx|'+s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></summary>${uncancelBar(s)}</details>` : `<div class="cx"><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></div>`;
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
@@ -3593,6 +3606,17 @@ document.addEventListener('click', async e => {
     S.plan.blockedDates = [...new Set([...(S.plan.blockedDates||[]), date])].filter(d=>d>=today()).sort();
     render(); await save('plan'); icuAutoSync();
     if(sample && !busy) askClaude(`Ich habe „${title}“ am ${fmtDay(date)} abgesagt. Grund: ${reason||'keine Angabe'}. Bitte berücksichtige den Grund bei der Umplanung bis Ende nächster Woche: Bei Krankheit oder Beschwerden die Trainingslast danach reduzieren und vorsichtig wieder einsteigen, bei Zeitmangel oder Wetter wichtige Inhalte sinnvoll auf andere Trainingstage verteilen, ohne Ruhetage zu opfern. Am ${fmtDay(date)} nichts planen. Frag nach, wenn der Grund für die Planung unklar ist.`, {auto:true, overlay:true, display:`„${title}“ abgesagt${reason?' – '+reason:''}`});
+  }
+  else if(a==='uncancel' || a==='uncancel-start'){
+    if(!S.plan) return;
+    const s = S.plan.sessions.find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title && x.cancelled); if(!s) return;
+    const reason = s.cancelled.reason; delete s.cancelled; s.extra = true;
+    if(!S.plan.sessions.some(x=>x!==s && x.date===s.date && x.cancelled)) S.plan.blockedDates = (S.plan.blockedDates||[]).filter(d=>d!==s.date);
+    S.plan.allowDates = [...new Set([...(S.plan.allowDates||[]), s.date])].filter(d=>d>=today()).sort();
+    await save('plan'); icuAutoSync();
+    if(a==='uncancel-start'){ wkStart(s); return; }
+    render();
+    if(normSport(s.sport)!=='strength') askWhenFree(`Ich mache „${s.title}“ am ${fmtDay(s.date)} doch (Absage${reason?' wegen „'+reason+'“':''} zurückgenommen). Die Einheit bleibt an diesem Tag. Prüfe Trainingslast und Abstände und passe den Plan bis Ende nächster Woche bei Bedarf an, z. B. wenn du ihre Inhalte nach der Absage schon anderswo eingeplant hast.`, {auto:true, overlay:true, display:`„${s.title}“ doch machen`});
   }
   else if(a==='rep-today' || a==='rep-start'){
     const x = acts().find(y=>y.id===b.dataset.id), s0 = repSession(x); if(!s0) return;
