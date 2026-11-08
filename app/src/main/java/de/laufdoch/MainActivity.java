@@ -436,9 +436,16 @@ public class MainActivity extends Activity {
 
     /** Neueste Version: {version, name, date, url, notes}. */
     private String latestRelease() throws Exception {
-        Resp r = http("GET", RELEASES, null, null, null);
+        Resp r = null;
+        for (int i = 0; i < 2; i++) {
+            try { r = http("GET", RELEASES, null, null, null); } catch (Exception e) { r = null; }
+            if (r != null && r.status < 500) break;
+            Thread.sleep(2000);
+        }
+        // API (api.github.com) gestört: über die normale Release-Seite ausweichen
+        if (r == null || r.status >= 500) return latestReleaseViaWeb();
         if (r.status == 404) throw new BridgeError("not_found", "Keine Releases gefunden (Repository privat?).");
-        if (r.status >= 400) throw new BridgeError("tool_error", "GitHub antwortet mit HTTP " + r.status);
+        if (r.status >= 400) return latestReleaseViaWeb();
         JSONObject j = new JSONObject(r.body);
         String url = null;
         JSONArray assets = j.optJSONArray("assets");
@@ -454,6 +461,34 @@ public class MainActivity extends Activity {
         out.put("url", url == null ? JSONObject.NULL : url);
         out.put("current", BuildConfig.VERSION_NAME);
         return out.toString();
+    }
+
+    /** Ersatzweg ohne API: github.com/…/releases/latest leitet auf …/releases/tag/vX.Y weiter. */
+    private String latestReleaseViaWeb() throws Exception {
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL("https://github.com/swissalpine/lauf-doch/releases/latest").openConnection();
+            c.setInstanceFollowRedirects(false);
+            c.setConnectTimeout(20000);
+            c.setReadTimeout(30000);
+            int code = c.getResponseCode();
+            String loc = c.getHeaderField("Location");
+            if (code < 300 || code >= 400 || loc == null || !loc.contains("/releases/tag/"))
+                throw new BridgeError("server_unavailable", "GitHub ist gerade nicht erreichbar (HTTP " + code + "). Bitte später erneut versuchen.");
+            String tag = loc.substring(loc.lastIndexOf('/') + 1);
+            JSONObject out = new JSONObject();
+            out.put("version", tag.replaceFirst("^v", ""));
+            out.put("name", "Lauf doch! " + tag.replaceFirst("^v", ""));
+            out.put("date", "");
+            out.put("notes", "");
+            out.put("url", "https://github.com/swissalpine/lauf-doch/releases/download/" + tag + "/LaufDoch.apk");
+            out.put("current", BuildConfig.VERSION_NAME);
+            return out.toString();
+        } catch (java.io.IOException e) {
+            throw new BridgeError("server_unavailable", "GitHub ist gerade nicht erreichbar. Internetverbindung prüfen.");
+        } finally {
+            if (c != null) c.disconnect();
+        }
     }
 
     /** APK herunterladen und über den Paketinstaller installieren (Android fragt nach Bestätigung). */
