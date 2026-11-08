@@ -80,6 +80,7 @@
     return {
       id: String(a.id), name: a.name, sport_type: a.sport_type || a.type,
       start_local: String(a.start_date_local || '').replace('Z',''),
+      polyline: (a.map && a.map.summary_polyline) || undefined,
       summary: {
         distance: a.distance || 0, moving_time: a.moving_time || 0, elapsed_time: a.elapsed_time || 0,
         elevation_gain: a.total_elevation_gain || 0, avg_speed: a.average_speed || 0,
