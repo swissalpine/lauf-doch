@@ -768,6 +768,9 @@ details.cancelled[open] .chev{transform:rotate(180deg)}
 .uncx .btn{width:auto;flex:0 0 auto;margin:0;padding:8px 12px;font-size:14px}
 details.cx .note{margin-top:4px}
 details.rcx > summary{display:flex;flex-direction:column}
+details.rcx > summary{position:relative;padding-right:24px}
+details.rcx > summary::after{content:'▼';position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)}
+details.rcx[open] > summary::after{content:'▲'}
 </style>
 </head>
 <body>
