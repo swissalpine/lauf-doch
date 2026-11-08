@@ -1998,13 +1998,15 @@ function renderToday(){
   const t = today();
   const planned = active().filter(s => s.date===t);
   const cancelledToday = sessions().filter(s => s.date===t && s.cancelled);
-  const done = acts().filter(a => a.date===t);
-  const used = new Set(); const out = [];
+  const done = acts().filter(a => a.date===t).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+  const used = new Set(); const out = [], items = [];
+  // chronologisch: Erledigtes nach Uhrzeit, dann noch Offenes, dann Abgesagtes
   planned.forEach(p => {
     const d = done.find(a => !used.has(a.id) && a.sport===normSport(p.sport));
-    if(d){ used.add(d.id); out.push(doneCard(d,p,false)); } else out.push(plannedCard(p,'Geplant · heute'));
+    if(d){ used.add(d.id); items.push(['0'+(d.time||''), doneCard(d,p,false)]); } else items.push(['1', plannedCard(p,'Geplant · heute')]);
   });
-  done.filter(a=>!used.has(a.id)).forEach(a => out.push(doneCard(a,null,planned.length>0 || true)));
+  done.filter(a=>!used.has(a.id)).forEach(a => items.push(['0'+(a.time||''), doneCard(a,null,planned.length>0 || true)]));
+  items.sort((x,y)=>x[0].localeCompare(y[0])).forEach(x => out.push(x[1]));
   cancelledToday.forEach(s => out.push(cancelledCard(s)));
   // alles für heute erledigt: nächsten Trainingstag kompakt ankündigen
   if((planned.length || done.length) && planned.every(p => done.some(a => a.sport===normSport(p.sport)))) out.push(nextCompact());
