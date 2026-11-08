@@ -83,6 +83,37 @@ public class MainActivity extends Activity {
                 openExternal(u);
                 return true;
             }
+
+            /** Kartenkacheln von OpenStreetMap: mit App-Kennung laden und 30 Tage zwischenspeichern (Nutzungsregeln OSM). */
+            @Override
+            public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+                Uri u = req.getUrl();
+                if (!"tile.openstreetmap.org".equals(u.getHost())) return null;
+                try {
+                    java.io.File dir = new java.io.File(getCacheDir(), "tiles");
+                    if (!dir.exists()) dir.mkdirs();
+                    java.io.File f = new java.io.File(dir, u.getPath().replaceAll("[^0-9]+", "_") + ".png");
+                    if (!f.exists() || System.currentTimeMillis() - f.lastModified() > 30L * 86400000L) {
+                        HttpURLConnection c = (HttpURLConnection) new URL(u.toString()).openConnection();
+                        c.setConnectTimeout(15000);
+                        c.setReadTimeout(20000);
+                        c.setRequestProperty("User-Agent", "LaufDoch/" + BuildConfig.VERSION_NAME + " (+https://github.com/swissalpine/lauf-doch)");
+                        c.setRequestProperty("Referer", "https://github.com/swissalpine/lauf-doch");
+                        try {
+                            if (c.getResponseCode() != 200) return null;
+                            java.io.File tmp = new java.io.File(dir, f.getName() + ".part");
+                            try (InputStream in = c.getInputStream(); OutputStream out = new java.io.FileOutputStream(tmp)) {
+                                byte[] buf = new byte[16384]; int n;
+                                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                            }
+                            if (!tmp.renameTo(f)) return null;
+                        } finally { c.disconnect(); }
+                    }
+                    return new android.webkit.WebResourceResponse("image/png", null, new java.io.FileInputStream(f));
+                } catch (Exception e) {
+                    return null;
+                }
+            }
         });
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
