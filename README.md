@@ -145,7 +145,7 @@ Claude plant mit allgemeinem sportwissenschaftlichem Wissen aus dem eigenen Trai
 - Alle Trainingsdaten (Profil, Plan, Aktivitäten, Rückmeldungen, Dialog) liegen **nur auf dem eigenen Gerät**. Es gibt keinen eigenen Server; auch die Web-App ist nur eine Seite, die im Browser läuft.
 - API-Schlüssel und Strava-Zugangsdaten liegen in der Android-App in deren Einstellungen, in der Web-App im Speicher des Browsers.
 - An **Anthropic** geht bei jeder Claude-Anfrage der oben beschriebene Kontext. An **Strava** gehen nur Abrufe und, wenn eingeschaltet, selbst angelegte Krafteinheiten. An **intervals.icu** gehen nur die geplanten Lauf- und Radeinheiten.
-- **Karte:** Für die Streckenkarte lädt die App Kartenkacheln vom Server der OpenStreetMap Foundation. Dabei sieht der Server die IP-Adresse und den Kartenausschnitt, also grob, wo trainiert wurde. Die Strecke selbst wird nicht übertragen. Die Android-App speichert geladene Kacheln 30 Tage und lädt sie in dieser Zeit nicht erneut.
+- **Karte:** Für die Streckenkarte lädt die App Kartenkacheln vom Server der OpenStreetMap Foundation. Dabei sieht der Server die IP-Adresse und den Kartenausschnitt, also grob, wo trainiert wurde. Die Strecke selbst wird nicht übertragen. Der Quellenhinweis „© OpenStreetMap“ auf der Karte führt zur Lizenzseite von OpenStreetMap. Die Android-App speichert geladene Kacheln 30 Tage und lädt sie in dieser Zeit nicht erneut.
 
 ---
 
