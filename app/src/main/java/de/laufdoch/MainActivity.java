@@ -106,7 +106,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
-        visible = false;
+        visible = false; WorkoutAlarm.appVisible = false;
         super.onPause();
     }
 
@@ -140,8 +140,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        visible = true;
-        try { android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE); nm.cancel(4711); nm.cancel(4714); } catch (Exception ignored) { }
+        visible = true; WorkoutAlarm.appVisible = true;
+        try { android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE); nm.cancel(4711); nm.cancel(4714); nm.cancel(WorkoutAlarm.ID_ALERT); } catch (Exception ignored) { }
         web.evaluateJavascript("window.dispatchEvent(new Event('appresume'))", null);
     }
 
@@ -494,22 +494,12 @@ public class MainActivity extends Activity {
         } finally {
             if (c != null) c.disconnect();
         }
-        android.content.pm.PackageInstaller pi = getPackageManager().getPackageInstaller();
-        android.content.pm.PackageInstaller.SessionParams params =
-                new android.content.pm.PackageInstaller.SessionParams(android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-        params.setAppPackageName(getPackageName());
-        int sid = pi.createSession(params);
-        try (android.content.pm.PackageInstaller.Session session = pi.openSession(sid)) {
-            try (InputStream in = new java.io.FileInputStream(f); OutputStream out = session.openWrite("laufdoch", 0, f.length())) {
-                byte[] buf = new byte[65536]; int n;
-                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
-                session.fsync(out);
-            }
-            Intent cb = new Intent(this, UpdateReceiver.class);
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
-            PendingIntent p = PendingIntent.getBroadcast(this, sid, cb, flags);
-            session.commit(p.getIntentSender());
-        }
+        // System-Installer öffnen: Dialog „Aktualisieren“, danach „Fertig / Öffnen“
+        Uri apk = Uri.parse("content://" + getPackageName() + ".apk/update.apk");
+        Intent vi = new Intent(Intent.ACTION_VIEW);
+        vi.setDataAndType(apk, "application/vnd.android.package-archive");
+        vi.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        runOnUiThread(() -> { try { startActivity(vi); } catch (Exception ignored) { } });
         return "{\"ok\":true}";
     }
 
@@ -548,6 +538,15 @@ public class MainActivity extends Activity {
                 runOnUiThread(() -> web.evaluateJavascript(js, null));
             });
         }
+
+        /** Krafttraining: laufende Benachrichtigung und Alarm bei Ende von Haltezeit/Erholung (endAt 0 = ohne Countdown). */
+        @JavascriptInterface
+        public void wkTimer(String title, String text, double endAt, String doneTitle, String doneText) {
+            WorkoutAlarm.update(MainActivity.this, title, text, (long) endAt, doneTitle, doneText);
+        }
+
+        @JavascriptInterface
+        public void wkClear() { WorkoutAlarm.clear(MainActivity.this); }
 
         /** Verbindungsstatus für die Einstellungen (ohne Schlüssel). */
         @JavascriptInterface

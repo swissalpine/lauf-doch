@@ -34,7 +34,7 @@ public class ReminderReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (Intent.ACTION_BOOT_COMPLETED.equals(action) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             schedule(c);
-            if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) showUpdated(c);
+            if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) { /* „Öffnen“ zeigt jetzt der System-Installer */ }
             return;
         }
         String kind = intent.getStringExtra("kind");

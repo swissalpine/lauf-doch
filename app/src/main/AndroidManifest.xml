@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
@@ -35,6 +37,8 @@
             </intent-filter>
         </activity>
         <receiver android:name=".UpdateReceiver" android:exported="false" />
+        <receiver android:name=".WorkoutAlarm" android:exported="false" />
+        <provider android:name=".ApkProvider" android:authorities="${applicationId}.apk" android:exported="false" android:grantUriPermissions="true" />
         <service android:name=".ClaudeService" android:exported="false" android:foregroundServiceType="dataSync" />
         <receiver android:name=".ReminderReceiver" android:exported="false">
             <intent-filter>
