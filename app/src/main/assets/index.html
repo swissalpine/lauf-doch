@@ -1295,6 +1295,13 @@ function moveControl(s, noCheck){
     <button class="ic" data-action="swap-open" ${da} data-tip="Umplanen" aria-label="Umplanen">${IC.edit}</button>
     <button class="ic neg" data-action="cancel-open" ${da} data-tip="Absagen" aria-label="Absagen">${IC.cancel}</button></span></div>`;
 }
+/* Aktivitäten eines Tages den geplanten Einheiten zuordnen: je Einheit die längste passende Aktivität */
+function matchActs(planned, done){
+  const m = new Map(), used = new Set();
+  planned.forEach(s => { const c = done.filter(a => !used.has(a.id) && a.sport===normSport(s.sport)).sort((x,y)=>(y.movingS||0)-(x.movingS||0))[0]; if(c){ used.add(c.id); m.set(s, c); } });
+  return m;
+}
+const byTime = list => list.slice().sort((x,y)=>(x.time||'').localeCompare(y.time||''));
 /* Abgesagte Einheit wieder aufnehmen: Knöpfe beim Antippen */
 function uncancelBar(s){
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
@@ -1998,11 +2005,11 @@ function renderToday(){
   const t = today();
   const planned = active().filter(s => s.date===t);
   const cancelledToday = sessions().filter(s => s.date===t && s.cancelled);
-  const done = acts().filter(a => a.date===t).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
-  const used = new Set(); const out = [], items = [];
+  const done = byTime(acts().filter(a => a.date===t));
+  const used = new Set(); const out = [], items = [], mt = matchActs(planned, done);
   // chronologisch: Erledigtes nach Uhrzeit, dann noch Offenes, dann Abgesagtes
   planned.forEach(p => {
-    const d = done.find(a => !used.has(a.id) && a.sport===normSport(p.sport));
+    const d = mt.get(p);
     if(d){ used.add(d.id); items.push(['0'+(d.time||''), doneCard(d,p,false)]); } else items.push(['1', plannedCard(p,'Geplant · heute')]);
   });
   done.filter(a=>!used.has(a.id)).forEach(a => items.push(['0'+(a.time||''), doneCard(a,null,planned.length>0 || true)]));
@@ -2365,13 +2372,18 @@ function renderPlan(){
   for(let i=0;i<nDays;i++){
     const d = addDays(start,i), past = d < t;
     const ss = sessions().filter(s=>s.date===d);
-    const dn = acts().filter(a=>a.date===d && a.sport!=='walk');
+    const dn = byTime(acts().filter(a=>a.date===d && a.sport!=='walk'));
     // Absolvierte Aktivitäten den geplanten Einheiten zuordnen (gleiche Sportart), Rest als zusätzliche Aktivität
-    const usedA = new Set(), matchA = new Map();
-    ss.filter(s=>!s.cancelled).forEach(s => { const a = dn.find(x => !usedA.has(x.id) && x.sport===normSport(s.sport)); if(a){ usedA.add(a.id); matchA.set(s, a); } });
+    const matchA = matchActs(ss.filter(s=>!s.cancelled), dn), usedA = new Set([...matchA.values()].map(a=>a.id));
     const doneFacts = a => [a.distKm ? fmtNum(a.distKm,1)+' km' : '', a.movingS ? Math.round(a.movingS/60)+' min' : ''].filter(Boolean).join(' · ');
     const greenIc = html => html.replace('class="sic"', 'class="sic done"');
-    const items = ss.map(s => {
+    // chronologisch: Erledigtes (geplant oder zusätzlich) nach Uhrzeit, dann Offenes, dann Abgesagtes
+    const ord = s => { const a = matchA.get(s); return s.cancelled ? '2' : a ? '0'+(a.time||'') : '1'; };
+    const parts = ss.map(s => [ord(s), s]).concat(dn.filter(a => !usedA.has(a.id)).map(a => ['0'+(a.time||''), null, a])).sort((x,y)=>x[0].localeCompare(y[0]));
+    const xactHtml = a => { const det = (a.sport==='run'||a.sport==='ride') && a.perf;
+      return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', 'class="sic extra"')}<span class="t">${esc(descTitle(a.name||SPORT[a.sport]))}</span><span class="x">${esc(SPORT[a.sport])} · <span class="dn ex">✓ ${esc(doneFacts(a))}</span></span></div>`; };
+    const items = parts.map(([k, s, xa]) => {
+      if(xa) return xactHtml(xa);
       if(s.cancelled) return `<details class="cx" data-k="${esc('cx|'+s.date+'|'+(s.title||''))}"><summary><span class="t">${esc(descTitle(s.title||'Training'))}</span> <span class="x">abgesagt${s.cancelled.reason?' · '+esc(s.cancelled.reason):''}</span></summary>${uncancelBar(s)}</details>`;
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
@@ -2383,8 +2395,7 @@ function renderPlan(){
         ${past ? '' : moveControl(s)}
       </details>`;
     }).join('');
-    const doneLine = dn.filter(a => !usedA.has(a.id)).map(a => { const det = (a.sport==='run'||a.sport==='ride') && a.perf;
-      return `<div class="xact${det?' tappable':''}"${det?` data-detail="${esc(a.id)}" role="button" tabindex="0"`:''}>${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', 'class="sic extra"')}<span class="t">${esc(descTitle(a.name||SPORT[a.sport]))}</span><span class="x">${esc(SPORT[a.sport])} · <span class="dn ex">✓ ${esc(doneFacts(a))}</span></span></div>`; }).join('');
+    const doneLine = '';
     const ab = absenceAt(d);
     if(i===0 || parseYmd(d).getDay()===1) rows.push(weekHead(d));
     const isRest = !items && !doneLine;
@@ -2503,12 +2514,12 @@ function renderHistory(){
   const t = today(); const rows = [];
   for(let i=0;i<7;i++){
     const d = addDays(mon,i);
-    const done = wa.filter(a=>a.date===d);
+    const done = byTime(wa.filter(a=>a.date===d));
     const planned = active().filter(s=>s.date===d);
     const cancelledD = sessions().filter(s=>s.date===d && s.cancelled);
-    const used = new Set();
+    const mr = matchActs(planned, done), used = new Set(mr.keys());
     done.forEach(a => {
-      const p = planned.find(s=>!used.has(s) && normSport(s.sport)===a.sport); if(p) used.add(p);
+      const p = planned.find(s => mr.get(s)===a);
       const f = fb(a.id), as = assess(a.id);
       const run = a.sport==='run'||a.sport==='walk';
       const facts = !a.distKm ? Math.round(a.movingS/60)+' min'
