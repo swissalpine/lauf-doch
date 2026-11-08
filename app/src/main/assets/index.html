@@ -2962,13 +2962,13 @@ function routeSvg(a){
   if(!a.poly || typeof a.poly!=='string') return '';
   let pts; try{ pts = decodePoly(a.poly); }catch(_){ return ''; }
   if(pts.length < 2) return '';
-  const W = 400, H = 170, P = 20, PB = 44;
+  const W = 400, H = 170, P = 20, PX = 36, PB = 44;
   // Web-Mercator in Weltpixeln bei Zoom 0
   const merc = ([la,lo]) => { const s = Math.min(Math.max(Math.sin(la*Math.PI/180),-0.9999),0.9999); return [(lo+180)/360*256, (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256]; };
   const xy = pts.map(merc);
   const xs = xy.map(p=>p[0]), ys = xy.map(p=>p[1]);
   const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(...xs)-x0 || 1e-9, h = Math.max(...ys)-y0 || 1e-9;
-  const sc = Math.min((W-2*P)/w, (H-P-PB)/h, 2**17), ox = (W - w*sc)/2, oy = P + (H-P-PB - h*sc)/2;
+  const sc = Math.min((W-2*PX)/w, (H-P-PB)/h, 2**17), ox = (W - w*sc)/2, oy = P + (H-P-PB - h*sc)/2;
   const q = xy.map(([x,y]) => [ox+(x-x0)*sc, oy+(y-y0)*sc]);
   const d = q.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
   const s = q[0], e = q[q.length-1], f = n => n.toFixed(1);
