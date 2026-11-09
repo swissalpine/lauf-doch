@@ -1652,6 +1652,7 @@ function manualCard(a, planned){
       if(a.re!=null) m.push(['Relative Effort', a.re]);
       return m.length ? `<div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>` : ''; })()}
     ${a.workout?`<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${wkLogText(x)}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`:''}
+    ${a.sport==='strength' ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
     ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
@@ -1691,7 +1692,7 @@ function doneCard(a, planned, extra){
     <h3 class="hic">${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', extra ? 'class="sic extra"' : 'class="sic done"')}<span>${esc(descTitle(a.name))}</span></h3>
     <div class="metrics">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`).join('')}</div>
     ${perfBlock(a)}
-    ${(a.sport==='run'||a.sport==='ride') && a.perf ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
+    ${((a.sport==='run'||a.sport==='ride') && a.perf) || a.sport==='strength' ? `<button class="dlink" data-action="detail-open" data-id="${esc(a.id)}">Analyse ansehen ›</button>` : ''}
     ${rpeOf(a)?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
     ${painPick(a)}
     ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
