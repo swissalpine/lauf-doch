@@ -817,6 +817,10 @@ details.cx > summary .cxl{color:var(--warn)}
 .dindoor::after{content:'';position:absolute;inset:auto 0 0 0;height:58%;background:linear-gradient(to bottom,transparent,var(--surface) 85%);pointer-events:none}
 :root[data-theme="dark"] .dindoor img{filter:invert(1);mix-blend-mode:screen;opacity:.45}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dindoor img{filter:invert(1);mix-blend-mode:screen;opacity:.45}}
+.hdone{gap:10px}
+.hdone .ritem{padding:0;border-top:0}
+.hdone .pl{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hdone .short{font-size:15px}
 </style>
 </head>
 <body>
@@ -1666,7 +1670,61 @@ function manualCard(a, planned){
   </article>`;
 }
 
+/* Heute: erledigte Einheit kompakt wie im Rückblick; Details per Antippen. Offene Rückmeldungen bleiben sichtbar. */
+function doneCompact(a, planned, extra){
+  const f = fb(a.id), as = assess(a.id), rp = rpeOf(a);
+  const run = a.sport==='run'||a.sport==='walk';
+  const facts = !a.distKm ? (a.movingS ? (a.workout ? fmtDur(a.movingS) : Math.round(a.movingS/60)+' min') : '')
+    : [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm'].join(' · ');
+  const r = analyze(a); let pl = '';
+  if(r){
+    const parts = [];
+    if(r.byPower) parts.push(r.watts+' W ('+Math.round(r.watts/ftpNow()*100)+' % FTP)');
+    if(r.hr) parts.push('HF '+Math.round(r.hr)+(r.zone?' (Z'+r.zone+')':''));
+    if(r.effect) parts.push(r.effect);
+    if(r.if) parts.push('IF '+fmtNum(r.if,2)+' · TSS '+r.tss);
+    else if(r.decoupling!=null) parts.push('Entkopplung '+fmtNum(r.decoupling,1)+' %');
+    if(a.re) parts.push('RE '+a.re);
+    pl = parts.join(' · ');
+  } else if(a.re) pl = 'RE '+a.re;
+  if(isManual(a)) pl = (a.workout ? 'in der App aufgezeichnet' : 'selbst eingetragen') + (a.workout ? ' · '+a.workout.filter(x=>(x.log||[]).some(l=>!l.skip)).length+' von '+a.workout.length+' Übungen' : '');
+  const chips = [];
+  if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
+  else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
+  if(rp) chips.push(`<span class="chip">RPE ${rp.v}/10</span>`);
+  const short = as ? (as.short || String(as.text).split(/(?<=[.!?])\s/)[0]) : noteText(f) || '';
+  const canDetail = ((a.sport==='run'||a.sport==='ride') && a.perf) || a.sport==='strength';
+  const title = descTitle(planned ? (planned.title||'Training') : (a.name||SPORT[a.sport]));
+  const man = isManual(a);
+  return `<article class="card hdone">
+    <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type||'')}${a.time?' · '+esc(a.time)+' Uhr':''}</span></div>
+    <div class="ritem${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}>
+      <span class="facts">${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', extra ? 'class="sic extra"' : 'class="sic done"')}<span class="t">${esc(title)}</span></span>
+      ${facts?`<span class="rx">${esc(SPORT[a.sport]||'')} <span class="s">·</span> ${esc(facts).replace(/ (km\/h|km|\/km|hm)/g,'&nbsp;$1')}</span>`:''}
+      ${pl?`<span class="pl">${esc(pl)}</span>`:''}
+      ${chips.length?`<div class="chips">${chips.join('')}</div>`:''}
+      ${short?`<p class="short">${esc(short)}</p>`:''}
+    </div>
+    ${rp?'':`<div class="rpepick"><span>RPE</span><div class="rpebtns">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-action="rpe-set" data-id="${esc(a.id)}" data-v="${n}" aria-label="RPE ${n} von 10">${n}</button>`).join('')}</div></div>`}
+    ${painPick(a)}
+    ${!man && !careMode() && !rp && !(f && f.note) ? `<div class="row"><span class="note">Noch keine Rückmeldung zum Befinden.</span><button class="btn ghost" data-action="prefill" data-text="${esc(fbTemplate(a.date, !!rp))}">Rückmeldung geben</button></div>` : ''}
+    ${man ? '' : as ? (staleAssess(a)?`<div class="row"><span class="note">Einschätzung vor deiner letzten Rückmeldung erstellt.</span><button class="btn ghost" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Aktualisieren</button></div>`:'')
+      : isPending(a.id) ? `<p class="note">Claude bewertet die Einheit, sobald RPE${careMode()?' und Schmerz':''} eingetragen sind.</p>` : `<button class="btn" data-action="assess" data-id="${esc(a.id)}" ${sample&&!busy?'':'disabled'}>Einschätzung von Claude anfordern</button>`}
+    ${man && a.push==='busy' ? `<p class="note">Wird an Strava gesendet …</p>` : ''}
+    ${man && a.push==='err' ? `<div class="row"><span class="note">Nicht an Strava gesendet: ${esc(a.pushErr||'')}</span><button class="btn ghost" data-action="done-push" data-id="${esc(a.id)}">Erneut senden</button></div>` : ''}
+    ${man && !a.push && !a.stravaId && stravaPushOn() ? `<div><button class="btn" data-action="done-push" data-id="${esc(a.id)}">An Strava senden</button></div>` : ''}
+    ${man && a.sport!=='strength' ? manualDelete(a) : ''}
+  </article>`;
+}
+function manualDelete(a){
+  return `<div class="row" style="justify-content:flex-end"><button class="btn ghost" data-action="done-undo" data-id="${esc(a.id)}">Eintrag löschen</button></div>
+    ${delAsk===a.id ? `<div class="rsbox"><p><b>Eintrag löschen?</b> ${a.workout?'Übungsprotokoll und ':''}Rückmeldung gehen verloren, die geplante Einheit ist danach wieder offen.${a.push==='ok'?' In Strava bleibt die Aktivität bestehen – dort bitte selbst löschen.':''}</p>
+      <div class="row" style="justify-content:flex-start"><button class="btn danger primary" data-action="done-undo-yes" data-id="${esc(a.id)}">Löschen</button><button class="btn" data-action="done-undo-no">Abbrechen</button></div></div>` : ''}`;
+}
 function doneCard(a, planned, extra){
+  return doneCompact(a, planned, extra);
+}
+function doneCardFull(a, planned, extra){
   if(isManual(a)) return manualCard(a, planned);
   const f = fb(a.id), as = assess(a.id);
   const run = a.sport==='run' || a.sport==='walk';
@@ -2375,7 +2433,8 @@ function renderStrengthDetail(a){
     <div class="card"><h2>Übungen</h2>${a.workout ? `<div class="wklog">${a.workout.map(x=>`<div><b>${esc(x.name)}</b><span>${wkLogText(x)}${x.pain!=null?' · '+x.pain+'/10':''}</span></div>`).join('')}</div>`
       : `<p class="note">${isManual(a) ? 'Selbst eingetragen, ohne Übungsprotokoll.' : 'Über Strava abgeglichen, ohne Übungsprotokoll der App.'}</p>`}
       ${pl && (pl.title||'')!==a.name ? `<p class="planref">Geplant war: <b>${esc(descTitle(pl.title||''))}</b></p>` : ''}</div>
-    ${chips.length || as ? `<div class="card"><h2>Rückmeldung</h2>${chips.length?`<div class="chips">${chips.join('')}</div>`:''}${as?`<div class="md">${md(as.text||as.short||'')}</div>`:''}</div>` : ''}`;
+    ${chips.length || as ? `<div class="card"><h2>Rückmeldung</h2>${chips.length?`<div class="chips">${chips.join('')}</div>`:''}${as?`<div class="md">${md(as.text||as.short||'')}</div>`:''}</div>` : ''}
+    ${isManual(a) ? `<div class="card"><p class="note">${a.workout?'In der App aufgezeichnet':'Selbst eingetragen'}${a.push==='ok'||a.stravaId?' · ✓ an Strava gesendet bzw. verknüpft':''}</p>${manualDelete(a)}</div>` : ''}`;
 }
 function renderDetail(){
   const a = acts().find(x => x.id===detailId);
@@ -3705,7 +3764,7 @@ document.addEventListener('click', async e => {
   else if(a==='done-mark'){ const s0 = active().find(x=>x.date===b.dataset.date && (x.title||'')===b.dataset.title); if(s0) markDone(s0); }
   else if(a==='done-undo'){ delAsk = b.dataset.id; render(); }
   else if(a==='done-undo-no'){ delAsk = null; render(); }
-  else if(a==='done-undo-yes'){ delAsk = null; unmarkDone(b.dataset.id); }
+  else if(a==='done-undo-yes'){ delAsk = null; if(detailId===b.dataset.id){ detailId = null; detailErr = null; } unmarkDone(b.dataset.id); }
   else if(a==='pain-set'){
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     log.feedback = log.feedback||{};
