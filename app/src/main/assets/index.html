@@ -809,6 +809,32 @@ details.cx > summary .t{text-decoration:line-through;color:var(--muted);font-wei
 details.cx > summary .x{display:block;color:var(--muted);font-size:15px;line-height:22px}
 details.cx > summary .cxl{color:var(--warn)}
 .day details.cx > summary .x{color:var(--muted);font-size:15px}
+/* Indoor-Grafik */
+.dindoor::before{display:none}
+.indoor .ibg{fill:var(--sunk)}
+.indoor .ih0{stop-color:var(--surface);stop-opacity:1}.indoor .ih1{stop-color:var(--surface);stop-opacity:.55}.indoor .ih2{stop-color:var(--surface);stop-opacity:0}
+.indoor .iring{fill:none;stroke:var(--surface);stroke-width:1.5;opacity:.9}
+.indoor .if0{stop-color:var(--line);stop-opacity:.0}.indoor .if1{stop-color:var(--line);stop-opacity:.9}
+.indoor .ibike{opacity:.62}
+.indoor .ibike path,.indoor .ibike circle{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.indoor .itr{stroke:var(--muted);stroke-width:4}
+.indoor .ifly{fill:var(--line)!important;stroke:var(--muted);stroke-width:3}
+.indoor .ihub{fill:var(--muted)!important;stroke:none}
+.indoor .iwh{stroke:var(--ink);stroke-width:4.5;opacity:.55}
+.indoor .irim{stroke:var(--line);stroke-width:7}
+.indoor .ifr{stroke:var(--ink);stroke-width:4.5;opacity:.75}
+.indoor .iring2{stroke:var(--ink);stroke-width:3;opacity:.7}
+.indoor .icrank{stroke:var(--ink);stroke-width:3.5;opacity:.7}
+.indoor .isad,.indoor .ibar{stroke:var(--ink);stroke-width:4;opacity:.75}
+.indoor .itorso{fill:var(--muted)!important;stroke:var(--muted);stroke-width:4}
+.indoor .iarm{stroke:var(--muted);stroke-width:8}
+.indoor .ihead{fill:var(--muted)!important;stroke:none}
+.indoor .ihelm{fill:var(--ink)!important;stroke:none;opacity:.8}
+.indoor .ileg{stroke:var(--muted);stroke-width:10}
+.indoor .ileg2{stroke:var(--line);stroke-width:9}
+.indoor .ifoot{stroke:var(--ink);stroke-width:5;opacity:.7}
+.indoor .ishadow{fill:var(--muted);opacity:.18}
+.indoor .icas{stroke:var(--muted);stroke-width:2}
 </style>
 </head>
 <body>
@@ -2367,7 +2393,7 @@ function renderDetail(){
   const hShare = zoneTimes(st,'hr',hrZone,5) || (()=>{ const r=analyze(a); return r&&r.tiz?r.tiz.map(x=>x/100):null; })();
   const as = assess(a.id);
   const stops = rows.filter(r => r.wNZ && r.w && r.wNZ - r.w >= 5);
-  return `<div class="card dcard">${routeSvg(a)}<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
+  return `<div class="card dcard">${routeSvg(a) || indoorHead(a)}<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
       <div><h2>${esc(descTitle(a.name))}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
     <div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
     ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':isRide&&(p.laps||[]).length>15?'Je 5 km':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
@@ -2977,7 +3003,8 @@ function compact(a){
   return {id:String(a.id), date:String(a.start_local||'').slice(0,10), time:String(a.start_local||'').slice(11,16), name:a.name||'Aktivität',
     type:a.sport_type||'', sport:sportOf(a.sport_type), distKm:Math.round((s.distance||0)/10)/100, movingS:s.moving_time||0,
     elev:s.elevation_gain||0, re:s.relative_effort??null, cadence:s.avg_cadence?Math.round(s.avg_cadence*10)/10:null,
-    poly:(a.polyline || a.summary_polyline || (a.map && a.map.summary_polyline) || undefined)};
+    // '' = abgeglichen, aber ohne GPS-Strecke (z. B. Rolle)
+    poly:(a.polyline || a.summary_polyline || (a.map && a.map.summary_polyline) || ((a.polyline!==undefined || a.map) ? '' : undefined))};
 }
 /* Strecke (Google-Polyline von Strava) als Grafik, ohne Kartendienst */
 function decodePoly(str){
@@ -2988,6 +3015,46 @@ function decodePoly(str){
     pts.push([lat/1e5, lng/1e5]);
   }
   return pts;
+}
+/* Indoor-Fahrt (Rolle, ohne GPS-Strecke): eigene Grafik in Grautönen statt Karte */
+function indoorHead(a){
+  if(a.sport!=='ride') return '';
+  const indoor = a.type==='VirtualRide' || /rolle|indoor|zwift|trainer|kickr|rouvy|mywhoosh/i.test(a.name||'') || a.poly==='';
+  if(!indoor || a.poly) return '';
+  return `<div class="droute dindoor"><svg aria-hidden="true" viewBox="0 0 400 170" preserveAspectRatio="xMidYMid slice" class="indoor">
+  <defs><linearGradient id="rfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--surface);stop-opacity:0"/><stop offset="1" style="stop-color:var(--surface);stop-opacity:1"/></linearGradient>
+    <radialGradient id="ihalo" cx="276" cy="66" r="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" class="ih0"/><stop offset=".62" class="ih1"/><stop offset="1" class="ih2"/>
+    </radialGradient>
+    <linearGradient id="ifloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="if0"/><stop offset="1" class="if1"/></linearGradient>
+  </defs>
+  <rect x="-50" width="500" height="170" class="ibg"/>
+  <circle cx="276" cy="66" r="100" fill="url(#ihalo)"/>
+  <circle cx="276" cy="66" r="70" class="iring"/>
+  <ellipse cx="280" cy="120" rx="82" ry="4" class="ishadow"/>
+  <g class="ibike" transform="translate(52 -16) scale(.9)">
+    <!-- Rollentrainer -->
+    <path d="M176 150 L198 124 L222 150" class="itr"/>
+    <circle cx="198" cy="123" r="15" class="ifly"/><circle cx="198" cy="123" r="5" class="ihub"/>
+    <!-- Vorderrad -->
+    <circle cx="302" cy="122" r="27" class="iwh"/><circle cx="302" cy="122" r="21" class="irim"/><circle cx="302" cy="122" r="2.5" class="ihub"/>
+    <!-- hinteres Bein (abgewandt) -->
+    <path d="M224 74 L254 96 L236 128" class="ileg2"/>
+    <!-- Rahmen -->
+    <path d="M193 123 h10 M198 118 v10" class="icas"/><path d="M198 123 L238 131 L224 80 Z M224 82 L288 79 L294 94 L238 131 M294 94 L302 122" class="ifr"/>
+    <circle cx="238" cy="131" r="9" class="iring2"/>
+    <path d="M238 131 L248 140" class="icrank"/>
+    <!-- Sattel, Lenker -->
+    <path d="M212 76 L234 75" class="isad"/>
+    <path d="M288 79 L301 76 Q311 76 309 86 Q307 92 300 91" class="ibar"/>
+    <!-- Fahrer -->
+    <path d="M216 70 Q222 58 240 56 Q262 50 280 47 Q290 47 288 58 Q270 62 248 70 Q232 78 220 80 Z" class="itorso"/>
+    <path d="M282 54 L291 69 L303 75" class="iarm"/>
+    <circle cx="296" cy="46" r="8.5" class="ihead"/>
+    <path d="M287 42 Q297 34 307 43 L303 46 Z" class="ihelm"/>
+    <path d="M222 74 L262 99 L247 137" class="ileg"/>
+    <path d="M246 138 L258 140" class="ifoot"/>
+  </g><rect x="-50" y="96" width="500" height="75" fill="url(#rfade)"/></svg></div>`;
 }
 /* Strecke auf Karte (OpenStreetMap, per CSS aufgehellt); ohne Netz bleibt das Raster */
 function routeSvg(a){
