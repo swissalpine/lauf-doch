@@ -811,9 +811,9 @@ details.cx > summary .cxl{color:var(--warn)}
 .day details.cx > summary .x{color:var(--muted);font-size:15px}
 /* Indoor-Grafik */
 .dindoor::before{display:none}
-.dindoor{background:radial-gradient(circle at 58% 42%, var(--surface) 0, transparent 62%), var(--sunk)}
-.dindoor img{position:absolute;right:20%;top:4px;height:140px;width:auto;mix-blend-mode:multiply;opacity:.62}
-.dindoor::after{content:'';position:absolute;inset:auto 0 0 0;height:48%;background:linear-gradient(to bottom,transparent,var(--surface));pointer-events:none}
+.dindoor{background:radial-gradient(circle at 50% 46%, var(--surface) 0, transparent 62%), var(--sunk)}
+.dindoor img{position:absolute;left:50%;transform:translateX(-50%);top:16px;height:154px;width:auto;mix-blend-mode:multiply;opacity:.62}
+.dindoor::after{content:'';position:absolute;inset:auto 0 0 0;height:58%;background:linear-gradient(to bottom,transparent,var(--surface) 85%);pointer-events:none}
 :root[data-theme="dark"] .dindoor img{filter:invert(1);mix-blend-mode:screen;opacity:.45}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dindoor img{filter:invert(1);mix-blend-mode:screen;opacity:.45}}
 </style>
