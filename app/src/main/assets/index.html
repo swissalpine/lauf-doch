@@ -2151,13 +2151,16 @@ function illFor(sport, title, a){
   return null;
 }
 const illCls = img => img ? ' bgill' : '';
-const illSty = img => img ? ` style="--ill:url(${img})"` : '';
+/* Maßstab je Figur, damit liegende und sitzende Figuren nicht größer wirken als die Läuferin */
+const illScale = img => img===STRENGTH_IMG ? 0.66 : img===STRETCH_IMG ? 0.8 : 1;
+const illSty = img => img ? ` style="--ill:url(${img});--ills:${illScale(img)}"` : '';
 /* Höhe der Grafik: bis knapp unter RPE-Reihe bzw. „Ziel der Einheit“ */
 function sizeIll(root){
   root.querySelectorAll('.card.bgill').forEach(c => {
     const an = c.querySelector('.rpepick,.purpose'), top = c.getBoundingClientRect().top;
     const h = an ? an.getBoundingClientRect().top - top + 56 : Math.min(c.offsetHeight, 220);
-    c.style.setProperty('--illh', Math.max(120, Math.min(280, Math.round(h)))+'px');
+    const k = parseFloat(c.style.getPropertyValue('--ills')) || 1;
+    c.style.setProperty('--illh', Math.round(Math.max(120, Math.min(280, h)) * k)+'px');
   });
 }
 function renderToday(){
