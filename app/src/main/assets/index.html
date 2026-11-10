@@ -976,6 +976,9 @@ const fmtDay = s => { const d=parseYmd(s); return WD[d.getDay()]+' '+d.getDate()
 const fmtNum = (n,dig=1) => Number(n).toLocaleString('de-DE',{minimumFractionDigits:dig,maximumFractionDigits:dig});
 const fmtDur = sec => { sec=Math.round(sec||0); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; return h? h+':'+pad(m)+':'+pad(s) : m+':'+pad(s); };
 const fmtPace = (km,sec) => { if(!km) return '–'; let t=Math.round(sec/km); return Math.floor(t/60)+':'+pad(t%60); };
+/* Schwimmen: Distanz in Metern, Pace je 100 m */
+const fmtM = km => fmtNum(Math.round((km||0)*1000),0)+' m';
+const fmtSwim = (km,sec) => fmtPace((km||0)*10, sec);
 const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
 function sportOf(t){ t=String(t||''); if(/Run/i.test(t)) return 'run'; if(/Ride|Cycl|Bike/i.test(t)) return 'ride'; if(/Weight|Strength|Workout|Crossfit|Yoga|Pilates/i.test(t)) return 'strength'; if(/Swim/i.test(t)) return 'swim'; if(/Climb|Mountaineer|Alpin/i.test(t)) return 'mountain'; if(/Walk|Hike/i.test(t)) return 'walk'; return 'other'; }
 function normSport(s){ s=String(s||'').toLowerCase(); return SPORT[s]? s : (/lauf|run/.test(s)?'run':/rad|rolle|ride|bike/.test(s)?'ride':/kraft|strength/.test(s)?'strength':/schwimm|swim/.test(s)?'swim':/berg|kletter|climb|mountain/.test(s)?'mountain':/geh|wander|walk|hike/.test(s)?'walk':/ruhe|rest|pause/.test(s)?'rest':'other'); }
@@ -1676,7 +1679,7 @@ function doneCompact(a, planned, extra){
   const f = fb(a.id), as = assess(a.id), rp = rpeOf(a);
   const run = a.sport==='run'||a.sport==='walk';
   const facts = !a.distKm ? (a.movingS ? (a.workout ? fmtDur(a.movingS) : Math.round(a.movingS/60)+' min') : '')
-    : [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm'].join(' · ');
+    : (a.sport==='swim' ? [fmtM(a.distKm), fmtSwim(a.distKm,a.movingS)+' /100 m'] : [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm']).join(' · ');
   const r = analyze(a); let pl = '';
   if(r){
     const parts = [];
@@ -1730,7 +1733,14 @@ function doneCardFull(a, planned, extra){
   const f = fb(a.id), as = assess(a.id);
   const run = a.sport==='run' || a.sport==='walk';
   // Ohne Strecke (Kraft, Gymnastik …): nur Dauer, Puls und Relative Effort
-  const m = !a.distKm ? [['Dauer', fmtDur(a.movingS)], ['Ø HF', a.perf && a.perf.hr ? Math.round(a.perf.hr)+' bpm' : '–'], ['Relative Effort', a.re ?? '–']].filter(x => x[0]==='Dauer' || x[1]!=='–') : [
+  const m = !a.distKm ? [['Dauer', fmtDur(a.movingS)], ['Ø HF', a.perf && a.perf.hr ? Math.round(a.perf.hr)+' bpm' : '–'], ['Relative Effort', a.re ?? '–']].filter(x => x[0]==='Dauer' || x[1]!=='–') : a.sport==='swim' ? [
+    ['Distanz', fmtM(a.distKm)],
+    ['Bewegungszeit', fmtDur(a.movingS)],
+    ['Pace /100 m', fmtSwim(a.distKm,a.movingS)],
+    ['Züge /min', a.cadence? Math.round(a.cadence):'–'],
+    ['Ø HF', a.perf && a.perf.hr ? Math.round(a.perf.hr)+' bpm' : '–'],
+    ['Relative Effort', a.re ?? '–']
+  ] : [
     ['Distanz', fmtNum(a.distKm,2)+' km'],
     ['Bewegungszeit', fmtDur(a.movingS)],
     run ? ['Pace /km', fmtPace(a.distKm,a.movingS)] : ['Ø km/h', fmtNum(a.distKm/(a.movingS/3600||1),1)],
@@ -2370,7 +2380,7 @@ function npApprox(st){
   for(let i=win-1;i<st.w.length;i++){ let s=0; for(let k=i-win+1;k<=i;k++) s+=st.w[k]||0; r.push(Math.pow(s/win,4)); }
   return Math.round(Math.pow(r.reduce((a,b)=>a+b,0)/r.length, 0.25));
 }
-function lapBars(a, rows, byPower, isRide){
+function lapBars(a, rows, byPower, isRide, isSwim){
   const W = 340, H = 130, top = 18, base = H-18;
   const tot = rows.reduce((x,l)=>x+l.dur,0) || 1;
   const vals = rows.map(l => byPower ? l.w : l.speed||0), max = Math.max(1, ...vals) * 1.08;
@@ -2379,7 +2389,7 @@ function lapBars(a, rows, byPower, isRide){
   const bars = rows.map((l,i) => {
     const w = Math.max(2, l.dur/tot*W - 2), h = Math.max(2, vals[i]/max*(base-top)), y = base-h;
     const col = byPower ? PZ_COL[(l.z||1)-1] : HZ_COL[(l.hz||1)-1];
-    const lab = byPower ? Math.round(l.w) : isRide ? fmtNum((l.speed||0)*3.6,1) : fmtPace(1, 1000/(l.speed||1));
+    const lab = byPower ? Math.round(l.w) : isRide ? fmtNum((l.speed||0)*3.6,1) : isSwim ? fmtPace(1, 100/(l.speed||1)) : fmtPace(1, 1000/(l.speed||1));
     const g = `<rect x="${x+1}" y="${y}" width="${w}" height="${h}" rx="3" fill="${col}"/>
       ${w>=20?`<text x="${x+1+w/2}" y="${y-4}" text-anchor="middle" class="bl">${lab}</text>`:''}
       <text x="${x+1+w/2}" y="${H-4}" text-anchor="middle" class="bn">${i+1}</text>`;
@@ -2442,7 +2452,7 @@ function renderDetail(){
   if(!a) return `<div class="card"><p>Aktivität nicht gefunden.</p><div><button class="btn" data-action="detail-close">Zurück</button></div></div>`;
   if(a.sport==='strength') return renderStrengthDetail(a);
   const p = a.perf || {}, ftp = ftpNow(), st = getStreams(a.id);
-  const isRide = a.sport==='ride';
+  const isRide = a.sport==='ride', isSwim = a.sport==='swim';
   const byPower = isRide && p.deviceWatts && !!ftp && lapSrc(a).some(l=>l.w);
   const ranges = lapRanges(a), useRounds = !!(p.rounds && p.rounds.length>1);
   const rows = lapSrc(a).map((l,i) => {
@@ -2454,9 +2464,9 @@ function renderDetail(){
   const hz = (S.log && S.log.zones && S.log.zones.hrMins) || null;
   const np = byPower ? npApprox(st) : null;
   const m = [
-    ['Dauer', mmss(a.movingS)], ['Distanz', fmtNum(a.distKm,1)+' km'],
-    byPower ? ['Ø Leistung', (p.watts||'–')+' W'] : isRide ? ['Ø Tempo', fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h'] : ['Ø Pace', fmtPace(a.distKm,a.movingS)+' /km'],
-    byPower ? ['NP / IF', np ? `ca. ${np} W · ${fmtNum(np/ftp,2)}` : '–'] : ['Höhenmeter', Math.round(a.elev||0)+' m'],
+    ['Dauer', mmss(a.movingS)], ['Distanz', isSwim ? fmtM(a.distKm) : fmtNum(a.distKm,1)+' km'],
+    isSwim ? ['Ø Pace', fmtSwim(a.distKm,a.movingS)+' /100 m'] : byPower ? ['Ø Leistung', (p.watts||'–')+' W'] : isRide ? ['Ø Tempo', fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h'] : ['Ø Pace', fmtPace(a.distKm,a.movingS)+' /km'],
+    isSwim ? ['Züge /min', a.cadence ? Math.round(a.cadence) : '–'] : byPower ? ['NP / IF', np ? `ca. ${np} W · ${fmtNum(np/ftp,2)}` : '–'] : ['Höhenmeter', Math.round(a.elev||0)+' m'],
     ['Ø / max. HF', p.hr ? Math.round(p.hr)+' / '+(p.hrMax||'–') : '–'], ['Relative Effort', a.re!=null?a.re:'–']];
   const pzLab = ftp ? [0,...PZ_UP].map((u,i,arr)=> i<6 ? `${Math.round(u*ftp)+(i?1:0)}–${Math.round(arr[i+1]*ftp)} W` : `ab ${Math.round(PZ_UP[5]*ftp)+1} W`) : [];
   const hzLab = hz ? hz.map((v,i)=> i<hz.length-1 ? `${v}–${hz[i+1]-1}` : `ab ${v}`) : [];
@@ -2467,24 +2477,26 @@ function renderDetail(){
   return `<div class="card dcard">${routeSvg(a) || indoorHead(a)}<div class="dhead"><button class="dback" data-action="detail-close" aria-label="Zurück">‹</button>
       <div><h2>${esc(descTitle(a.name))}</h2><span class="note">${esc(SPORT[a.sport]||'')} · ${esc(fmtDay(a.date))} · ${esc(a.time||'')} Uhr</span></div></div>
     <div class="wsum">${m.map(([k,v])=>`<div class="metric"><span class="v">${esc(String(v))}</span><span class="k">${esc(k)}</span></div>`).join('')}</div></div>
-    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':useRounds?'Runden':isRide&&(p.laps||[]).length>15?'Je 5 km':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
-      ${lapBars(a, rows, byPower, isRide)}
-      <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':`<th>km</th><th>${isRide?'km/h':'Pace'}</th>`}<th>HF</th><th>${byPower?'U/min':'Steig.'}</th></tr></thead><tbody>
+    ${rows.length?`<div class="card"><div class="row"><h2>${byPower?'Leistung je Runde':isSwim?'Abschnitte':useRounds?'Runden':isRide&&(p.laps||[]).length>15?'Je 5 km':'Kilometer'}</h2>${byPower?`<span class="note">FTP ${ftp} W</span>`:`<span class="note">Farbe = HF-Zone</span>`}</div>
+      ${lapBars(a, rows, byPower, isRide, isSwim)}
+      <table class="laps"><thead><tr><th>#</th><th>Dauer</th>${byPower?'<th>Ø W</th><th>FTP</th><th>Zone</th>':`<th>${isSwim?'m':'km'}</th><th>${isRide?'km/h':isSwim?'/100 m':'Pace'}</th>`}<th>HF</th><th>${byPower?'U/min':isSwim?'Züge':'Steig.'}</th></tr></thead><tbody>
       ${rows.map(r => `<tr class="${byPower&&r.z>=3?'work':''}"><td>${r.n}</td><td>${mmss(r.dur)}</td>
         ${byPower?`<td><b>${r.w||'–'}</b>${r.wNZ && r.w && r.wNZ-r.w>=5?`<small>ohne Stopp ${Math.round(r.wNZ)}</small>`:''}</td><td>${r.pct!=null?r.pct+' %':'–'}</td><td><span class="zc" style="background:${PZ_COL[(r.z||1)-1]};color:${r.z>=4?'#fff':'#0b1530'}">Z${r.z||'–'}</span></td>`
+          :isSwim?`<td>${fmtNum(r.d,0)}</td><td><b>${r.speed?fmtSwim(r.d/1000,r.d/r.speed):'–'}</b></td>`
           :`<td>${fmtNum(r.d/1000,2)}</td><td><b>${r.speed?(isRide?fmtNum(r.speed*3.6,1):fmtPace(r.d/1000,r.d/r.speed)):'–'}</b>${(() => { if(!r.speed || !r.stop || !r.d) return ''; const sec = r.d/r.speed, mv = sec - r.stop;
             if(mv <= 0 || sec/(r.d/1000) - mv/(r.d/1000) < 3) return '';
             return `<small class="mvp">${isRide ? fmtNum(r.d/mv*3.6,1) : fmtPace(r.d/1000, mv)} in Bew.</small>`; })()}</td>`}
-        <td>${r.hr?Math.round(r.hr):'–'}${r.hz?`<small>Z${r.hz}</small>`:''}</td><td>${byPower?(r.c?Math.round(r.c):'–'):(r.g!=null?fmtNum(r.g,1)+' %':'–')}</td></tr>`).join('')}
+        <td>${r.hr?Math.round(r.hr):'–'}${r.hz?`<small>Z${r.hz}</small>`:''}</td><td>${byPower||isSwim?(r.c?Math.round(r.c):'–'):(r.g!=null?fmtNum(r.g,1)+' %':'–')}</td></tr>`).join('')}
       </tbody></table>
       ${stops.length?`<p class="note">Runde ${stops.map(r=>r.n).join(', ')}: kurze Unterbrechung, ohne Stopp ${stops.map(r=>Math.round(r.wNZ)+' W').join(', ')}.</p>`:''}</div>`:''}
     <div class="card"><div class="row"><h2>Verlauf</h2>${!st?`<button class="btn" data-action="detail-streams" data-id="${esc(a.id)}" ${detailBusy?'disabled':''}>${detailBusy?'Wird geladen …':'Verlauf laden'}</button>`:''}</div>
       ${detailErr?`<div class="status err">${esc(detailErr)}</div>`:''}
       ${st ? (byPower ? lineChart(st,'w','var(--accent)','Leistung',v=>Math.round(v)+' W',ranges,true)
             : isRide ? lineChart(Object.assign({}, st, {kmh:(st.v||[]).map(v=>v*3.6)}),'kmh','var(--accent)','Tempo',v=>fmtNum(v,1)+' km/h',ranges,true)
+            : isSwim ? lineChart(st,'v','var(--accent)','Tempo',v=>fmtPace(1,100/(v||1))+' /100 m',ranges,true)
             : lineChart(st,'v','var(--accent)','Tempo',v=>fmtPace(1,1000/(v||1))+' /km',ranges,true))
         + lineChart(st,'hr','#D2463A','Herzfrequenz',v=>Math.round(v)+' bpm',ranges,true)
-        + lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,true)
+        + (isSwim ? '' : lineChart(st,'alt','#7A869C','Höhe',v=>Math.round(v)+' m',ranges,true))
         : (!detailBusy?'<p class="note">Sekundengenaue Daten von Strava, werden beim ersten Öffnen geladen.</p>':'')}</div>
     ${pShare||hShare?`<div class="card"><h2>Zeit in Zonen</h2>
       ${pShare?`<div class="dl-h"><b>Leistung</b><span class="note">FTP ${ftp} W</span></div>${zoneBars(pShare, PZ_COL, pzLab)}`:''}
@@ -2672,7 +2684,7 @@ function renderHistory(){
       const f = fb(a.id), as = assess(a.id);
       const run = a.sport==='run'||a.sport==='walk';
       const facts = !a.distKm ? Math.round(a.movingS/60)+' min'
-        : [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm'].join(' · ');
+        : (a.sport==='swim' ? [fmtM(a.distKm), fmtSwim(a.distKm,a.movingS)+' /100 m'] : [fmtNum(a.distKm,1)+' km', run?fmtPace(a.distKm,a.movingS)+' /km':fmtNum(a.distKm/(a.movingS/3600||1),1)+' km/h', Math.round(a.elev||0)+' hm']).join(' · ');
       const chips = [];
       if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz ${f.painDuring}${f.painAfter!=null?' / '+f.painAfter:''}</span>`);
       else if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
@@ -3251,13 +3263,13 @@ function buildContext(){
     const r = analyze(a), L = loadAt(a.date);
     const leistung = r ? {hfAvg:r.hr, hfMax:a.perf.hrMax, hfZone:r.zone, effekt:r.effect, zonenAnteilProzent:r.tiz, effizienz:r.ef?Math.round(r.ef*1000)/1000:undefined,
       entkopplungProzent:r.decoupling!=null?Math.round(r.decoupling*10)/10:undefined, IF:r.if?Math.round(r.if*100)/100:undefined, TSS:r.tss,
-      splits: r.laps ? undefined : (a.sport==='ride' ? rideSplits(a.perf.laps||[]) : (a.perf.laps||[])).map(l=>`${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'} ${l.hr?Math.round(l.hr):'–'}bpm ${l.g??0}%`).join(' | '),
+      splits: r.laps ? undefined : (a.sport==='ride' ? rideSplits(a.perf.laps||[]) : (a.perf.laps||[])).map(l=> a.sport==='swim' ? `${l.d}m ${fmtSwim(l.d/1000,l.s)}/100m ${l.hr?Math.round(l.hr):'–'}bpm${l.c?' '+Math.round(l.c)+'Züge/min':''}` : `${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'} ${l.hr?Math.round(l.hr):'–'}bpm ${l.g??0}%`).join(' | '),
       leistungW: r.byPower ? r.watts : undefined, leistungZone: r.byPower ? r.pzone : undefined, hauptreizNachLeistung: r.byPower ? r.effect : undefined,
       leistungszonenAnteilProzent: r.ptiz,
       rundenUhr: !r.laps && (a.perf.rounds||[]).length>1 ? (()=>{ const st = getStreams(a.id), rg = lapRanges(a);
         return a.perf.rounds.map((l,i)=>{ const stop = a.sport!=='ride' && st && rg[i] ? streamStopped(st, rg[i].from, rg[i].to) : 0, mv = (l.s||0) - stop;
           const inBew = stop && mv>0 && l.d && (l.s-mv)/(l.d/1000) >= 3 ? ` (in Bewegung ${fmtPace(l.d/1000,mv)}/km, ${Math.round(stop)} s Stillstand)` : '';
-          return `R${i+1} ${Math.floor((l.e||l.s)/60)}:${String((l.e||l.s)%60).padStart(2,'0')} ${fmtNum(l.d/1000,2)}km ${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':fmtPace(l.d/1000,l.s)+'/km'+inBew} HF${l.hr?Math.round(l.hr):'–'} ${l.g??0}%`; }).join(' | '); })() : undefined,
+          return `R${i+1} ${Math.floor((l.e||l.s)/60)}:${String((l.e||l.s)%60).padStart(2,'0')} ${fmtNum(l.d/1000,2)}km ${a.sport==='ride'?fmtNum(l.d/(l.s||1)*3.6,1)+'km/h':a.sport==='swim'?fmtSwim(l.d/1000,l.s)+'/100m':fmtPace(l.d/1000,l.s)+'/km'+inBew} HF${l.hr?Math.round(l.hr):'–'} ${l.g??0}%`; }).join(' | '); })() : undefined,
       runden: r.laps ? (()=>{ const st = getStreams(a.id), rg = lapRanges(a);
         return r.laps.map((l,i)=>{ const nz = st && rg[i] ? streamAvg(st,'w',rg[i].from,rg[i].to,true) : null;
           return `R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W${nz && nz-l.w>=5?` (ohne Stopp ${Math.round(nz)}W)`:''} ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`; }).join(' | '); })() : undefined,
