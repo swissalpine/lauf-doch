@@ -91,7 +91,9 @@
   async function claude(p){
     const key = get('claude_key', '');
     if(!key) throw new BridgeError('not_configured', 'Kein Claude-API-Schlüssel hinterlegt.');
-    const req = {model: get('claude_model', DEFAULT_MODEL), max_tokens: 20000, messages: p.messages};
+    const model = get('claude_model', DEFAULT_MODEL);
+    // Fable denkt immer mit (Denken zählt zu max_tokens), daher mehr Spielraum
+    const req = {model, max_tokens: model.startsWith('claude-fable') ? 64000 : 20000, messages: p.messages};
     if(p.system) req.system = p.system;
     req.stream = true;
     // Streaming hält die Verbindung aktiv (lange Planantworten); ein zweiter Versuch bei Netz- oder Serverfehlern

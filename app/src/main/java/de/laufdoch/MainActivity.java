@@ -350,8 +350,10 @@ public class MainActivity extends Activity {
         String key = prefs.getString("claude_key", "");
         if (key.isEmpty()) throw new BridgeError("not_configured", "Kein Claude-API-Schlüssel hinterlegt.");
         JSONObject req = new JSONObject();
-        req.put("model", prefs.getString("claude_model", DEFAULT_MODEL));
-        req.put("max_tokens", 20000);
+        String model = prefs.getString("claude_model", DEFAULT_MODEL);
+        req.put("model", model);
+        // Fable denkt immer mit (Denken zählt zu max_tokens), daher mehr Spielraum
+        req.put("max_tokens", model.startsWith("claude-fable") ? 64000 : 20000);
         if (p.has("system")) req.put("system", p.getString("system"));
         req.put("messages", p.getJSONArray("messages"));
 

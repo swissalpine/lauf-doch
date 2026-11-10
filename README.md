@@ -188,6 +188,7 @@ Die App spricht Claude direkt über die Anthropic API an. Abgerechnet wird nach 
 **Modelle**
 - **Sonnet:** empfohlen, gutes Verhältnis von Qualität und Kosten.
 - **Opus:** gründlicher, aber teurer.
+- **Fable:** stärkstes Modell, antwortet langsamer und kostet etwa das Vierfache von Sonnet. Für die Aufgaben der App meist nicht nötig.
 - **Haiku:** schnell und günstig, bei komplexen Planungen weniger sorgfältig.
 
 **Kosten:** Unter Verbindungen → Claude zeigt die App Anfragen und geschätzte Kosten für den laufenden Monat und den Vormonat. Die Schätzung beruht auf Listenpreisen; die genaue Abrechnung steht in der Anthropic Console. Der feste Regelteil wird zwischengespeichert (Prompt-Caching), das senkt die Kosten wiederholter Anfragen deutlich.

@@ -165,13 +165,15 @@
     if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch(e) {} }
     throw {code:'invalid_json', message:'Antwort war kein JSON', text:text};
   }
-  // Verbrauch je Monat mitschreiben (Listenpreise in US-$ je 1 Mio. Token: Eingabe, Cache schreiben, Cache lesen, Ausgabe)
-  const PRICES = {'claude-sonnet-5-5':[2,2.5,0.2,10], 'claude-opus-5-5':[4,5,0.2,20], 'claude-haiku-5-5':[1,1.25,0.1,5]};
+  // Verbrauch je Monat mitschreiben (Listenpreise in US-$ je 1 Mio. Token: Eingabe, Cache schreiben, Cache lesen, Ausgabe; Stand 11/2026)
+  // Haiku 5.5 hat zwei Stufen: bis 100.000 Eingabe-Token (inkl. Cache) günstig, darüber teurer
+  const PRICES = {'claude-sonnet-5-5':[2,2.5,0.1,10], 'claude-opus-5-5':[4,5,0.2,20], 'claude-fable-5-2':[8,10,0.2,40],
+    'claude-haiku-5-5':[0.1,0.125,0.01,0.5], 'claude-haiku-5-5>100k':[0.5,0.625,0.05,2.5]};
   function trackUsage(u){
     try {
       let model = ''; try { model = JSON.parse(window.Android.getStatus()).model || ''; } catch(e) {}
-      const p = PRICES[model] || PRICES['claude-sonnet-5-5'];
       const i = u.input_tokens||0, cw = u.cache_creation_input_tokens||0, cr = u.cache_read_input_tokens||0, o = u.output_tokens||0;
+      const p = PRICES[model + (i+cw+cr > 100000 && PRICES[model+'>100k'] ? '>100k' : '')] || PRICES['claude-sonnet-5-5'];
       const key = 'ld-usage', all = JSON.parse(localStorage.getItem(key) || '{}');
       const m = new Date().toISOString().slice(0,7);
       const r = all[m] || (all[m] = {n:0, i:0, cw:0, cr:0, o:0, usd:0});

@@ -2779,7 +2779,7 @@ function renderHistory(){
 }
 
 /* ---------- Nur in der Android-App: Verbindungen und Datensicherung ---------- */
-const MODELS = [['claude-sonnet-5-5','Claude Sonnet 5.5 (empfohlen)'],['claude-opus-5-5','Claude Opus 5.5 (gründlicher, teurer)'],['claude-haiku-5-5','Claude Haiku 5.5 (schnell, günstig)']];
+const MODELS = [['claude-sonnet-5-5','Claude Sonnet 5.5 (empfohlen)'],['claude-opus-5-5','Claude Opus 5.5 (gründlicher, teurer)'],['claude-fable-5-2','Claude Fable 5.2 (stärkstes Modell, langsamer, deutlich teurer)'],['claude-haiku-5-5','Claude Haiku 5.5 (schnell, günstig)']];
 function appStatus(){ try{ return JSON.parse(window.Android.getStatus()); }catch(e){ return {}; } }
 /* ---------- Erinnerungen (Android-Benachrichtigungen) ---------- */
 function remindCfg(){ let c={}; try{ c=JSON.parse(localStorage.getItem('ld-remind')||'{}'); }catch(_){} return Object.assign({morningOn:false, morningTime:'07:00', eveningOn:false, eveningTime:'20:00'}, c); }
@@ -2839,7 +2839,7 @@ function usageBlock(){
   const line = k => { const r = all[k], m = MN[Number(k.slice(5,7))-1];
     return `<div class="svcrow"><b>${m}</b><span class="st">${r ? `${r.n} ${r.n===1?'Anfrage':'Anfragen'} · ca. ${fmtNum(r.usd, r.usd<10?2:1)} $` : 'keine Anfragen'}</span></div>`; };
   return `<div class="usage"><b>Verbrauch</b>${line(cur)}${all[prev]?line(prev):''}
-    <p class="note">Schätzung nach Listenpreisen des gewählten Modells (Stand 09/2026), inklusive Prompt-Caching. Die genaue Abrechnung steht in der Anthropic Console.</p></div>`;
+    <p class="note">Schätzung nach Listenpreisen des gewählten Modells (Stand 11/2026), inklusive Prompt-Caching. Die genaue Abrechnung steht in der Anthropic Console.</p></div>`;
 }
 /* ---------- App-Update über GitHub-Releases ---------- */
 let upd = {info:null, busy:false, pct:null, err:null, checking:false, checked:false};
