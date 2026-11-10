@@ -819,6 +819,12 @@ details.cx > summary .cxl{color:var(--warn)}
 :root[data-theme="dark"] .dindoor img{filter:invert(1);mix-blend-mode:screen;opacity:.45}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .dindoor img{filter:invert(1);mix-blend-mode:screen;opacity:.45}}
 .hdone{gap:10px}
+/* Heute: Illustration als Kartenhintergrund, nach unten ausgeblendet */
+.card.bgill{position:relative;isolation:isolate}
+.card.bgill::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:10px;height:var(--illh,220px);background:var(--ill) center top / contain no-repeat;opacity:.2;mix-blend-mode:multiply;pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,#000 45%,transparent 92%);mask-image:linear-gradient(to bottom,#000 45%,transparent 92%)}
+.card.bgill .purpose{background:color-mix(in srgb, var(--sunk) 55%, transparent)}
+:root[data-theme="dark"] .card.bgill::before{filter:invert(1);mix-blend-mode:screen;opacity:.15}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .card.bgill::before{filter:invert(1);mix-blend-mode:screen;opacity:.15}}
 .hdone .ritem{padding:0;border-top:0}
 .hdone .pl{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .hdone .short{font-size:15px}
@@ -1290,6 +1296,7 @@ function render(){
   p.innerHTML = (IN_APP ? updBanner() : '') + changeBanner() + (tab==='heute' ? renderToday() : tab==='plan' ? renderPlan() : tab==='rueckblick' ? renderHistory() : renderSettings());
   p.querySelectorAll('details[data-k]').forEach(d=>{ if(openK.has(d.dataset.k)) d.open=true; });
   if(openK.size) window.scrollTo(0, sy);
+  if(tab==='heute'){ sizeIll(p); requestAnimationFrame(()=>sizeIll(p)); }
   renderDialog();
   renderMoveDialog();
   pushReminders();
@@ -1630,7 +1637,8 @@ function plannedCard(s, label){
   const target = [s.distanceKm ? fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km' : '', s.durationMin ? 'ca. '+s.durationMin+' min' : ''].filter(Boolean).join(' · ');
   const rest = normSport(s.sport)==='rest';
   if(rest) label = String(label||'').replace('Geplant · heute','Ruhetag · heute').replace('Nächstes Training','Ruhetag');
-  return `<article class="card${rest?' restday':''}">
+  const ill = rest ? null : illFor(normSport(s.sport), s.title);
+  return `<article class="card${rest?' restday':''}${illCls(ill)}"${illSty(ill)}>
     <div class="card-head"><span class="tag ${rest?'':'plan'}">${esc(label||'Geplant')}</span><span class="sport">${esc(SPORT[normSport(s.sport)])}</span></div>
     <h3 class="hic">${rest?'':sic(normSport(s.sport), s.title)}<span>${esc(descTitle(s.title||'Training'))}</span></h3>
     ${target?`<div class="target">${esc(target)}</div>`:''}
@@ -1650,7 +1658,8 @@ function manualCard(a, planned){
   if(f && f.painDuring!=null) chips.push(`<span class="chip ${painClass(f.painDuring)}">Schmerz während ${f.painDuring}/10</span>`);
   if(f && f.painAfter!=null) chips.push(`<span class="chip ${painClass(f.painAfter)}">danach ${f.painAfter}/10</span>`);
   if(noteText(f)) chips.push(`<span class="chip">${esc(f.note)}</span>`);
-  return `<article class="card">
+  const ill = illFor(a.sport, (planned && planned.title)||'', a);
+  return `<article class="card${illCls(ill)}"${illSty(ill)}>
     <div class="card-head"><span class="tag done">Absolviert</span><span class="sport">${esc(SPORT[a.sport]||'')}${a.time?' · '+esc(a.time)+' Uhr':''}</span></div>
     <h3 class="hic">${sic(a.sport, a.name).replace('class="sic"', 'class="sic done"')}<span>${esc(descTitle(a.name))}</span></h3>
     ${(() => { const m = [];
@@ -1700,7 +1709,8 @@ function doneCompact(a, planned, extra){
   const canDetail = ((a.sport==='run'||a.sport==='ride') && a.perf) || a.sport==='strength';
   const title = descTitle(planned ? (planned.title||'Training') : (a.name||SPORT[a.sport]));
   const man = isManual(a);
-  return `<article class="card hdone">
+  const ill = illFor(a.sport, (planned && planned.title)||'', a);
+  return `<article class="card hdone${illCls(ill)}"${illSty(ill)}>
     <div class="card-head"><span class="tag ${extra?'extra':'done'}">${extra?'Zusätzlich':'Absolviert'}</span><span class="sport">${esc(SPORT[a.sport]||a.type||'')}${a.time?' · '+esc(a.time)+' Uhr':''}</span></div>
     <div class="ritem${canDetail?' tappable':''}"${canDetail?` data-detail="${esc(a.id)}" role="button" tabindex="0" aria-label="Analyse öffnen"`:''}>
       <span class="facts">${sic(a.sport, (a.type||'')+' '+(a.name||'')).replace('class="sic"', extra ? 'class="sic extra"' : 'class="sic done"')}<span class="t">${esc(title)}</span></span>
@@ -2128,7 +2138,31 @@ function nextCompact(){
         ${moveControl(s)}
       </details>`; }).join('')}</div>`;
 }
+/* Heute: passende Illustration je Einheit (Rolle, Hallenschwimmen, Kraft, Dehnen); Laufen und Strecken draußen ohne */
+let illOn = false;
+const INDOOR_RE = /rolle|indoor|zwift|trainer|kickr|rouvy|mywhoosh/i;
+function illFor(sport, title, a){
+  if(!illOn) return null;
+  if(a && a.poly) return null;
+  if(sport==='swim') return SWIM_IMG;
+  if(sport==='ride') return (a ? (a.type==='VirtualRide' || a.poly==='' || INDOOR_RE.test(a.name||'')) : INDOOR_RE.test(title||'')) ? INDOOR_IMG : null;
+  if(sport==='strength') return isStretch(title, a && a.name) || (a && a.workout && a.workout.length && a.workout.every(x=>isStretch(x.name))) ? STRETCH_IMG : STRENGTH_IMG;
+  return null;
+}
+const illCls = img => img ? ' bgill' : '';
+const illSty = img => img ? ` style="--ill:url(${img})"` : '';
+/* Höhe der Grafik: bis knapp unter RPE-Reihe bzw. „Ziel der Einheit“ */
+function sizeIll(root){
+  root.querySelectorAll('.card.bgill').forEach(c => {
+    const an = c.querySelector('.rpepick,.purpose'), top = c.getBoundingClientRect().top;
+    const h = an ? an.getBoundingClientRect().top - top + 56 : Math.min(c.offsetHeight, 220);
+    c.style.setProperty('--illh', Math.max(120, Math.min(280, Math.round(h)))+'px');
+  });
+}
 function renderToday(){
+  illOn = true; try { return renderTodayInner(); } finally { illOn = false; }
+}
+function renderTodayInner(){
   if(!S.loaded) return syncBlock()+`<div class="empty">Trainingsdaten werden geladen …</div>`;
   const t = today();
   const planned = active().filter(s => s.date===t);
