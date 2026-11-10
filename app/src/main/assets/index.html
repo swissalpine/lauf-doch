@@ -1484,7 +1484,7 @@ Antworte nur mit JSON:
 {"exercises":[{"name":"Name der Übung","purpose":"wozu sie dient, ein Satz","steps":["Ausgangsposition …","Bewegung …","…"],"dose":"Sätze, Wiederholungen oder Haltezeit, Pause – passend zum Schritt","cues":["worauf achten"],"mistakes":["typischer Fehler"],"caution":"Hinweis zu den Beschwerden (z. B. Schmerzgrenze, Winkel) oder leer","easier":"leichtere Variante","harder":"schwerere Variante"}]}
 Enthält der Schritt mehrere Übungen, liefere jede einzeln. 3–6 Ausführungsschritte, je 2–4 Hinweise.`;
   try{
-    const res = await sample.json(prompt, {modelTier:'quick'});
+    const res = await sample.json(prompt, {modelTier:'quick', effort:'low'});
     if(!res || !Array.isArray(res.exercises) || !res.exercises.length) throw {code:'invalid_json'};
     const log = S.log || (S.log={activities:[], feedback:{}, assessments:{}});
     const gs = Object.assign({}, log.guides||{}); gs[d.key] = {exercises:res.exercises.slice(0,6), ts:new Date().toISOString()};
@@ -3313,7 +3313,7 @@ function buildContext(){
           return `R${l.n} ${Math.floor(l.s/60)}:${String(l.s%60).padStart(2,'0')} ${l.w}W${nz && nz-l.w>=5?` (ohne Stopp ${Math.round(nz)}W)`:''} ${l.pct}%FTP Z${l.z} HF${l.hr?Math.round(l.hr):'–'}`; }).join(' | '); })() : undefined,
       geplant: (()=>{ const ps = sessions().find(x=>x.date===a.date && normSport(x.sport)===a.sport && !x.cancelled); return ps ? ps.title+': '+(ps.steps||[]).map(st=>[st.label,st.detail,st.watt,st.hr,st.pace].filter(Boolean).join(' ')).join(' / ') : undefined; })()} : undefined;
     return {id:a.id, datum:a.date, sport:a.sport, name:a.name, selbstEingetragen: isManual(a) && !a.workout || undefined, inAppAufgezeichnet: isManual(a) && !!a.workout || undefined, kraftProtokoll: a.workout ? a.desc : undefined, km:a.distKm, minuten:Math.round(a.movingS/60), pace:a.sport==='run'?fmtPace(a.distKm,a.movingS):undefined, hm:a.elev, relativeEffort:a.re,
-      belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?as.text:undefined};
+      belastung7zu28:L.acwr!=null?Math.round(L.acwr*100)/100:undefined, leistung, rueckmeldung:f||undefined, belastungStrava: a.perf&&a.perf.rpe!=null ? a.perf.rpe : undefined, einschaetzung:as?(a.date>=addDays(t,-14) ? as.text : (as.short||as.text)):undefined};
   });
   const wochen = []; for(let i=5;i>=0;i--){ const m=addDays(mondayOf(t),-7*i), st=weekStats(m); wochen.push({woche:m, laufKm:Math.round(st.km*10)/10, relativeEffort:st.re, belastung7zu28:st.acwr!=null?Math.round(st.acwr*100)/100:null, laufEffizienz:st.ef?Math.round(st.ef*1000)/1000:null, kraftEinheiten:acts().filter(a=>a.sport==='strength'&&a.date>=m&&a.date<=addDays(m,6)).length, radMinuten:Math.round(acts().filter(a=>a.sport==='ride'&&a.date>=m&&a.date<=addDays(m,6)).reduce((x,a)=>x+(a.movingS||0),0)/60)}); }
   const zones = S.log && S.log.zones;
@@ -3395,7 +3395,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `GESAMTPLAN: ${macroCtx()}`,
 `PLANSTATUS: ${macro() ? 'bestehender Plan – weiterführen, nicht neu aufsetzen' : 'neu aufsetzen (noch kein Gesamtplan)'}`,
 `TRAININGSSTAND (Strava, letzte 8 Wochen, für das Neuaufsetzen):\n${trainingBaseCtx()}`,
-`AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen): ${JSON.stringify(al)}`,
+`AKTIVITÄTEN DER LETZTEN 6 WOCHEN (Strava, mit Rückmeldungen; "einschaetzung" bei Einheiten älter als 14 Tage nur als Kurzbewertung, Details in den Wochenfazits): ${JSON.stringify(al)}`,
 `HF-ZONEN (Untergrenzen Z1–Z5): ${zones&&zones.hrMins?zones.hrMins.join(', '):'unbekannt'} · FTP: ${zones&&zones.ftp||'unbekannt'} W`,
 `WOCHENWERTE (letzte 6 Wochen): ${JSON.stringify(wochen)}`,
 `WOCHENFAZITS DER LETZTEN 6 WOCHEN: ${JSON.stringify(Object.fromEntries(Object.entries((S.log&&S.log.weekSummaries)||{}).filter(([k])=>k>=mondayOf(since)).map(([k,v])=>[k,v.text])))}`
@@ -3627,7 +3627,7 @@ Einheiten:
 ${JSON.stringify(items.map(({s,ext,mode})=>({key:ext, zielvorgabe:mode, sportart:normSport(s.sport), titel:s.title, ziel:s.goal, km:s.distanceKm, minuten:s.durationMin, schritte:s.steps})))}
 
 Antworte nur mit JSON: {"workouts":[{"key":"…","text":"…"}]}`;
-  const res = await sample.json(prompt, {cache:false});
+  const res = await sample.json(prompt, {cache:false, effort:'medium'});
   const map = {}; (res && res.workouts || []).forEach(w => { if(w && w.key && w.text) map[w.key] = String(w.text).slice(0,4000); });
   return map;
 }

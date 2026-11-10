@@ -355,6 +355,9 @@ public class MainActivity extends Activity {
         // Fable denkt immer mit (Denken zählt zu max_tokens), daher mehr Spielraum
         req.put("max_tokens", model.startsWith("claude-fable") ? 64000 : 20000);
         if (p.has("system")) req.put("system", p.getString("system"));
+        // Denkaufwand je Aufgabe (nur gesetzt, wenn die App ihn mitgibt; sonst Standard des Modells)
+        String effort = p.optString("effort", "");
+        if (!effort.isEmpty()) req.put("output_config", new JSONObject().put("effort", effort));
         req.put("messages", p.getJSONArray("messages"));
 
         req.put("stream", true);

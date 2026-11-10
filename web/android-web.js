@@ -95,6 +95,8 @@
     // Fable denkt immer mit (Denken zählt zu max_tokens), daher mehr Spielraum
     const req = {model, max_tokens: model.startsWith('claude-fable') ? 64000 : 20000, messages: p.messages};
     if(p.system) req.system = p.system;
+    // Denkaufwand je Aufgabe (nur gesetzt, wenn die App ihn mitgibt; sonst Standard des Modells)
+    if(p.effort) req.output_config = {effort: p.effort};
     req.stream = true;
     // Streaming hält die Verbindung aktiv (lange Planantworten); ein zweiter Versuch bei Netz- oder Serverfehlern
     let last;

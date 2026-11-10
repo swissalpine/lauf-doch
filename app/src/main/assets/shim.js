@@ -218,7 +218,14 @@
         {type:'text', text:rest}
       ];
     }
-    const res = await call('claude', {messages: messages, system: system});
+    // Gesprächsverlauf bis zur letzten Nachricht zwischenspeichern: Folgeanfragen (nächste Antwort, automatischer
+    // Wiederholungsversuch) lesen ihn aus dem Cache statt neu (dritter von höchstens vier Cache-Punkten)
+    const last = messages[messages.length - 1];
+    if (messages.length > 1 && last && typeof last.content === 'string' && last.content)
+      last.content = [{type:'text', text:last.content, cache_control:{type:'ephemeral'}}];
+    // Denkaufwand: nur für kurze, eigenständige Aufgaben gesenkt (eigener Cache, betrifft den Dialog nicht)
+    const effort = opts && opts.effort;
+    const res = await call('claude', effort ? {messages: messages, system: system, effort: effort} : {messages: messages, system: system});
     if (res && res.usage) { console.log('Claude-Token', JSON.stringify(res.usage)); trackUsage(res.usage); }
     if (opts && typeof opts.onText === 'function') { try { opts.onText({text: res.text, delta: res.text}); } catch(e) {} }
     return res;
