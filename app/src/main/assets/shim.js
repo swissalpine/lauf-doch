@@ -183,6 +183,24 @@
       localStorage.setItem(key, JSON.stringify(all));
     } catch(e) {}
   }
+  // Einmalig: gespeicherte Monatswerte mit den aktuellen Preisen neu berechnen (bis 2.61 galten falsche Haiku-
+  // und Sonnet-Cache-Preise). Je Monat sind nur Token-Summen gespeichert, daher Preise des gewählten Modells;
+  // die Haiku-Stufe über 100.000 Token wird über den Schnitt je Anfrage bestimmt.
+  (function(){
+    try {
+      if (localStorage.getItem('ld-usage-v') === '2') return;
+      let model = ''; try { model = JSON.parse(window.Android.getStatus()).model || ''; } catch(e) {}
+      const all = JSON.parse(localStorage.getItem('ld-usage') || '{}');
+      Object.keys(all).forEach(function(k){
+        const r = all[k]; if (!r || !r.n) return;
+        const big = (r.i + r.cw + r.cr) / r.n > 100000 && PRICES[model+'>100k'];
+        const p = PRICES[model + (big ? '>100k' : '')] || PRICES['claude-sonnet-5-5'];
+        r.usd = (r.i*p[0] + r.cw*p[1] + r.cr*p[2] + r.o*p[3]) / 1e6;
+      });
+      localStorage.setItem('ld-usage', JSON.stringify(all));
+      localStorage.setItem('ld-usage-v', '2');
+    } catch(e) {}
+  })();
   async function ask(input, opts, system){
     const messages = typeof input === 'string' ? [{role:'user', content:input}] : merge(input);
     // Feste Regeln (bis zur Marke) als zwischengespeicherten Block senden (Prompt-Caching)
