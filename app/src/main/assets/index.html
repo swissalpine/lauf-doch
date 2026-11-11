@@ -2187,7 +2187,11 @@ function renderTodayInner(){
     const next = active().filter(s => s.date>t).sort((a,b)=>a.date<b.date?-1:1)[0];
     const abT = absenceAt(t);
     if(!cancelledToday.length) out.push(`<div class="restday-line"><span class="tag">Heute</span><span>${abT&&abT.type!=='daily'?'Abwesend – '+esc(absText(abT)):'Ruhetag – kein Training geplant'}</span></div>`);
-    if(next) out.push(plannedCard(next, 'Nächstes Training · '+fmtDay(next.date)));
+    // alle Einheiten des nächsten Trainingstags, nicht nur die erste
+    const nd = active().filter(s => s.date>t && normSport(s.sport)!=='rest').map(s=>s.date).sort()[0];
+    const nextAll = nd ? active().filter(s => s.date===nd && normSport(s.sport)!=='rest') : [];
+    if(nextAll.length) nextAll.forEach(s => out.push(plannedCard(s, 'Nächstes Training · '+fmtDay(s.date))));
+    else if(next) out.push(plannedCard(next, 'Nächstes Training · '+fmtDay(next.date)));
     else out.push(`<div class="empty">Es gibt noch keinen Plan. Bitte Claude unten im Dialog, einen Plan für die nächsten zwei Wochen zu erstellen.</div>`);
   }
   return syncBlock() + checkCard() + out.join('');
