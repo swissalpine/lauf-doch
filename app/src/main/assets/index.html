@@ -1345,7 +1345,8 @@ async function planToday(s0, from){
 }
 function moveControl(s, noCheck){
   if(s.date < today() || s.cancelled || normSport(s.sport)==='rest') return '';
-  if(acts().some(a => a.date===s.date && a.sport===normSport(s.sport))) return '';
+  // nur ausblenden, wenn genau diese Einheit schon erledigt ist (nicht bei zwei Einheiten derselben Sportart)
+  if(matchActs(sessions().filter(x => x.date===s.date && !x.cancelled), acts().filter(a => a.date===s.date)).has(s)) return '';
   const da = `data-date="${esc(s.date)}" data-title="${esc(s.title||'')}"`;
   const is = icuState(s);
   const lbl = is ? ({hr:'HF', pace:'Pace', watt:'Watt', erg:'Watt', rpe:'RPE'})[icuModeFor(icuEntry(s))] : '';
