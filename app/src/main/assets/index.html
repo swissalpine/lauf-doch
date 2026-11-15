@@ -2666,9 +2666,10 @@ document.addEventListener('focusout', () => setTimeout(kbUpdate, 50));
 document.addEventListener('change', e => {
   if(e.target && e.target.id==='cfExpSec'){ expSecrets = !!e.target.checked; render(); return; }
   if(e.target && /^rem-(morning|evening)$/.test(e.target.id||'')){ const c=remindCfg(), k=e.target.id.slice(4); if(/^\d\d:\d\d$/.test(e.target.value)){ c[k+'Time']=e.target.value; setRemindCfg(c); } return; }
-  const id = e.target && e.target.id; if(id!=='pfName' && id!=='pfPerf') return;
+  const id = e.target && e.target.id; if(id!=='pfName' && id!=='pfPerf' && id!=='pfEquip') return;
   const pr = S.profile || (S.profile = JSON.parse(JSON.stringify(profile())));
   if(id==='pfName') pr.name = e.target.value.trim().slice(0,40);
+  else if(id==='pfEquip'){ pr.equipment = e.target.value.trim().slice(0,300); markChange('equipment', 'Ausstattung für Kraft: '+(pr.equipment||'keine Geräte')); render(); }
   else { pr.performance = e.target.value.trim().slice(0,400); markChange('performance', 'Leistungsstand: '+(pr.performance||'entfernt')); render(); }
   save('profile');
 });
@@ -3008,6 +3009,8 @@ function renderSettings(){
       <div class="fld"><span>Sportarten</span><div class="sports">${['run','ride','swim','strength'].map(s=>{ const fo = focusOf(pr).includes(s); return `<button class="toggle${fo?' focus':''}" data-action="sport" data-sport="${s}" aria-pressed="${sp.has(s)}" aria-label="${esc(SP_LABEL(s))}${fo?' (Schwerpunkt)':sp.has(s)?' (ergänzend)':''}">${fo?'★ ':''}${esc(SP_LABEL(s))}</button>`; }).join('')}</div>
         <p class="note"><b>${esc(focusText(pr))}</b><br>Antippen: dabei → ★ Schwerpunkt → aus.</p></div>
       <label class="fld" for="pfPerf"><span>Leistungsstand</span><textarea id="pfPerf" rows="2" placeholder="z. B. 10 km in 52:30 (Mai 2026)">${esc(pr.performance||'')}</textarea></label>
+      <label class="fld" for="pfEquip"><span>Ausstattung für Kraft</span><textarea id="pfEquip" rows="2" placeholder="z. B. Kurzhanteln 2 × 5 kg, Gymnastikband, Matte, Treppe">${esc(pr.equipment||'')}</textarea>
+        <span class="note" style="text-transform:none;letter-spacing:0;font-weight:400">Leer lassen = Claude plant nur mit Eigengewicht und Alltagsgegenständen (Stufe, Wand, Stuhl).</span></label>
       <div class="fld"><span>Trainingstage</span>
       ${(() => { const ld = new Set(longDaysOf(pr)); return `<div class="weekdays${ld.size?' haslong':''}">${order.map(d=>`<button class="toggle${ld.has(d)?' focus':''}" data-action="day" data-day="${d}" aria-pressed="${td.has(d)}" aria-label="${WD_LONG[d]}${ld.has(d)?', lange Einheit möglich':''}">${ld.has(d)?'★ ':''}${WD[d]}</button>`).join('')}</div>
       ${ld.size?`<p class="note"><b>Lange Einheit möglich: ${[1,2,3,4,5,6,0].filter(x=>ld.has(x)).map(x=>WD[x]).join(', ')}.</b></p>`:''}`; })()}
@@ -3336,7 +3339,7 @@ function buildContext(){
 
 Regeln:
 - Antworte auf Deutsch, direkt, knapp und fachlich präzise. Formatierung sparsam: kurze Absätze, bei Bedarf Aufzählungen mit „- “ und **fett** für Stichwörter; keine Überschriften, Tabellen oder Links. Keine Diagnosen; bei neu auftretenden, anhaltenden oder zunehmenden Schmerzen zur ärztlichen oder physiotherapeutischen Abklärung raten.
-- Krafteinheiten sollen sich steigern: Wurde eine Übung in den letzten zwei bis drei Einheiten vollständig absolviert (alle Sätze laut Protokoll)${care?' und schmerzfrei ausgeführt (Schmerz während und danach höchstens 1/10, keine Verschlechterung im Morgen-Check)':''}, plane die nächste Stufe: mehr Wiederholungen oder Haltezeit, ein zusätzlicher Satz, langsamere exzentrische Phase oder eine schwierigere Variante derselben Funktion (z. B. beidbeinig → einbeinig, höhere Stufe, zusätzliches Gewicht). Pro Übung nur eine Stellschraube auf einmal. Sind Sätze abgebrochen worden${care?' oder traten Schmerzen auf':''}, halte die Stufe oder nimm sie zurück.
+- Krafteinheiten sollen sich steigern: Wurde eine Übung in den letzten zwei bis drei Einheiten vollständig absolviert (alle Sätze laut Protokoll)${care?' und schmerzfrei ausgeführt (Schmerz während und danach höchstens 1/10, keine Verschlechterung im Morgen-Check)':''}, plane die nächste Stufe: mehr Wiederholungen oder Haltezeit, ein zusätzlicher Satz, langsamere exzentrische Phase oder eine schwierigere Variante derselben Funktion (z. B. beidbeinig → einbeinig, höhere Stufe, mehr Widerstand). Gewichte, Bänder und andere Geräte nur, wenn sie unter AUSSTATTUNG FÜR KRAFT stehen. Pro Übung nur eine Stellschraube auf einmal. Sind Sätze abgebrochen worden${care?' oder traten Schmerzen auf':''}, halte die Stufe oder nimm sie zurück.
 ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung und am Folgetag abgeklungen gilt als akzeptabel (Folgetag: siehe MORGEN-CHECKS). Darüber oder bei unklaren Signalen: nicht steigern, Umfang reduzieren oder Ersatztraining mit weniger Belastung für die betroffene Stelle einplanen.
 - Steigerung höchstens 10–15 % pro Woche, geplante Entlastungswochen einhalten, für die Beschwerden kritische Belastungen (z. B. bergab bei Kniebeschwerden) anfangs entschärfen.
 - „RPE“ ist die wahrgenommene Anstrengung (1–10). Nenn sie im Text immer „RPE“, nicht „Belastung“, damit sie nicht mit der Trainingslast verwechselt wird. Speichere sie unter "rpe". Liegt sie schon vor (eigene Rückmeldung oder "belastungStrava" aus Strava), frag nicht erneut.
@@ -3352,7 +3355,7 @@ ${care ? `- Schmerz an der betroffenen Stelle bis 2/10 während der Belastung un
 - Erkenntnisse: Führe eine Liste dauerhafter, für die Planung relevanter Beobachtungen (was Beschwerden auslöst oder lindert, gut vertragene Umfänge und Intensitäten, Vorlieben, Rahmenbedingungen). Ergänze sie, wenn du aus Daten oder Dialog etwas Dauerhaftes lernst, korrigiere veraltete Punkte, fasse zusammen statt zu wiederholen, höchstens 20 Punkte zu je einer kurzen Zeile. Liefere "insights" nur, wenn sich etwas ändert, und dann immer die vollständige Liste. Einmalige Tagesbefunde gehören nicht hinein.
 - Schritte mit Intensität (Einlaufen, Dauerlauf, Intervalle, Pausen, Auslaufen) bekommen Zielwerte: "rpe" (RPE 1–10, z. B. "6–7") immer, "hr" (HF-Zone, z. B. "Z2") wenn Herzfrequenzdaten vorliegen, "pace" nur auf flacher Strecke, beim Rad mit Leistungsmesser und bekannter FTP "watt" als enger Bereich um den Zielwert (etwa ±5 %, z. B. "160–176 W (Z3)"), nie bei 0 beginnend; Einrollen, Erholung und Pausen z. B. "95–110 W" (45–55 % FTP), damit die Mitte des Bereichs auch im ERG-Modus der Rolle sinnvoll ist. Jede Intensitätsstufe ist ein eigener Schritt mit eigenem Zielwert: Pyramiden, Stufen und Intervalle als einzelne Schritte bzw. als Wiederholung (z. B. „Pyramide 1: 2 min“, „Pause 2 min“, „Pyramide 2: 3 min“ …), nie mehrere Wattzahlen in einem Detailtext. „Ansteigend“ (z. B. Einrollen) beim Rad als 2–4 kurze Stufen mit steigender Wattzahl. "detail" knapp halten (höchstens etwa 200 Zeichen), Technikhinweise kurz. Auf Trails mit Höhenmetern steuert RPE bzw. HF, nicht das Tempo; sag das im Detail.
 - Ändern sich Ziel, Trainingstage, Sportarten, Beschwerden oder Leistungsstand (im Dialog oder in den Einstellungen), lieferst du im selben Schritt einen angepassten Plan und erklärst die Änderung kurz in der Begründung.
-- Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
+- Name, Ziel, Trainingstage, Sportarten, Beschwerden, Leistungsstand, Ausstattung und Hintergrund werden über diesen Dialog festgelegt. Übernimm Änderungen nur, wenn ${nm} sie klar äußert. Eine Beschwerde entfernst du nur auf ausdrücklichen Wunsch.
 - Leistungsaussagen: Eine Einschätzung behandelt ${care?'neben den Beschwerden ':''}Trainingslast und Trainingswirkung. Stütze dich auf die gelieferten Kennzahlen und nenne Zahlen sparsam:
   · Trainingslast (nicht mit der RPE verwechseln): Relative Effort der Einheit und Verhältnis 7/28 Tage (unter 0,8 Entlastung, 0,8–1,3 im Rahmen, 1,3–1,5 erhöht, darüber hoch).${care?' Bei Beschwerden gilt ein hohes Verhältnis zusätzlich als Risiko für die betroffene Stelle.':''}
   · Trainingseffekt: HF-Zonen und Zeitanteile (Z1 Regeneration, Z2 Grundlage, Z3 aerob intensiv, Z4 Schwelle, Z5 VO2max). Benenne, welcher Reiz gesetzt wurde und ob er zum Ziel der Einheit passt.
@@ -3375,6 +3378,7 @@ Antwortformat: Antworte ausschließlich mit einem JSON-Objekt:
    "name":"Vorname",
    "complaints":["Achillessehne rechts"],
    "performance":"Leistungsstand, z. B. Bestzeiten",
+   "equipment":"Ausstattung für Kraft (nur wenn ${nm} sie nennt oder ändert)",
    "insights":["vollständige Liste der Erkenntnisse, je eine kurze Zeile"],
    "goal":{"text":"knappes Ziel","date":"YYYY-MM-DD"},
    "trainingDays":[2,4,6],"longRunDays":[6],
@@ -3399,6 +3403,7 @@ Wochentage: 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa. "updates" darf leer sein. 
 `BESONDERE ZEITRÄUME (Abwesenheiten, jeden Tag Training): ${absences().filter(a=>a.to>=t).map(a=>a.from+' bis '+a.to+' '+(a.type==='off'?'kein Training':a.type==='daily'?'jeden Tag Training':'eingeschränkt')+(a.note?' ('+a.note+')':'')).join('; ')||'keine'}`,
 `MORGEN-CHECKS (Zustand am Tag nach einer Einheit, letzte 4 Wochen): ${Object.entries(checks()).filter(([d,c])=>d>=addDays(t,-28) && c && !c.skipped).sort().map(([d,c])=>d+' '+checkText(c)).join('; ')||'keine'}`,
 `LEISTUNGSSTAND: ${pr.performance||'nicht angegeben'}`,
+`AUSSTATTUNG FÜR KRAFT: ${pr.equipment||'keine Geräte angegeben – nur Eigengewicht und Alltagsgegenstände (Stufe, Wand, Stuhl)'}`,
 `ERKENNTNISSE: ${(pr.insights||[]).length ? (pr.insights||[]).map(x=>'- '+x).join('\n') : 'noch keine'}`,
 `TRAININGSTAGE: ${(pr.trainingDays||[]).map(d=>WD[d]).join(', ')||'noch nicht festgelegt'}${longDaysOf(pr).length?' – die lange Einheit der Woche in der Schwerpunkt-Sportart (z. B. langer Lauf, lange Radausfahrt) nur an: '+[1,2,3,4,5,6,0].filter(x=>longDaysOf(pr).includes(x)).map(x=>WD[x]).join(', '):''}`,
 `SPORTARTEN (planbar): ${focusText(pr)} Gehen und Wandern sind freie Ergänzungen: nicht planen, aber als Belastung berücksichtigen.`,
@@ -3455,6 +3460,7 @@ async function applyUpdates(u){
   if(typeof u.name==='string' && u.name.trim()){ pr.name = u.name.trim().slice(0,40); pc=true; }
   if(Array.isArray(u.complaints)){ pr.complaints = u.complaints.map(c=>String(c||'').trim().slice(0,60)).filter(Boolean).slice(0,5); pc=true; }
   if(typeof u.performance==='string'){ pr.performance = u.performance.slice(0,400); pc=true; }
+  if(typeof u.equipment==='string'){ pr.equipment = u.equipment.slice(0,300); pc=true; }
   if(Array.isArray(u.insights)){ pr.insights = u.insights.map(x=>String(x||'').trim().slice(0,200)).filter(Boolean).slice(0,25); pc=true; }
   if(u.goal && u.goal.text){ pr.goal = {text:String(u.goal.text).slice(0,200), date:isDate(u.goal.date)?u.goal.date:null}; pc=true; }
   if(Array.isArray(u.longRunDays)){ pr.longRunDays = [...new Set(u.longRunDays.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6))].sort(); pc=true; }

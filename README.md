@@ -92,7 +92,7 @@ Die App hat vier Bereiche. Die Bilder zeigen Beispieldaten. Auf jeder Seite gibt
 </p>
 
 ### Einstellungen
-- **Profil:** Name, Sportarten, Leistungsstand, Trainingstage.
+- **Profil:** Name, Sportarten, Leistungsstand, Ausstattung für Kraft (z. B. Kurzhanteln, Gymnastikband; leer = nur Eigengewicht), Trainingstage.
 - **Sportarten:** Laufen, Radfahren, Schwimmen, Kraft & Mobilität. Antippen schaltet durch: dabei → ★ Schwerpunkt → aus. Ohne Schwerpunkt sind alle gewählten Sportarten gleichwertig.
 - **Besondere Zeiträume:** Urlaub oder Reisen („kein Training“ oder „eingeschränkt“ mit Notiz) sowie Zeiträume mit „jeden Tag Training“. In einem solchen Zeitraum ist jeder Tag ein Trainingstag: Bist du beschwerdefrei und erholt, plant Claude ihn frei neu, die Kerneinheiten bleiben erhalten, die übrigen Tage werden mit leichten Einheiten gefüllt.
 - **Fitness und Beschwerden:** Sind Beschwerden eingetragen, plant Claude vorsichtiger und fragt gezielt nach Schmerz.
@@ -114,7 +114,7 @@ Claude bekommt bei jeder Anfrage einen festen Regelteil und den aktuellen Stand 
 
 | Bereich | Inhalt |
 |---|---|
-| Profil | Ziel und Zieldatum, Leistungsstand, Trainingstage, Sportarten, Beschwerden, besondere Zeiträume, Hintergrund, gespeicherte Erkenntnisse |
+| Profil | Ziel und Zieldatum, Leistungsstand, Ausstattung für Kraft, Trainingstage, Sportarten, Beschwerden, besondere Zeiträume, Hintergrund, gespeicherte Erkenntnisse |
 | Aktivitäten | Strava-Aktivitäten der letzten 6 Wochen mit Pace, HF, Zonen, Effizienz, Entkopplung (nur im Hauptteil ohne Ein- und Auslaufen), Watt und %FTP, Runden der Uhr |
 | Rückmeldungen | Schmerz während und danach, RPE, Morgen-Checks, Krafttraining-Protokolle |
 | Belastung | Wochenwerte, Relative Effort, Verhältnis der Belastung 7 zu 28 Tagen, Wochenfazits |
