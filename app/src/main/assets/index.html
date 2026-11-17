@@ -2158,7 +2158,7 @@ function illFor(sport, title, a){
 }
 const illCls = img => img ? ' bgill' : '';
 /* Maßstab je Figur, damit liegende und sitzende Figuren nicht größer wirken als die Läuferin */
-const illScale = img => img===STRENGTH_IMG ? 0.56 : img===STRETCH_IMG ? 0.8 : 1;
+const illScale = img => img===STRENGTH_IMG ? 0.6 : img===STRETCH_IMG ? 0.8 : 1;
 const illSty = img => img ? ` style="--ill:url(${img});--ills:${illScale(img)}${img===STRENGTH_IMG?';--illf:72%':''}"` : '';
 /* Höhe der Grafik: bis knapp unter RPE-Reihe bzw. „Ziel der Einheit“ */
 function sizeIll(root){
