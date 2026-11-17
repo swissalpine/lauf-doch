@@ -821,7 +821,7 @@ details.cx > summary .cxl{color:var(--warn)}
 .hdone{gap:10px}
 /* Heute: Illustration als Kartenhintergrund, nach unten ausgeblendet */
 .card.bgill{position:relative;isolation:isolate}
-.card.bgill::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:10px;height:var(--illh,220px);background:var(--ill) center top / contain no-repeat;opacity:.2;mix-blend-mode:multiply;pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,#000 45%,transparent 92%);mask-image:linear-gradient(to bottom,#000 45%,transparent 92%)}
+.card.bgill::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:10px;height:var(--illh,220px);background:var(--ill) center top / contain no-repeat;opacity:.2;mix-blend-mode:multiply;pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,#000 var(--illf,45%),transparent 92%);mask-image:linear-gradient(to bottom,#000 var(--illf,45%),transparent 92%)}
 .card.bgill .purpose{background:color-mix(in srgb, var(--sunk) 55%, transparent)}
 .card.bgill .tag.plan{background:color-mix(in srgb, var(--accent-soft) 70%, transparent)}
 .card.bgill .tag.done{background:color-mix(in srgb, var(--ok-soft) 70%, transparent)}
@@ -2159,7 +2159,7 @@ function illFor(sport, title, a){
 const illCls = img => img ? ' bgill' : '';
 /* Maßstab je Figur, damit liegende und sitzende Figuren nicht größer wirken als die Läuferin */
 const illScale = img => img===STRENGTH_IMG ? 0.56 : img===STRETCH_IMG ? 0.8 : 1;
-const illSty = img => img ? ` style="--ill:url(${img});--ills:${illScale(img)}"` : '';
+const illSty = img => img ? ` style="--ill:url(${img});--ills:${illScale(img)}${img===STRENGTH_IMG?';--illf:72%':''}"` : '';
 /* Höhe der Grafik: bis knapp unter RPE-Reihe bzw. „Ziel der Einheit“ */
 function sizeIll(root){
   root.querySelectorAll('.card.bgill').forEach(c => {
