@@ -2595,8 +2595,10 @@ function renderPlan(){
       const steps = Array.isArray(s.steps)?s.steps:[];
       const x = [SPORT[normSport(s.sport)], s.distanceKm?fmtNum(s.distanceKm, s.distanceKm%1?1:0)+' km':'', s.durationMin?s.durationMin+' min':''].filter(Boolean).join(' · ');
       const sent = typeof icuState==='function' && icuState(s)==='ok';
-      const ma = matchA.get(s), miss = past && !ma;
-      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"${miss?' class="miss"':''}><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : miss ? sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"') : sic(normSport(s.sport), s.title)}<span class="t">${esc(descTitle(s.title||'Training'))}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : miss ? `${esc(SPORT[normSport(s.sport)])} · <span class="ms">nicht absolviert</span>` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
+      // Ruhetag in der Vergangenheit ist kein Ausfall: eingehalten, wenn an dem Tag nichts trainiert wurde
+      const isRest = normSport(s.sport)==='rest', ma = isRest ? null : matchA.get(s), miss = past && !ma && !isRest;
+      const restKept = isRest && past && !dn.length;
+      return `<details data-k="${esc(s.date+'|'+(s.title||''))}"${miss?' class="miss"':''}><summary>${ma ? greenIc(sic(normSport(s.sport), s.title)) : miss ? sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"') : sic(normSport(s.sport), s.title)}<span class="t">${esc(descTitle(s.title||'Training'))}</span><span class="x">${ma ? `${esc(SPORT[normSport(s.sport)])} · <span class="dn">✓ ${esc(doneFacts(ma))}</span>` : miss ? `${esc(SPORT[normSport(s.sport)])} · <span class="ms">nicht absolviert</span>` : restKept ? `${esc(SPORT.rest)} · ✓ eingehalten` : esc(x)}${sent&&!ma?`<span class="sent" title="An die Uhr gesendet">${IC.watchOk}</span>`:''}</span></summary>
         ${s.goal?`<p class="purpose"><b>Ziel der Einheit</b>${esc(s.goal)}</p>`:''}
         ${steps.length?`<ol class="steps">${steps.map(st=>stepLi(st,s)).join('')}</ol>`:''}
         ${ma && (((ma.sport==='run'||ma.sport==='ride') && ma.perf) || ma.sport==='strength') ? `<div class="anl"><button class="lnk" data-action="detail-open" data-id="${esc(ma.id)}">Analyse ansehen ›</button></div>` : ''}
@@ -2762,7 +2764,7 @@ function renderHistory(){
         ${short?`<p class="short">${esc(short)}</p>`:''}
         ${d < t && repSession(a) ? `<div class="rep"><button class="lnk" data-action="rep-today" data-id="${esc(a.id)}">↻ Heute wiederholen</button>${a.sport==='strength' ? `<button class="lnk" data-action="rep-start" data-id="${esc(a.id)}">▶ Jetzt starten</button>` : ''}</div>` : ''}</div>`);
     });
-    planned.filter(s=>!mr.has(s) && d<t).forEach(s => its.push(`<div class="ritem missed"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}<span class="t">${esc(descTitle(s.title||'Training'))}</span></span>
+    planned.filter(s=>!mr.has(s) && d<t && normSport(s.sport)!=='rest').forEach(s => its.push(`<div class="ritem missed"><span class="facts">${sic(normSport(s.sport), s.title).replace('class="sic"', 'class="sic miss"')}<span class="t">${esc(descTitle(s.title||'Training'))}</span></span>
       <span class="rx">${esc(SPORT[normSport(s.sport)])} <span class="s">·</span> <span class="ms">nicht absolviert</span></span>${MANUAL_SPORTS.includes(normSport(s.sport)) && s.date>=addDays(t,-14) ? `<div class="mdone"><button class="btn ghost" data-action="done-mark" data-date="${esc(s.date)}" data-title="${esc(s.title||'')}">Doch erledigt</button></div>`:''}</div>`));
     cancelledD.forEach(s => its.push(`<div class="ritem">${cxDetails(s, 'rcx')}</div>`));
     if(its.length) rows.push(`<div class="entry"><div class="dl"><b>${WD[parseYmd(d).getDay()]}</b><span>${parseYmd(d).getDate()}.${parseYmd(d).getMonth()+1}.</span></div>
